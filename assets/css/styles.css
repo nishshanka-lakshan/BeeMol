@@ -1,0 +1,585 @@
+/* BeeMol styles */
+
+    :root{
+
+      --bg:#0b1220;
+
+      --panel:#111a2d;
+
+      --panel2:#0f1727;
+
+      --border:#263552;
+
+      --text:#eef4ff;
+
+      --muted:#9fb0cc;
+
+      --accent:#59a8ff;
+
+      --accent2:#78d7b6;
+
+      --danger:#ff7a90;
+
+      --code:#09101d;
+
+    }
+
+    *{box-sizing:border-box}
+
+    body{
+
+      margin:0;
+
+      font-family:Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+
+      background:linear-gradient(160deg,#08111f 0%,#0d1422 45%,#111827 100%);
+
+      color:var(--text);
+
+      min-height:100vh;
+
+    }
+
+    .topbar{
+
+      display:flex;align-items:center;justify-content:space-between;
+
+      padding:14px 20px;border-bottom:1px solid var(--border);
+
+      background:rgba(10,17,30,.94);position:sticky;top:0;z-index:20;
+
+      backdrop-filter: blur(10px);
+
+    }
+
+.brand{
+
+  display:flex;
+
+  gap:12px;
+
+  align-items:center;
+
+}
+
+/* BeeMol logo box */
+
+.logo{
+
+  width:40px;
+
+  height:40px;
+
+  border-radius:11px;
+
+  display:grid;
+
+  place-items:center;
+
+  font-size:22px;
+
+  background:linear-gradient(
+
+    135deg,
+
+    #ffd84d 0%,
+
+    #f5a623 100%
+
+  );
+
+  color:#111827;
+
+  box-shadow:
+
+    0 0 0 1px rgba(255,255,255,.08),
+
+    0 5px 18px rgba(245,166,35,.22);
+
+}
+
+/* BeeMol name */
+
+.brand h1{
+
+  margin:0;
+
+  font-family:"Exo 2", sans-serif;
+
+  font-size:24px;
+
+  font-weight:800;
+
+  line-height:1;
+
+  letter-spacing:.4px;
+
+}
+
+/* Bee part */
+
+.brand h1 .bee{
+
+  color:#ffd84d;
+
+}
+
+/* Mol part */
+
+.brand h1 .mol{
+
+  color:#eef4ff;
+
+}
+
+/* Subtitle */
+
+.brand small{
+
+  display:block;
+
+  margin-top:4px;
+
+  color:var(--muted);
+
+  font-family:"Exo 2", sans-serif;
+
+  font-size:11px;
+
+  font-weight:500;
+
+  letter-spacing:.35px;
+
+}
+
+    .top-actions{display:flex;gap:8px;flex-wrap:wrap}
+
+    button,.file-label{
+
+      border:1px solid var(--border);background:#16233b;color:var(--text);
+
+      padding:9px 12px;border-radius:9px;cursor:pointer;font-weight:600;
+
+      transition:.15s ease;display:inline-flex;align-items:center;gap:7px;
+
+    }
+
+    button:hover,.file-label:hover{border-color:var(--accent);transform:translateY(-1px)}
+
+    button.primary,.file-label.primary{background:var(--accent);color:#07111f;border-color:transparent}
+
+    button.secondary{background:#142738}
+
+    button.danger{background:#321824;border-color:#6a293f}
+
+    .container{
+
+      display:grid;
+
+      grid-template-columns:minmax(360px, 1.05fr) minmax(390px, .95fr);
+
+      gap:14px;padding:14px;
+
+      min-height:calc(100vh - 66px);
+
+    }
+
+    .left,.right{display:flex;flex-direction:column;gap:14px;min-width:0}
+
+    .card{
+
+      background:rgba(17,26,45,.96);
+
+      border:1px solid var(--border);
+
+      border-radius:14px;overflow:hidden;
+
+      box-shadow:0 14px 40px rgba(0,0,0,.16);
+
+    }
+
+    .card-header{
+
+      display:flex;align-items:center;justify-content:space-between;
+
+      padding:11px 14px;border-bottom:1px solid var(--border);
+
+      background:#111b2f;
+
+    }
+
+    .card-header h2{font-size:14px;margin:0}
+
+    .card-header span{font-size:12px;color:var(--muted)}
+
+    .mode-tabs{display:flex;gap:8px;padding:10px 20px}
+
+    .mode-tab{
+
+      border:1px solid var(--border);background:#142033;color:var(--muted);
+
+      padding:7px 14px;border-radius:8px;cursor:pointer;font-weight:700;font-size:12.5px;
+
+      border-bottom:1px solid var(--border);
+
+    }
+
+    .mode-tab.active{color:var(--text);background:#18243b;border-color:var(--accent)}
+
+    #viewerStack{position:relative;width:calc(100% - 40px);height:430px;margin:14px 20px 0;background:#070d17}
+
+    #viewer,#orbitalViewer{
+
+      position:absolute;top:0;left:0;width:100%;height:100%;overflow:hidden;background:#070d17;
+
+    }
+
+    #orbitalViewer{border:1px solid var(--border);border-radius:0}
+
+    .viewer-toolbar{display:flex;gap:8px;flex-wrap:wrap;padding:10px;border-top:1px solid var(--border)}
+
+    .bond-editor{
+
+      display:grid;
+
+      grid-template-columns:1fr 150px auto auto;
+
+      gap:10px;
+
+      align-items:end;
+
+      padding:10px 12px;
+
+      border-top:1px solid var(--border);
+
+      background:#0e1728;
+
+    }
+
+    .bond-editor .bond-status{
+
+      align-self:center;
+
+      font-size:12px;
+
+      color:var(--muted);
+
+      line-height:1.45;
+
+    }
+
+    .bond-editor label{margin-bottom:5px}
+
+    .bond-editor input{margin:0}
+
+    @media(max-width:700px){
+
+      .bond-editor{grid-template-columns:1fr 1fr}
+
+    }
+
+    .section{padding:14px}
+
+    .grid2{display:grid;grid-template-columns:1fr 1fr;gap:11px}
+
+    .grid3{display:grid;grid-template-columns:repeat(3,1fr);gap:10px}
+
+    label{
+
+      display:block;font-size:12px;color:var(--muted);margin-bottom:6px;font-weight:600;
+
+    }
+
+    input,select,textarea{
+
+      width:100%;background:#0c1526;color:var(--text);
+
+      border:1px solid var(--border);border-radius:8px;padding:9px 10px;
+
+      outline:none;font-family:inherit;
+
+    }
+
+    input:focus,select:focus,textarea:focus{border-color:var(--accent)}
+
+    textarea{resize:vertical}
+
+    #xyzInput{min-height:185px;font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:12px}
+
+    #codeOutput{
+
+      min-height:425px;background:var(--code);font-family:ui-monospace,SFMono-Regular,Menlo,monospace;
+
+      font-size:12.5px;line-height:1.55;white-space:pre;overflow:auto;padding:14px;margin:0;
+
+      color:#dce8ff;
+
+    }
+
+    .tabs{display:flex;border-bottom:1px solid var(--border);background:#0e1728}
+
+    .tab{
+
+      padding:10px 13px;cursor:pointer;color:var(--muted);font-size:13px;font-weight:700;
+
+      border-right:1px solid var(--border);
+
+    }
+
+    .tab.active{color:var(--text);background:#18243b}
+
+    .tab-panel{display:none}
+
+    .tab-panel.active{display:block}
+
+    .orbital-controls-wrap{padding:14px}
+
+    #orbitalListWrap{max-height:520px;overflow:auto;border:1px solid var(--border);border-radius:8px}
+
+    #orbitalListTable{width:100%;border-collapse:collapse;font-size:12.5px}
+
+    #orbitalListTable thead th{
+
+      position:sticky;top:0;background:#111b2f;color:var(--muted);
+
+      text-align:left;padding:8px 10px;border-bottom:1px solid var(--border);font-size:11px;
+
+      text-transform:uppercase;letter-spacing:.03em;
+
+    }
+
+    #orbitalListTable td{padding:7px 10px;border-bottom:1px solid #1c2942}
+
+    #orbitalListTable tbody tr{cursor:pointer}
+
+    #orbitalListTable tbody tr:hover{background:#152238}
+
+    #orbitalListTable tbody tr.active-orbital{background:#1a2c4a}
+
+    .orbital-controls{
+
+      display:grid;
+
+      grid-template-columns:repeat(2,minmax(0,1fr));
+
+      gap:11px;
+
+    }
+
+    .orbital-actions{
+
+      display:flex;
+
+      gap:8px;
+
+      flex-wrap:wrap;
+
+      margin-top:12px;
+
+    }
+
+    .orbital-status{
+
+      margin-top:10px;
+
+      font-size:12px;
+
+      color:var(--muted);
+
+      line-height:1.45;
+
+    }
+
+    @media(max-width:700px){
+
+      .orbital-controls{grid-template-columns:1fr}
+
+    }
+
+    .row{display:flex;align-items:center;gap:10px}
+
+    .switch-row{
+
+      display:flex;justify-content:space-between;align-items:center;
+
+      padding:8px 0;border-bottom:1px dashed #25334f;font-size:13px;
+
+    }
+
+    .switch-row:last-child{border-bottom:0}
+
+    input[type="checkbox"]{width:auto;transform:scale(1.15)}
+
+    .pill{
+
+      font-size:11px;padding:4px 7px;border-radius:999px;
+
+      background:#162740;color:#bdd8ff;border:1px solid #2e4567;
+
+    }
+
+    .status{font-size:12px;color:var(--muted)}
+
+    .status.ok{color:var(--accent2)}
+
+    .status.err{color:var(--danger)}
+
+    .mini-note{font-size:11px;color:var(--muted);margin-top:6px;line-height:1.45}
+
+    .footer-note{padding:10px 14px;color:var(--muted);font-size:11px;border-top:1px solid var(--border)}
+
+    .hidden{display:none}
+
+    @media(max-width:900px){
+
+      .container{grid-template-columns:1fr}
+
+      #viewerStack{height:350px}
+
+    }
+
+    /* Three-panel workspace for orbital inspection. */
+
+    #orbitalWorkspace{display:grid;grid-template-columns:minmax(240px,285px) minmax(420px,1fr) minmax(290px,335px);gap:12px;padding:12px;align-items:start;min-height:calc(100vh - 70px)}
+
+    #orbitalWorkspace.hidden{display:none}
+
+    #orbitalWorkspace .card{margin:0;min-width:0}
+
+    #orbitalSceneHost,#orbitalViewHost,#orbitalPropertiesHost{min-width:0}
+
+    #orbitalWorkspace #viewerStack{width:calc(100% - 24px);height:max(570px,calc(100vh - 230px));margin:12px}
+
+    #orbitalWorkspace #orbitalListWrap{max-height:calc(100vh - 225px)}
+
+    #orbitalWorkspace #orbitalListTable{font-size:12px}
+
+    #orbitalWorkspace #orbitalListTable td,#orbitalWorkspace #orbitalListTable th{padding:9px 5px}
+
+    #orbitalWorkspace #orbitalControlsWrap{padding:12px}
+
+    #orbitalWorkspace .orbital-controls{grid-template-columns:1fr}
+
+    #orbitalWorkspace .vibe-orbital-controls{justify-content:center}
+
+    #orbitalWorkspace .orbital-actions{display:grid;grid-template-columns:1fr 1fr}
+
+    #orbitalWorkspace .orbital-actions button,#orbitalWorkspace .orbital-actions .file-label{text-align:center;display:flex;align-items:center;justify-content:center;height:44px;width:100%;box-sizing:border-box}
+
+    #orbitalPropertiesHost>.card-header{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px;padding:10px}
+
+    #orbitalPropertiesHost>.card-header button{height:44px;width:100%;padding:6px;font-size:12px;text-align:center;box-sizing:border-box}
+
+    #orbitalPropertiesHost>.card-header button.active{background:#1c365e;border-color:#54a7ff;color:#fff}
+
+    #orbitalPropertiesHost>#orbitalAnimation{margin:12px;padding:12px}
+
+    #orbitalPropertiesHost>#orbitalAnimation.hidden,#orbitalPropertiesHost>#orbitalControlsWrap.hidden{display:none}
+
+    .top-actions{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));width:min(100%,690px);margin-left: auto}
+
+    .top-actions button,.top-actions .file-label{width:100%;height:44px;display:flex;align-items:center;justify-content:center;box-sizing:border-box;white-space:nowrap}
+
+    #orbitalPropertiesHost .vibe-orbital-controls button{flex:1 1 0;min-width:0;height:44px;box-sizing:border-box}
+
+    #orbitalPropertiesHost #orbitalAnimation .row button{flex:1 1 0;height:44px;box-sizing:border-box}
+
+    #orbitalWorkspace .orbital-controls > div{min-width:0;width:100%;box-sizing:border-box}
+
+    #orbitalWorkspace .orbital-controls input:not([type="checkbox"]),#orbitalWorkspace .orbital-controls select{width:100%;box-sizing:border-box}
+
+    #orbitalWorkspace .grid-dimensions{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px}
+
+    #orbitalWorkspace .grid-dimensions label{margin:0}
+
+    #orbitalWorkspace .mode-tabs{margin:0 12px}
+
+    @media(max-width:1050px){#orbitalWorkspace{grid-template-columns:minmax(180px,240px) minmax(300px,1fr)}#orbitalPropertiesHost{grid-column:1/-1}#orbitalWorkspace .orbital-controls{grid-template-columns:repeat(2,minmax(0,1fr))}}
+
+    @media(max-width:660px){#orbitalWorkspace{grid-template-columns:1fr}#orbitalPropertiesHost{grid-column:auto}#orbitalWorkspace #viewerStack{height:460px}#orbitalWorkspace #orbitalListWrap{max-height:260px}}
+
+    main.container.waterbox-active > .right > :not(#waterBoxWorkspace) {
+
+      display: none !important;
+
+    }
+
+    main.container.waterbox-active #waterBoxWorkspace .card {
+
+      margin: 0;
+
+    }
+
+    main.container.waterbox-active #waterBoxWorkspace label {
+
+      display: block;
+
+      margin-top: 6px;
+
+    }
+
+    main.container.waterbox-active #waterBoxWorkspace input[type="number"] {
+
+      max-width: 100%;
+
+      box-sizing: border-box;
+
+    }
+
+    main.container.waterbox-active #waterBoxWorkspace #wbGenerate {
+
+       width: 100%;
+
+      margin-top: 8px;
+
+    }
+
+    main.container.waterbox-active #waterBoxWorkspace .wb-download-row {
+
+      display: flex;
+
+      gap: 8px;
+
+      margin-top: 8px;
+
+    }
+
+    main.container.waterbox-active #waterBoxWorkspace .wb-download-row button {
+
+      flex: 1 1 0;
+
+      min-width: 0;
+
+      margin: 0;
+
+    }
+
+    /* Molecule setup uses the same scene / canvas / properties arrangement. */
+
+    main.container{grid-template-columns:minmax(245px,290px) minmax(400px,1fr) minmax(330px,410px);align-items:start;gap:12px;padding:12px}
+
+    main.container.hidden{display:none}
+
+    #moleculeSceneHost,.container>.left,.container>.right{min-width:0}
+
+    #moleculeSceneHost .card{margin:0}
+
+    #moleculeSceneHost #xyzInput{min-height:265px;width:100%;font-size:12px;line-height:1.5}
+
+    #moleculeSceneHost .card-header{flex-wrap:wrap}
+
+    #moleculeSceneHost .section .row{flex-wrap:wrap}
+
+    main.container #viewerStack{width:calc(100% - 24px);height:max(520px,calc(100vh - 285px));margin:12px}
+
+    main.container .viewer-toolbar{flex-wrap:wrap}
+
+    main.container>.right #codeOutput{max-height:55vh;overflow:auto}
+
+    @media(max-width:1150px){main.container{grid-template-columns:minmax(220px,270px) minmax(350px,1fr)}main.container>.right{grid-column:1/-1}}
+
+    @media(max-width:710px){main.container{grid-template-columns:1fr}main.container>.right{grid-column:auto}main.container #viewerStack{height:430px}}
+
+/* Three.js canvas fills the actual orbital viewport */
+
+#orbitalViewer > canvas { width:100% !important; height:100% !important; display:block; }

@@ -1,28 +1,45 @@
-# PyBuilder: PySCF input builder and orbital viewer
+# BeeMol Three.js orbital edition
 
-**[Open PyBuilder](http://127.0.0.1:5500/PyBuilder.html)**
+## Running
 
-PyBuilder is a browser-based tool for preparing PySCF input scripts from molecular coordinates. It also provides a 3D molecule view and tools for inspecting molecular orbitals from Molden or orbital CUBE files.
+Extract the ZIP, then serve the `BeeMol_ThreeJS` directory with:
 
-## Getting started
+```bash
+python3 -m http.server 8000
+```
 
-1. Click **Open PyBuilder** above. If you downloaded the files, keep this README and `PyBuilder-integrated-orbitals.html` in the same folder, then open the HTML file in a browser.
-2. Paste atom coordinates into **Coordinates**, or use **Open XYZ** to load a geometry. Click **Update Molecule** to refresh the 3D view.
-3. Select the calculation settings, including the method, basis set, charge, and spin. For multireference calculations, enter the active electrons, active orbitals, and number of roots as appropriate.
-4. Review the generated Python code. Use **Copy PySCF** to paste it into your editor, or **Download .py** to save it.
-5. Run the saved Python script in an environment with PySCF installed. Check the molecular charge, spin, active space, and chosen method before submitting a calculation.
+Open `http://localhost:8000` in Chrome. Internet is required for the Three.js JavaScript module, 3Dmol.js, and JSmol dependencies loaded from external services.
 
-## Methods and visualization
+## Architecture
 
-The builder offers RHF, UHF, ROHF, and DFT as starting methods. Its second-method menu includes CASSCF, CASCI, ADC, and NEVPT2. Additional controls cover DFT functionals, ADC settings, SCF convergence, memory, and threads. Available combinations should be checked against the generated code and your installed PySCF version.
+- `index.html`: application interface
+- `assets/css/styles.css`: appearance
+- `assets/js/`: molecule builder, PySCF UI, and water box
+- `orbital-visualization/orbital-grid.js`: existing Molden and orbital grid logic
+- `orbital-visualization/orbital-renderer.js`: orbital UI and Three.js integration
+- `orbital-visualization/three-orbitals.js`: new independent Three.js orbital renderer
 
-Use **Open Molden** to inspect orbitals and their phases. The orbital controls include orbital selection, isosurface level, phase colors, and display options. An orbital CUBE file can also be opened. In the animation panel, successive Molden orbitals are treated as frames; the `Ene=` field is a frame index there, not automatically a time in femtoseconds.
+The molecular orbital viewer is implemented with Three.js. Isosurfaces use a marching-tetrahedra implementation with vertex normals (not yet VibeMol's gradient-normal marching-cubes approach). The existing 3Dmol.js engine remains for other molecular tasks.
 
-## What runs where
+## Limitations
 
-The page generates Python input and displays molecular data in your browser. It does not execute PySCF calculations or submit jobs to a cluster. You must run the downloaded script separately. The page loads 3Dmol.js and JSmol from external sources, so those viewer features may need an internet connection.
+- JavaScript syntax was checked with Node. Full interactive browser and scientific visualization correctness were **not** verified.
+- The Three.js orbital renderer expects Gaussian CUBE scalar fields, including those produced by BeeMol's pre-existing Molden workflow. Multi-component CUBE files are not comprehensively supported.
+- The existing Molden Gaussian basis evaluator is unchanged; validate orbital shapes against reference software.
+- Some existing orientation and recording controls are still tied to 3Dmol.js. Full integration with Three.js and reliable movie capture require additional adaptation.
+- Orbital isosurfaces are extracted on the main thread, so large grids can freeze the browser. Use moderate grids to begin.
 
-## Files
+### Smooth isosurface update
+The Three.js orbital renderer now uses consistent tetrahedron edge topology for
+three- and four-edge intersections, removing the artificial cutouts caused by
+unordered intersection points. Vertex normals are calculated from trilinearly
+interpolated scalar-field gradients in physical coordinates, rather than
+per-triangle flat normals. The geometry is rendered double-sided for robust
+visibility. No changes were made to the underlying Molden orbital evaluator.
 
-- [`PyBuilder.html`](PyBuilder.html): the application; open this file to use PyBuilder.
-- `README.md`: this guide.
+
+## Blank orbital viewer repair
+Fixed a JavaScript runtime exception in triangle winding: the two world-space triangle vertices must be mutable when reversed. If the browser displays cached files, hard-refresh (Cmd+Shift+R). Run using `python3 -m http.server 8000` and open http://localhost:8000.
+
+## Three.js orientation control fix
+Fit, Horizontal, Vertical, six Look along axis choices, and X/Y/Z rotation buttons now manipulate the visible Three.js orbital group. Shift-click reverses rotation. No orbital grid or surface extraction changes.

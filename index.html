@@ -1,862 +1,36 @@
 <!DOCTYPE html>
 
-
-
 <html lang="en">
-
-
 
 <head>
 
-
-
   <meta charset="UTF-8" />
-
-
 
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
 
-
-
   <title>BeeMol</title>
 
-
-
-  <script src="https://3Dmol.org/build/3Dmol-min.js"></script>
-
-  <script src="https://chemapps.stolaf.edu/jmol/jsmol/JSmol.min.js"></script>
+  
 
   <link rel="preconnect" href="https://fonts.googleapis.com">
 
   <link rel="preconnect"
+
       href="https://fonts.gstatic.com"
+
       crossorigin>
 
   <link href="https://fonts.googleapis.com/css2?family=Exo+2:wght@500;600;700;800&display=swap"
+
       rel="stylesheet">
 
-  <style>
-
-
-
-    :root{
-
-
-      --bg:#0b1220;
-
-      --panel:#111a2d;
-
-      --panel2:#0f1727;
-
-      --border:#263552;
-
-      --text:#eef4ff;
-
-      --muted:#9fb0cc;
-
-      --accent:#59a8ff;
-
-      --accent2:#78d7b6;
-
-      --danger:#ff7a90;
-
-      --code:#09101d;
-
-    }
-
-
-
-    *{box-sizing:border-box}
-
-
-
-    body{
-
-
-
-      margin:0;
-
-
-
-      font-family:Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
-
-
-
-      background:linear-gradient(160deg,#08111f 0%,#0d1422 45%,#111827 100%);
-
-      color:var(--text);
-
-      min-height:100vh;
-
-
-
-    }
-
-
-
-    .topbar{
-
-
-
-      display:flex;align-items:center;justify-content:space-between;
-
-
-
-      padding:14px 20px;border-bottom:1px solid var(--border);
-
-
-
-      background:rgba(10,17,30,.94);position:sticky;top:0;z-index:20;
-
-
-
-      backdrop-filter: blur(10px);
-
-
-
-    }
-
-.brand{
-  display:flex;
-  gap:12px;
-  align-items:center;
-}
-
-
-/* BeeMol logo box */
-.logo{
-  width:40px;
-  height:40px;
-
-  border-radius:11px;
-
-  display:grid;
-  place-items:center;
-
-  font-size:22px;
-
-  background:linear-gradient(
-    135deg,
-    #ffd84d 0%,
-    #f5a623 100%
-  );
-
-  color:#111827;
-
-  box-shadow:
-    0 0 0 1px rgba(255,255,255,.08),
-    0 5px 18px rgba(245,166,35,.22);
-}
-
-
-/* BeeMol name */
-.brand h1{
-  margin:0;
-
-  font-family:"Exo 2", sans-serif;
-
-  font-size:24px;
-  font-weight:800;
-
-  line-height:1;
-
-  letter-spacing:.4px;
-}
-
-
-/* Bee part */
-.brand h1 .bee{
-  color:#ffd84d;
-}
-
-
-/* Mol part */
-.brand h1 .mol{
-  color:#eef4ff;
-}
-
-
-/* Subtitle */
-.brand small{
-  display:block;
-
-  margin-top:4px;
-
-  color:var(--muted);
-
-  font-family:"Exo 2", sans-serif;
-
-  font-size:11px;
-  font-weight:500;
-
-  letter-spacing:.35px;
-}
-
-
-
-    .top-actions{display:flex;gap:8px;flex-wrap:wrap}
-
-
-
-    button,.file-label{
-
-
-
-      border:1px solid var(--border);background:#16233b;color:var(--text);
-
-
-
-      padding:9px 12px;border-radius:9px;cursor:pointer;font-weight:600;
-
-
-
-      transition:.15s ease;display:inline-flex;align-items:center;gap:7px;
-
-
-
-    }
-
-
-
-    button:hover,.file-label:hover{border-color:var(--accent);transform:translateY(-1px)}
-
-
-
-    button.primary,.file-label.primary{background:var(--accent);color:#07111f;border-color:transparent}
-
-
-
-    button.secondary{background:#142738}
-
-
-
-    button.danger{background:#321824;border-color:#6a293f}
-
-
-
-    .container{
-
-
-
-      display:grid;
-
-
-
-      grid-template-columns:minmax(360px, 1.05fr) minmax(390px, .95fr);
-
-
-
-      gap:14px;padding:14px;
-
-
-
-      min-height:calc(100vh - 66px);
-
-
-
-    }
-
-
-
-    .left,.right{display:flex;flex-direction:column;gap:14px;min-width:0}
-
-
-
-    .card{
-
-
-
-      background:rgba(17,26,45,.96);
-
-
-
-      border:1px solid var(--border);
-
-
-
-      border-radius:14px;overflow:hidden;
-
-
-
-      box-shadow:0 14px 40px rgba(0,0,0,.16);
-
-
-
-    }
-
-
-
-    .card-header{
-
-
-
-      display:flex;align-items:center;justify-content:space-between;
-
-
-
-      padding:11px 14px;border-bottom:1px solid var(--border);
-
-
-
-      background:#111b2f;
-
-
-
-    }
-
-
-
-    .card-header h2{font-size:14px;margin:0}
-
-
-
-    .card-header span{font-size:12px;color:var(--muted)}
-
-
-
-    .mode-tabs{display:flex;gap:8px;padding:10px 20px}
-
-
-
-    .mode-tab{
-
-
-
-      border:1px solid var(--border);background:#142033;color:var(--muted);
-
-
-
-      padding:7px 14px;border-radius:8px;cursor:pointer;font-weight:700;font-size:12.5px;
-
-
-
-      border-bottom:1px solid var(--border);
-
-
-
-    }
-
-
-
-    .mode-tab.active{color:var(--text);background:#18243b;border-color:var(--accent)}
-
-
-
-    #viewerStack{position:relative;width:calc(100% - 40px);height:430px;margin:14px 20px 0;background:#070d17}
-
-
-
-    #viewer,#orbitalViewer{
-
-
-
-      position:absolute;top:0;left:0;width:100%;height:100%;overflow:hidden;background:#070d17;
-
-
-
-    }
-
-
-
-    #orbitalViewer{border:1px solid var(--border);border-radius:0}
-
-
-
-    .viewer-toolbar{display:flex;gap:8px;flex-wrap:wrap;padding:10px;border-top:1px solid var(--border)}
-
-
-
-    .bond-editor{
-
-
-
-      display:grid;
-
-
-
-      grid-template-columns:1fr 150px auto auto;
-
-
-
-      gap:10px;
-
-
-
-      align-items:end;
-
-
-
-      padding:10px 12px;
-
-
-
-      border-top:1px solid var(--border);
-
-
-
-      background:#0e1728;
-
-
-
-    }
-
-
-
-    .bond-editor .bond-status{
-
-
-
-      align-self:center;
-
-
-
-      font-size:12px;
-
-
-
-      color:var(--muted);
-
-
-
-      line-height:1.45;
-
-
-
-    }
-
-
-
-    .bond-editor label{margin-bottom:5px}
-
-
-
-    .bond-editor input{margin:0}
-
-
-
-    @media(max-width:700px){
-
-
-
-      .bond-editor{grid-template-columns:1fr 1fr}
-
-
-
-    }
-
-
-
-    .section{padding:14px}
-
-
-
-    .grid2{display:grid;grid-template-columns:1fr 1fr;gap:11px}
-
-
-
-    .grid3{display:grid;grid-template-columns:repeat(3,1fr);gap:10px}
-
-
-
-    label{
-
-
-
-      display:block;font-size:12px;color:var(--muted);margin-bottom:6px;font-weight:600;
-
-
-
-    }
-
-
-
-    input,select,textarea{
-
-
-
-      width:100%;background:#0c1526;color:var(--text);
-
-
-
-      border:1px solid var(--border);border-radius:8px;padding:9px 10px;
-
-
-
-      outline:none;font-family:inherit;
-
-
-
-    }
-
-
-
-    input:focus,select:focus,textarea:focus{border-color:var(--accent)}
-
-
-
-    textarea{resize:vertical}
-
-
-
-    #xyzInput{min-height:185px;font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:12px}
-
-
-
-    #codeOutput{
-
-
-
-      min-height:425px;background:var(--code);font-family:ui-monospace,SFMono-Regular,Menlo,monospace;
-
-
-
-      font-size:12.5px;line-height:1.55;white-space:pre;overflow:auto;padding:14px;margin:0;
-
-
-
-      color:#dce8ff;
-
-
-
-    }
-
-
-
-    .tabs{display:flex;border-bottom:1px solid var(--border);background:#0e1728}
-
-
-
-    .tab{
-
-
-
-      padding:10px 13px;cursor:pointer;color:var(--muted);font-size:13px;font-weight:700;
-
-
-
-      border-right:1px solid var(--border);
-
-
-
-    }
-
-
-
-    .tab.active{color:var(--text);background:#18243b}
-
-
-
-    .tab-panel{display:none}
-
-
-
-    .tab-panel.active{display:block}
-
-
-
-    .orbital-controls-wrap{padding:14px}
-
-
-
-    #orbitalListWrap{max-height:520px;overflow:auto;border:1px solid var(--border);border-radius:8px}
-
-
-
-    #orbitalListTable{width:100%;border-collapse:collapse;font-size:12.5px}
-
-
-
-    #orbitalListTable thead th{
-
-
-
-      position:sticky;top:0;background:#111b2f;color:var(--muted);
-
-
-
-      text-align:left;padding:8px 10px;border-bottom:1px solid var(--border);font-size:11px;
-
-
-
-      text-transform:uppercase;letter-spacing:.03em;
-
-
-
-    }
-
-
-
-    #orbitalListTable td{padding:7px 10px;border-bottom:1px solid #1c2942}
-
-
-
-    #orbitalListTable tbody tr{cursor:pointer}
-
-
-
-    #orbitalListTable tbody tr:hover{background:#152238}
-
-
-
-    #orbitalListTable tbody tr.active-orbital{background:#1a2c4a}
-
-
-
-    .orbital-controls{
-
-
-
-      display:grid;
-
-
-
-      grid-template-columns:repeat(2,minmax(0,1fr));
-
-
-
-      gap:11px;
-
-
-
-    }
-
-
-
-    .orbital-actions{
-
-
-
-      display:flex;
-
-
-
-      gap:8px;
-
-
-
-      flex-wrap:wrap;
-
-
-
-      margin-top:12px;
-
-
-
-    }
-
-
-
-    .orbital-status{
-
-
-
-      margin-top:10px;
-
-
-
-      font-size:12px;
-
-
-
-      color:var(--muted);
-
-
-
-      line-height:1.45;
-
-
-
-    }
-
-
-
-    @media(max-width:700px){
-
-
-
-      .orbital-controls{grid-template-columns:1fr}
-
-
-
-    }
-
-
-
-    .row{display:flex;align-items:center;gap:10px}
-
-
-
-    .switch-row{
-
-
-
-      display:flex;justify-content:space-between;align-items:center;
-
-
-
-      padding:8px 0;border-bottom:1px dashed #25334f;font-size:13px;
-
-
-
-    }
-
-
-
-    .switch-row:last-child{border-bottom:0}
-
-
-
-    input[type="checkbox"]{width:auto;transform:scale(1.15)}
-
-
-
-    .pill{
-
-
-
-      font-size:11px;padding:4px 7px;border-radius:999px;
-
-
-
-      background:#162740;color:#bdd8ff;border:1px solid #2e4567;
-
-
-
-    }
-
-
-
-    .status{font-size:12px;color:var(--muted)}
-
-
-
-    .status.ok{color:var(--accent2)}
-
-
-
-    .status.err{color:var(--danger)}
-
-
-
-    .mini-note{font-size:11px;color:var(--muted);margin-top:6px;line-height:1.45}
-
-
-
-    .footer-note{padding:10px 14px;color:var(--muted);font-size:11px;border-top:1px solid var(--border)}
-
-
-
-    .hidden{display:none}
-
-
-
-    @media(max-width:900px){
-
-      .container{grid-template-columns:1fr}
-
-      #viewerStack{height:350px}
-
-
-
-    }
-
-
-
-
-    /* Three-panel workspace for orbital inspection. */
-    #orbitalWorkspace{display:grid;grid-template-columns:minmax(240px,285px) minmax(420px,1fr) minmax(290px,335px);gap:12px;padding:12px;align-items:start;min-height:calc(100vh - 70px)}
-    #orbitalWorkspace.hidden{display:none}
-    #orbitalWorkspace .card{margin:0;min-width:0}
-    #orbitalSceneHost,#orbitalViewHost,#orbitalPropertiesHost{min-width:0}
-    #orbitalWorkspace #viewerStack{width:calc(100% - 24px);height:max(570px,calc(100vh - 230px));margin:12px}
-    #orbitalWorkspace #orbitalListWrap{max-height:calc(100vh - 225px)}
-    #orbitalWorkspace #orbitalListTable{font-size:12px}
-    #orbitalWorkspace #orbitalListTable td,#orbitalWorkspace #orbitalListTable th{padding:9px 5px}
-    #orbitalWorkspace #orbitalControlsWrap{padding:12px}
-    #orbitalWorkspace .orbital-controls{grid-template-columns:1fr}
-    #orbitalWorkspace .vibe-orbital-controls{justify-content:center}
-    #orbitalWorkspace .orbital-actions{display:grid;grid-template-columns:1fr 1fr}
-    #orbitalWorkspace .orbital-actions button,#orbitalWorkspace .orbital-actions .file-label{text-align:center;display:flex;align-items:center;justify-content:center;height:44px;width:100%;box-sizing:border-box}
-    #orbitalPropertiesHost>.card-header{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px;padding:10px}
-    #orbitalPropertiesHost>.card-header button{height:44px;width:100%;padding:6px;font-size:12px;text-align:center;box-sizing:border-box}
-    #orbitalPropertiesHost>.card-header button.active{background:#1c365e;border-color:#54a7ff;color:#fff}
-    #orbitalPropertiesHost>#orbitalAnimation{margin:12px;padding:12px}
-    #orbitalPropertiesHost>#orbitalAnimation.hidden,#orbitalPropertiesHost>#orbitalControlsWrap.hidden{display:none}
-    .top-actions{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));width:min(100%,690px);margin-left: auto}
-    .top-actions button,.top-actions .file-label{width:100%;height:44px;display:flex;align-items:center;justify-content:center;box-sizing:border-box;white-space:nowrap}
-    #orbitalPropertiesHost .vibe-orbital-controls button{flex:1 1 0;min-width:0;height:44px;box-sizing:border-box}
-    #orbitalPropertiesHost #orbitalAnimation .row button{flex:1 1 0;height:44px;box-sizing:border-box}
-    #orbitalWorkspace .orbital-controls > div{min-width:0;width:100%;box-sizing:border-box}
-    #orbitalWorkspace .orbital-controls input:not([type="checkbox"]),#orbitalWorkspace .orbital-controls select{width:100%;box-sizing:border-box}
-    #orbitalWorkspace .grid-dimensions{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px}
-    #orbitalWorkspace .grid-dimensions label{margin:0}
-    #orbitalWorkspace .mode-tabs{margin:0 12px}
-    @media(max-width:1050px){#orbitalWorkspace{grid-template-columns:minmax(180px,240px) minmax(300px,1fr)}#orbitalPropertiesHost{grid-column:1/-1}#orbitalWorkspace .orbital-controls{grid-template-columns:repeat(2,minmax(0,1fr))}}
-    @media(max-width:660px){#orbitalWorkspace{grid-template-columns:1fr}#orbitalPropertiesHost{grid-column:auto}#orbitalWorkspace #viewerStack{height:460px}#orbitalWorkspace #orbitalListWrap{max-height:260px}}
-
-    main.container.waterbox-active > .right > :not(#waterBoxWorkspace) {
-      display: none !important;
-    }
-
-    main.container.waterbox-active #waterBoxWorkspace .card {
-      margin: 0;
-    }
-
-    main.container.waterbox-active #waterBoxWorkspace label {
-      display: block;
-      margin-top: 6px;
-    }
-
-    main.container.waterbox-active #waterBoxWorkspace input[type="number"] {
-      max-width: 100%;
-      box-sizing: border-box;
-    }
-
-    main.container.waterbox-active #waterBoxWorkspace #wbGenerate {
-       width: 100%;
-      margin-top: 8px;
-    }
-
-    main.container.waterbox-active #waterBoxWorkspace .wb-download-row {
-      display: flex;
-      gap: 8px;
-      margin-top: 8px;
-    }
-
-    main.container.waterbox-active #waterBoxWorkspace .wb-download-row button {
-      flex: 1 1 0;
-      min-width: 0;
-      margin: 0;
-    }
-
-    /* Molecule setup uses the same scene / canvas / properties arrangement. */
-    main.container{grid-template-columns:minmax(245px,290px) minmax(400px,1fr) minmax(330px,410px);align-items:start;gap:12px;padding:12px}
-    main.container.hidden{display:none}
-    #moleculeSceneHost,.container>.left,.container>.right{min-width:0}
-    #moleculeSceneHost .card{margin:0}
-    #moleculeSceneHost #xyzInput{min-height:265px;width:100%;font-size:12px;line-height:1.5}
-    #moleculeSceneHost .card-header{flex-wrap:wrap}
-    #moleculeSceneHost .section .row{flex-wrap:wrap}
-    main.container #viewerStack{width:calc(100% - 24px);height:max(520px,calc(100vh - 285px));margin:12px}
-    main.container .viewer-toolbar{flex-wrap:wrap}
-    main.container>.right #codeOutput{max-height:55vh;overflow:auto}
-    @media(max-width:1150px){main.container{grid-template-columns:minmax(220px,270px) minmax(350px,1fr)}main.container>.right{grid-column:1/-1}}
-    @media(max-width:710px){main.container{grid-template-columns:1fr}main.container>.right{grid-column:auto}main.container #viewerStack{height:430px}}
-  </style>
-
-
+  <link rel="stylesheet" href="assets/css/styles.css">
 
 </head>
 
-
-
 <body>
 
-
-
   <header class="topbar">
-
-
 
   <div class="brand">
 
@@ -865,7 +39,9 @@
     <div>
 
       <h1>
+
         <span class="bee">Bee</span><span class="mol">Mol</span>
+
       </h1>
 
       <small>Quantum Chemistry Visualization</small>
@@ -874,6032 +50,937 @@
 
   </div>
 
-
-
     <div class="top-actions">
 
-
-
     <label class="file-label" for="orbitalFileInput"> Open </label>
+
     <input id="orbitalFileInput" type="file"
+
          accept=".xyz,.molden,.molden.input,.molden.inp,.inp,.txt,.cube,.cub"
+
          multiple class="hidden" />
 
       <button id="copyCode">Copy PySCF</button>
+
       <button id="downloadPy" class="primary">Download .py</button>
 
     </div>
 
-
-
   </header>
 
-
-
-
-
-
-
   <div id="orbitalWorkspace" class="hidden" aria-label="Orbital workspace">
+
     <aside id="orbitalSceneHost"></aside>
+
     <section id="orbitalViewHost"></section>
+
     <aside id="orbitalPropertiesHost" class="card"><div class="card-header" role="tablist" aria-label="Orbital controls"><button id="showOrbitalAppearance" type="button" class="active" role="tab" aria-selected="true" aria-controls="orbitalControlsWrap" style="display:flex;align-items:center;justify-content:center;text-align:center;">Orbital appearance</button><button id="toggleOrbitalAnimation" type="button" role="tab" aria-selected="false" aria-controls="orbitalAnimation" style="display:flex;align-items:center;justify-content:center;text-align:center;">Orbital animation</button></div></aside>
+
   </div>
 
   <main class="container">
+
     <aside id="moleculeSceneHost" aria-label="Molecule coordinates"></aside>
-
-
 
     <section class="left">
 
-
-
       <div class="card">
-
-
 
         <div class="card-header">
 
-
-
           <h2>3D Viewer</h2>
-
-
 
           <span id="atomCount">0 atoms</span>
 
-
-
         </div>
-
-
-
-
-
-
 
         <div class="mode-tabs">
 
-
-
           <div id="modeMoleculeBtn" class="mode-tab active">Molecule</div>
 
-
-
           <div id="modeOrbitalsBtn" class="mode-tab">Orbitals</div>
+
           <div id="wbOpen" class="mode-tab" role="button" tabindex="0">Water box</div>
-
-
 
         </div>
 
-
-
-
-
-
-
         <div id="viewerStack">
-
-
 
           <div id="viewer"></div>
 
-
-
           <div id="orbitalViewer" class="hidden"></div>
+
           <div id="wbViewer" class="hidden"
+
                 style="position:absolute;inset:0;width:100%;height:100%;background:#f8fbff"></div>
 
         </div>
 
-
-
-
-
-
-
         <div id="orientationControls" class="viewer-toolbar" style="margin:0 12px 12px;display:flex;align-items:center;flex-wrap:wrap;gap:7px">
+
           <button type="button" id="fitOrbitalBtn">Fit</button>
+
           <button type="button" id="alignHorizontal" title="Align the longest atom-to-atom axis left to right">Horizontal</button>
+
           <button type="button" id="alignVertical" title="Align the longest atom-to-atom axis bottom to top">Vertical</button>
+
           <label style="margin:0;display:flex;align-items:center;gap:5px">Look along
+
             <select id="axisView" style="width:83px;padding:6px"><option value="+z">+Z</option><option value="-z">−Z</option><option value="+x">+X</option><option value="-x">−X</option><option value="+y">+Y</option><option value="-y">−Y</option></select>
+
           </label>
+
           <button type="button" id="applyAxisView">View</button>
+
           <label style="margin:0;display:flex;align-items:center;gap:5px">Rotate
+
             <input id="orientationDegrees" type="number" value="15" min="1" max="180" step="1" style="width:64px;padding:6px">°
+
           </label>
+
           <button type="button" data-rotate-axis="vx">X ±</button>
+
           <button type="button" data-rotate-axis="vy">Y ±</button>
+
           <button type="button" data-rotate-axis="vz">Z ±</button>
+
           <label style="margin:0;display:flex;align-items:center;gap:5px">Zoom (%)
+
             <input id="orbitalZoom" type="number" value="100" min="10" max="500" step="10" style="width:76px;padding:6px" title="Zoom relative to the fitted view">
+
           </label>
+
           <button type="button" id="applyOrbitalZoom">Apply zoom</button>
+
           <span class="mini-note" style="margin:0">Click to rotate forward; Shift-click to reverse.</span>
+
         </div>
 
         <div id="moleculeControls">
 
-
-
           <div class="viewer-toolbar">
-
-
 
               <button id="fitBtn">Fit</button>
 
-
-
               <button id="spinBtn">Spin</button>
-
-
 
               <button id="styleBtn">Ball & Stick</button>
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
               <label for="bgColorPicker" style="display:flex;align-items:center;gap:8px;margin-left:8px;">
-
-
 
                   <span style="font-size:12px;color:var(--muted);">Background</span>
 
-
-
                   <input id="bgColorPicker" type="color" value="#070d17"
-
-
 
                    style="width:42px;height:32px;padding:0;border:none;background:none;cursor:pointer;" />
 
-
-
               </label>
 
-
-
           </div>
-
-
-
-
-
-
 
           <div class="bond-editor">
 
-
-
             <div id="bondSelectionStatus" class="bond-status">
-
-
 
               Bond edit: click two atoms in the 3D viewer
 
-
-
             </div>
-
-
-
-
-
-
 
             <div>
 
-
-
               <label for="bondLengthInput">Bond length (Å)</label>
-
-
 
               <input id="bondLengthInput"
 
-
-
                      type="number"
-
-
 
                      value="1.400"
 
-
-
                      min="0.10"
-
-
 
                      max="10.00"
 
-
-
                      step="0.01" />
-
-
 
             </div>
 
-
-
-
-
-
-
             <button id="applyBondLengthBtn" class="primary">
-
-
 
               Apply Bond Length
 
-
-
             </button>
-
-
-
-
-
-
 
             <button id="clearBondSelectionBtn">
 
-
-
               Clear Selection
-
-
 
             </button>
 
-
-
           </div>
-
-
 
         </div>
 
-
-
-
-
-
-
         <div id="orbitalControlsWrap" class="hidden">
 
-
-
           <div class="orbital-controls-wrap">
-
-
 
             <div class="orbital-controls">
 
               <div>
 
-
-
                 <label>Orbital number</label>
-
-
 
                 <input id="orbitalNumber" type="number" value="1" min="1" step="1" />
 
-
-
               </div>
 
-
-
-
-
-
-
               <div>
-
-
 
                 <label>Isovalue</label>
 
-
-
                 <input id="orbitalCutoff" type="number"
-
-
 
                        value="0.020" min="0.000001" max="0.500" step="0.0001" />
 
-
-
               </div>
-              <div class="vibe-orbital-controls" style="grid-column:1/-1;display:flex;flex-wrap:wrap;align-items:center;gap:8px">
+
+              <div style="grid-column:1/-1"><label style="display:flex;align-items:center;gap:7px"><input type="checkbox" id="autoOrbitalIso" checked> Automatic isovalue (85% orbital weight)</label></div>
+
+               <div class="vibe-orbital-controls" style="grid-column:1/-1;display:flex;flex-wrap:wrap;align-items:center;gap:8px">
+
                 <button type="button" id="orbitalPrev" title="Previous orbital">◀ Prev</button>
+
                 <button type="button" id="orbitalNext" title="Next orbital">▶ Next</button>
+
                 <label style="display:inline-flex;align-items:center;gap:6px;margin:0 0 0 8px"><input type="checkbox" id="showOrbitalAtoms" checked> Atoms and bonds</label>
-              </div>
-              <div><label>Grid detail (X × Y × Z)</label>
-                <div class="grid-dimensions">
-                  <label>X<input id="gridX" type="number" min="12" max="200" step="1" value="50"></label>
-                  <label>Y<input id="gridY" type="number" min="12" max="200" step="1" value="60"></label>
-                  <label>Z<input id="gridZ" type="number" min="12" max="200" step="1" value="50"></label>
-                </div>
+
               </div>
 
+              <div><label>Grid detail (X × Y × Z)</label>
+
+                <div class="grid-dimensions">
+
+                  <label>X<input id="gridX" type="number" min="12" max="200" step="1" value="80"></label>
+
+                  <label>Y<input id="gridY" type="number" min="12" max="200" step="1" value="80"></label>
+
+                  <label>Z<input id="gridZ" type="number" min="12" max="200" step="1" value="80"></label>
+
+                </div>
+
+              </div>
 
               <div style="grid-column:1/-1;display:flex;align-items:center;flex-wrap:wrap;gap:16px">
+
               <label style="display:inline-flex;align-items:center;gap:6px;margin:0;white-space:nowrap">
+
                 Negative
+
                 <input id="orbitalNegativeColor" type="color" value="#1555ed"
+
                   style="width:34px;height:28px;padding:2px;flex:none" />
+
               </label>
 
               <label style="display:inline-flex;align-items:center;gap:6px;margin:0;white-space:nowrap">
+
                 Positive
+
                 <input id="orbitalPositiveColor" type="color" value="#ffbf00"
+
                   style="width:34px;height:28px;padding:2px;flex:none" />
+
               </label>
+
               </div>
 
-
-
               <div style="grid-column:1/-1"><label style="display:flex;align-items:center;gap:8px"><input type="checkbox" id="orbitalFlipPhase"> Flip phase colors</label></div>
+
               <div style="grid-column:1/-1">
+
                 <label for="orbitalDepth" style="margin-top:10px">Surface depth (%)</label>
+
                 <input id="orbitalDepth" type="number" min="0" max="100" step="1" value="0" />
+
                 <label for="orbitalGloss" style="margin-top:10px">Gloss (%)</label>
+
                 <input id="orbitalGloss" type="number" min="0" max="100" step="1" value="0" />
+
               </div>
 
               <div>
 
-
-
                 <label>Translucency</label>
-
-
 
                 <input id="orbitalTranslucency" type="number"
 
-
-
                        value="0" min="0" max="0.95" step="0.05" />
-
-
 
               </div>
 
-
-
             </div>
-
-
-
-
-
-
 
             <div class="orbital-actions">
 
-              <button id="orbitalBackgroundBtn" type="button">Background: Dark</button>
+              <button id="orbitalBackgroundBtn" type="button">Background: Light</button>
+
               <button id="downloadOrbitalCube" type="button">Download orbital CUBE</button>
 
             </div>
 
-
             <div id="orbitalAnimation" class="card hidden" style="margin-top:12px;padding:12px">
+
               <strong>Orbital animation</strong>
+
               <div class="mini-note">Each Molden orbital is one frame. Ene= is a frame index here, not a time in fs.</div>
+
               <input id="animationFrame" type="range" min="1" max="1" value="1" step="1" style="width:100%;margin-top:12px">
+
               <div id="animationFrameLabel" class="mini-note">Frame 1 of 1</div>
+
               <div class="row" style="margin-top:9px;flex-wrap:wrap;gap:8px">
+
                 <label>First <input id="animationStart" type="number" min="1" value="1" style="width:75px"></label>
+
                 <label>Last <input id="animationEnd" type="number" min="1" value="1" style="width:75px"></label>
+
                 <label>FPS <input id="animationFps" type="number" min="1" max="12" value="6" style="width:65px"></label>
+
                 <label>Frame step <input id="animationStep" type="number" min="1" max="100" value="10" step="1" style="width:65px"></label>
+
               </div>
+
               <div class="row" style="margin-top:10px;flex-wrap:wrap;gap:7px">
+
                 <button type="button" id="animationPlay"
+
                     style="display:flex;align-items:center;justify-content:center">
+
                   Play
+
                   </button>
+
                   <button type="button" id="animationRecord"
+
                     style="display:flex;align-items:center;justify-content:center">
+
                 Movie
+
                 </button>
+
               </div>
-              <div class="mini-note">Frame step 10 shows frames 1, 11, 21, and so on. Playback and Save WebM use the X, Y, and Z grid detail set in Orbital appearance.</div>
+
+              <div class="mini-note">Frame step 10 shows frames 1, 11, 21, and so on. Playback and movie recording use the X, Y, and Z grid detail set in Orbital appearance.</div>
+
             </div>
 
             <div id="orbitalStatus" class="orbital-status">
 
-
-
               Open a Molden file. The available orbital numbers will be shown here.
-
-
 
             </div>
 
-
-
           </div>
-
-
 
         </div>
 
-
-
       </div>
-
-
-
-
-
-
 
       <div class="card">
 
-
-
         <div class="card-header">
-
-
 
           <h2>Coordinates</h2>
 
-
-
           <span>XYZ or element/x/y/z lines</span>
 
-
-
         </div>
-
-
 
         <div class="section">
 
-
-
           <textarea id="xyzInput" spellcheck="false" placeholder="Open a Molden or XYZ file, or paste coordinates here."></textarea>
-
-
 
           <div class="row" style="margin-top:10px">
 
-
-
             <button id="updateMol" class="secondary">Update Molecule</button>
-
-
 
             <span id="geomStatus" class="status">Waiting for coordinates</span>
 
-
-
           </div>
 
-
-
-          <div class="mini-note">Edit the atomic coordinates here, then click Update Molecule. This prototype uses 3Dmol.js for visualization.</div>
-
-
+          <div class="mini-note">Edit the atomic coordinates here, then click Update Molecule. This viewer uses Three.js for visualization.</div>
 
         </div>
 
-
-
       </div>
 
-
-
     </section>
-
-
-
-
-
-
 
     <section class="right">
 
       <section id="waterBoxWorkspace" class="hidden" style="padding:0">
+
       <div class="card" style="padding:16px">
+
       <div class="card-header" style="padding:0 0 12px">
+
           <h2>Water box</h2>
+
       </div>
 
       <p class="mini-note">
+
         Coordinates and box lengths are in Å. The molecule is translated to the
+
         exact center of the box. Water molecules retain the geometry
+
         supplied below.
+
       </p>
 
       <div style="display:grid;grid-template-columns:1fr;gap:12px;margin:14px 0">
+
         <div>
+
           <label for="wbSolute">Geometry (XYZ)</label>
+
           <textarea id="wbSolute" spellcheck="false"
+
                     style="width:100%;height:120px;box-sizing:border-box;font-family:monospace">
+
     4
+
     HCCI
+
     H   0.000000  0.000000 -1.060000
+
     C   0.000000  0.000000  0.000000
+
     C   0.000000  0.000000  1.200000
+
     I   0.000000  0.000000  3.250000</textarea>
+
             <label for="wbSoluteFile" class="file-label"
+
                    style="display:inline-block;margin-top:6px">Open HCCI XYZ</label>
+
             <input id="wbSoluteFile" type="file" accept=".xyz,.txt" class="hidden">
+
         </div>
 
         <div>
+
           <label for="wbWater">Water geometry (XYZ)</label>
+
           <textarea id="wbWater" spellcheck="false"
-                    style="width:100%;height:120px;box-sizing:border-box;font-family:monospace">
-    3
-    H2O
-    O   0.000000  0.000000  0.000000
-    H   0.757200  0.000000  0.586500
-    H  -0.757200  0.000000  0.586500</textarea>
+                    style="width:100%;height:120px;box-sizing:border-box;font-family:monospace">3
+H2O
+O  0.000000  0.000000  0.000000
+H  0.757200  0.000000  0.586500
+H -0.757200  0.000000  0.586500</textarea>
+
           <label for="wbWaterFile" class="file-label"
+
                  style="display:inline-block;margin-top:6px">Open water XYZ</label>
+
           <input id="wbWaterFile" type="file" accept=".xyz,.txt" class="hidden">
+
         </div>
+
       </div>
 
       <div style="display:flex;align-items:end;flex-wrap:wrap;gap:12px">
+
         <label>Box X (Å)
+
           <input id="wbX" type="number" min="6" step="0.5" value="20" style="width:90px">
+
         </label>
+
         <label>Box Y (Å)
+
           <input id="wbY" type="number" min="6" step="0.5" value="20" style="width:90px">
+
         </label>
+
         <label>Box Z (Å)
+
           <input id="wbZ" type="number" min="6" step="0.5" value="20" style="width:90px">
+
         </label>
+
         <label>Water molecules
+
           <input id="wbCount" type="number" min="0" max="800" step="1"
+
                value="200" style="width:105px">
+
         </label>
 
         <button type="button" id="wbGenerate" class="primary">Generate water box</button>
-  
+
         <div class="wb-download-row">
+
             <button type="button" id="wbDownload" disabled>XYZ</button>
+
             <button type="button" id="wbDownloadPDB" disabled>PDB</button>
+
         </div>
 
         <span id="wbStatus" role="status" class="mini-note"></span>
+
       </div>
 
     </div>
-  </section>
 
+  </section>
 
       <div class="card" id="tabsCard">
 
-
-
         <div class="tabs">
-
-
 
           <div class="tab active" data-tab="basic">Basic</div>
 
-
-
           <div class="tab" data-tab="advanced">Advanced</div>
-
-
 
           <div class="tab" data-tab="job">Job</div>
 
-
-
         </div>
-
-
-
-
-
-
 
         <div class="tab-panel active" id="basic">
 
-
-
           <div class="section">
-
-
 
             <div class="grid2">
 
-
-
               <div>
-
-
 
                 <label>Method 1</label>
 
-
-
                 <select id="method1">
-
-
 
                   <option>RHF</option>
 
-
-
                   <option>UHF</option>
-
-
 
                   <option selected>DFT</option>
 
-
-
                   <option>ROHF</option>
-
-
 
                 </select>
 
-
-
               <div>
 
-
-
-
-
-
-
               </div>
-
-
 
                 <label>Method 2</label>
 
-
-
                 <select id="method2">
-
-
 
                   <option selected>None</option>
 
-
-
                   <option>CASSCF</option>
-
-
 
                   <option>CASCI</option>
 
-
-
                   <option>ADC</option>
-
-
 
                   <option>NEVPT2</option>
 
-
-
                 </select>
 
-
-
               </div>
-
-
 
               <div id="functionalWrap">
 
-
-
                 <label>DFT Functional</label>
-
-
 
                 <select id="functional">
 
-
-
                   <option>B3LYP</option>
-
-
 
                   <option>PBE0</option>
 
-
-
                   <option>PBE</option>
-
-
 
                   <option>BP86</option>
 
-
-
                   <option>M06-2X</option>
-
-
 
                   <option>CAM-B3LYP</option>
 
-
-
                   <option>wB97X-D</option>
-
-
 
                 </select>
 
-
-
               </div>
 
-
-
               <div>
-
-
 
                 <label>Basis Set</label>
 
-
-
                 <select id="basis">
-
-
 
                   <option>sto-3g</option>
 
-
-
                   <option>6-31g</option>
-
-
 
                   <option>6-31g*</option>
 
-
-
                   <option>cc-pvdz</option>
-
-
 
                   <option>cc-pvtz</option>
 
-
-
                   <option selected>def2-tzvp</option>
-
-
 
                   <option>ano-rcc-vdzp</option>
 
-
-
                   <option>ano-rcc-vtzp</option>
-
-
 
                 </select>
 
-
-
               </div>
 
-
-
               <div>
-
-
 
                 <label>Charge</label>
 
-
-
                 <input id="charge" type="number" value="0" step="1" />
-
-
 
               </div>
 
-
-
               <div>
-
-
 
                 <label>Spin = Nα − Nβ</label>
 
-
-
                 <input id="spin" type="number" value="0" step="1" min="0" />
-
-
 
               </div>
 
-
-
             </div>
-
-
-
-
-
-
 
             <div style="margin-top:13px">
 
-
-
               <div class="switch-row">
-
-
 
                 <span>Geometry optimization</span>
 
-
-
                 <input id="optimize" type="checkbox" />
-
-
 
               </div>
 
-
-
               <div class="switch-row">
-
-
 
                 <span>Density fitting</span>
 
-
-
                 <input id="densityFit" type="checkbox" />
 
-
-
               </div>
-
-
 
               <div class="switch-row">
 
-
-
                 <span>Save checkpoint</span>
-
-
 
                 <input id="checkpoint" type="checkbox" checked />
 
-
-
               </div>
-
-
 
             </div>
 
-
-
           </div>
 
-
-
         </div>
-
-
-
-
-
-
 
         <div class="tab-panel" id="advanced">
 
-
-
           <div class="section">
-
-
 
             <div class="grid2">
 
-
-
               <div>
-
-
 
                 <label>SCF convergence</label>
 
-
-
                 <select id="convTol">
-
-
 
                   <option value="1e-8">1e-8</option>
 
-
-
                   <option value="1e-9" selected>1e-9</option>
-
-
 
                   <option value="1e-10">1e-10</option>
 
-
-
                 </select>
-
-
 
               </div>
 
-
-
               <div>
-
-
 
                 <label>Max SCF cycles</label>
 
-
-
                 <input id="maxCycle" type="number" value="100" min="1"/>
-
-
 
               </div>
 
-
-
               <div>
-
-
 
                 <label>Memory (MB)</label>
 
-
-
                 <input id="memory" type="number" value="8000" min="100"/>
-
-
 
               </div>
 
-
-
               <div>
-
-
 
                 <label>Verbose</label>
 
-
-
                 <select id="verbose">
-
-
 
                   <option>3</option><option selected>4</option><option>5</option>
 
-
-
                 </select>
-
-
 
               </div>
 
-
-
             </div>
-
-
-
-
-
-
 
             <div id="casOptions" style="display:none;margin-top:14px">
 
-
-
               <div class="card-header" style="margin:0 -14px 12px;border-top:1px solid var(--border)">
-
-
 
                 <h2>Active Space</h2><span class="pill">CASSCF / CASCI / NEVPT2</span>
 
-
-
               </div>
-
-
 
               <div class="grid3">
 
-
-
                 <div>
-
-
 
                   <label>Active orbitals</label>
 
-
-
                   <input id="ncas" type="number" value="14" min="1"/>
-
-
 
                 </div>
 
-
-
                 <div>
-
-
 
                   <label>Active electrons</label>
 
-
-
                   <input id="nelecas" type="number" value="14" min="1"/>
-
-
 
                 </div>
 
-
-
                 <div>
-
-
 
                   <label>Number of roots</label>
 
-
-
                   <input id="nroots" type="number" value="1" min="1"/>
-
-
 
                 </div>
 
-
-
               </div>
 
-
-
             </div>
-
-
-
-
-
-
 
             <div id="adcOptions" style="display:none;margin-top:14px">
 
-
-
               <div class="card-header" style="margin:0 -14px 12px;border-top:1px solid var(--border)">
-
-
 
                 <h2>ADC Options</h2><span class="pill">IP / EA / EE</span>
 
-
-
               </div>
-
-
 
               <div class="grid2">
 
-
-
                 <div>
-
-
 
                   <label>ADC Method</label>
 
-
-
                   <select id="adcMethod">
-
-
 
                     <option selected>adc(2)</option>
 
-
-
                     <option>adc(2)-x</option>
-
-
 
                     <option>adc(3)</option>
 
-
-
                   </select>
 
-
-
                 </div>
-
-
 
                 <div>
 
-
-
                   <label>ADC Type</label>
-
-
 
                   <select id="adcType">
 
-
-
                     <option selected>IP</option>
-
-
 
                     <option>EA</option>
 
-
-
                     <option>EE</option>
-
-
 
                   </select>
 
-
-
                 </div>
-
-
 
               </div>
 
-
-
             </div>
-
-
 
           </div>
 
-
-
         </div>
-
-
-
-
-
-
 
         <div class="tab-panel" id="job">
 
-
-
           <div class="section">
-
-
 
             <div class="grid2">
 
-
-
               <div>
-
-
 
                 <label>Output prefix</label>
 
-
-
                 <input id="jobName" type="text" value="pyscf_job"/>
 
-
-
               </div>
-
-
 
               <div>
 
-
-
                 <label>Threads</label>
-
-
 
                 <input id="threads" type="number" value="8" min="1"/>
 
-
-
               </div>
-
-
 
             </div>
 
-
-
             <div class="mini-note">This version generates the Python input only. A later version can add SLURM submission scripts and a backend for actually running PySCF.</div>
-
-
 
           </div>
 
-
-
         </div>
 
-
-
-
-
-
-
       </div>
-
-
-
-
-
-
 
       <div class="card hidden" id="orbitalListCard" style="flex:1">
 
-
-
         <div class="card-header">
-
-
 
           <h2>Molecular Orbitals</h2>
 
-
-
           <span id="orbitalListCount">0 orbitals</span>
 
-
-
         </div>
-
-
 
         <div class="section">
 
-
-
           <div id="orbitalListWrap">
-
-
 
             <table id="orbitalListTable">
 
-
-
               <thead>
-
-
 
                 <tr><th>#</th><th>Ene= (Ha)</th><th>Occupancy</th><th>Spin</th></tr>
 
-
-
               </thead>
-
-
 
               <tbody id="orbitalListBody"></tbody>
 
-
-
             </table>
-
-
 
           </div>
 
-
-
           <div class="mini-note" id="orbitalListNote">The Ene= column contains values stored in the Molden file. These are orbital energies or placeholders, not total SCF or CASSCF energies.</div>
-
-
 
         </div>
 
-
-
       </div>
-
-
-
-
-
-
 
       <div class="card" id="codeCard" style="flex:1">
 
-
-
         <div class="card-header">
-
-
 
           <h2>Generated PySCF Input</h2>
 
-
-
           <span id="codeStatus" class="status ok">Ready</span>
-
-
 
         </div>
 
-
-
         <pre id="codeOutput"></pre>
-
-
 
         <div class="footer-note">Review charge, spin, active-space choices, and method-specific options before running production calculations.</div>
 
-
-
       </div>
-
-
 
     </section>
 
-
-
   </main>
 
+<script src="assets/js/three-molecule.js"></script>
 
+<script src="assets/js/app-core.js"></script>
 
+<script src="orbital-visualization/orbital-grid.js"></script>
 
+<script src="assets/js/molecule-and-ui.js"></script>
 
+<script src="orbital-visualization/three-orbitals.js"></script>
 
+<script src="orbital-visualization/orbital-renderer.js"></script>
+
+<script src="assets/js/waterbox.js"></script>
 
 <script>
 
+// The orbital surface is rendered by Three.js, not the legacy 3Dmol.js viewer.
 
+// Install handlers after all other scripts, so every button reaches the visible scene.
 
-let viewer;
+(function(){
 
+ const get=(id)=>document.getElementById(id);
 
+ const three=()=>window.BeeMolThree;
 
-let spinning = false;
+ const active=()=>!get('orbitalViewer')?.classList.contains('hidden');
 
+ const replace=(id,handler)=>{const el=get(id);if(el){const previous=el.onclick;el.onclick=(event)=>{
 
+   if(active()&&three()?.isReady){handler(event);return;}
 
-let ballStick = true;
+   if(previous)previous(event);
 
+ };}};
 
+ replace('fitOrbitalBtn',()=>three().fit());
 
-let coordinateUpdateTimer = null;
+ replace('alignHorizontal',()=>three().align('x'));
 
+ replace('alignVertical',()=>three().align('y'));
 
+ replace('applyAxisView',()=>three().axisView(get('axisView').value));
 
-let viewerBgColor = "#070d17";
+ document.querySelectorAll('[data-rotate-axis]').forEach(button=>{
 
+   const previous=button.onclick;button.onclick=(event)=>{
 
+     if(!active()||!three()?.isReady){if(previous)previous(event);return;}
 
+     const degrees=Math.max(1,Math.min(180,Number(get('orientationDegrees').value)||15));
 
+     const sign=event.shiftKey?-1:1;
 
+     three().rotateView(button.dataset.rotateAxis.slice(1),sign*degrees);
 
+   };
 
-let jmolApplet0 = null;
+ });
 
-
-
-let orbitalViewerReady = false;
-
-let cubeData = null;
-let embeddedActive = false;
-let importedMolden = null;
-let importLoadToken = 0;
-let orbitalLoadToken = 0;
-const SUPPLIED_MOLDEN = "[Molden Format]\nmade by pyscf v[2.9.0]\n[Atoms] (AU)\nCu   1   29    -0.00082542710658     0.06165694385630    -0.11473666200782\nC   2   6    -0.00013572367603     3.41174239442053    -0.11482315048183\nO   3   8     0.00054005958528     5.54401434438089    -0.11487114635003\nCl   4   17    -0.00000120589974    -3.84215281827023    -0.11488742257253\n[GTO]\n1 0\n s   21 1.00\n               9148883  0.00011722000111642\n               1369956  0.00033155000315772\n              311782.6  0.00088243000840437\n               88318.8  0.0021722900206891\n              28815.53  0.0052954700504347\n              10403.46   0.012966300123493\n              4057.791   0.031880500303634\n              1682.974   0.075765690721601\n              733.7543    0.16244637154716\n              333.2677    0.28435959270827\n              156.4338    0.34173643325474\n              74.69721    0.20955087199579\n              33.32262   0.035447510337606\n              16.62237  -0.0024399600232385\n               8.20826  0.0014699000139995\n                3.6094  -0.00064379000613153\n              1.683449  0.00024738000235608\n              0.733757  -8.1180000773168e-05\n              0.110207  1.6150000153815e-05\n              0.038786  -1.2330000117432e-05\n              0.015514  4.520000043049e-06\n s   21 1.00\n               9148883  -3.6749999930094e-05\n               1369956  -0.00010402999980211\n              311782.6  -0.00027732999947246\n               88318.8  -0.00068416999869856\n              28815.53  -0.0016768599968103\n              10403.46  -0.0041345999921351\n              4057.791   -0.01035126998031\n              1682.974  -0.025347909951783\n              733.7543  -0.058369469888969\n              333.2677   -0.11673283977795\n              156.4338   -0.18466859964872\n              74.69721   -0.14700898972036\n              33.32262    0.18483256964841\n              16.62237    0.56773608892004\n               8.20826    0.37956091927799\n                3.6094   0.047037549910524\n              1.683449  -0.00072782999861551\n              0.733757  0.0010297599980412\n              0.110207  -7.0199999866464e-05\n              0.038786  7.0899999865133e-05\n              0.015514  -2.453999995332e-05\n s   21 1.00\n               9148883  1.3829999907808e-05\n               1369956  3.9139999739088e-05\n              311782.6  0.00010438999930412\n               88318.8  0.00025744999828381\n              28815.53  0.00063202999578681\n              10403.46  0.0015571799896196\n              4057.791  0.0039165899738915\n              1682.974  0.0095947599360402\n              733.7543   0.022388369850756\n              333.2677   0.045286059698118\n              156.4338   0.074983779500149\n              74.69721   0.061881699587489\n              33.32262  -0.090473269396894\n              16.62237   -0.39288471738098\n               8.20826   -0.35664955762253\n                3.6094    0.34554792769654\n              1.683449     0.7063919652911\n              0.733757    0.25335910831108\n              0.110207   0.006587489956087\n              0.038786  -0.00044246999705044\n              0.015514  0.00072337999517786\n s   21 1.00\n               9148883  -2.7100000165167e-06\n               1369956  -7.6600000466855e-06\n              311782.6  -2.0470000124759e-05\n               88318.8  -5.0300000306564e-05\n              28815.53  -0.0001244200007583\n              10403.46  -0.00030269000184481\n              4057.791  -0.0007762800047312\n              1682.974  -0.0018524000112898\n              733.7543  -0.0044827000273208\n              333.2677  -0.0086602400527816\n              156.4338  -0.015447260094147\n              74.69721  -0.010898640066424\n              33.32262   0.014678670089462\n              16.62237   0.091541220557917\n               8.20826   0.063308570385847\n                3.6094  -0.060938790371404\n              1.683449   -0.27148545165463\n              0.733757   -0.10138944061794\n              0.110207    0.71212180434018\n              0.038786    0.34613175210957\n              0.015514    0.07198709043874\n s   21 1.00\n               9148883  3.4599999920132e-06\n               1369956  9.7899999774015e-06\n              311782.6  2.6259999939383e-05\n               88318.8  6.3919999852452e-05\n              28815.53  0.00016086999962866\n              10403.46  0.00038022999912231\n              4057.791  0.0010171599976521\n              1682.974  0.0022915199947104\n              733.7543  0.0059749699862078\n              333.2677   0.010446949975885\n              156.4338   0.021515829950334\n              74.69721   0.010301279976221\n              33.32262  -0.0098432399772786\n              16.62237   -0.14292629967008\n               8.20826  -0.056127069870441\n                3.6094    0.09135649978912\n              1.683449    0.45831401894206\n              0.733757   -0.19726739954464\n              0.110207     -1.303101566992\n              0.038786    0.87975567796924\n              0.015514    0.57310888867708\n p   15 1.00\n              9713.253  0.00039986999831416\n              2300.889  0.0021015699911399\n              746.7706   0.010010969957794\n              284.6806   0.038360389838274\n              119.9999    0.11626755950982\n              54.07386    0.25899830890807\n              25.37321    0.38428225837988\n              12.20962    0.29911209873895\n              5.757421   0.080006719662695\n              2.673402  0.0031943999865325\n              1.186835  0.0014725199937919\n              0.481593  -0.00023390999901384\n              0.192637  0.00020760999912472\n              0.077055  -8.9629999622123e-05\n              0.030822  2.782999988267e-05\n p   15 1.00\n              9713.253  -0.00014878999906112\n              2300.889  -0.0007826199950616\n              746.7706  -0.0037622899762596\n              284.6806  -0.014579679908001\n              119.9999   -0.04571092971156\n              54.07386   -0.10593012933157\n              25.37321   -0.16836227893762\n              12.20962   -0.10373212934544\n              5.757421    0.21083154866964\n              2.673402    0.48916442691333\n              1.186835     0.3846863775726\n              0.481593   0.085293379461792\n              0.192637  -0.0016104499898379\n              0.077055  0.0020652999869678\n              0.030822  -0.00064174999595051\n p   15 1.00\n              9713.253  -0.00015877999915981\n              2300.889  -0.0008535899954832\n              746.7706  -0.0039991899788381\n              284.6806  -0.016080919914907\n              119.9999  -0.049248639739399\n              54.07386   -0.12165678935625\n              25.37321   -0.17713366906269\n              12.20962   -0.14448196923547\n              5.757421    0.64743310657408\n              2.673402    0.54797691710036\n              1.186835   -0.78180320586306\n              0.481593   -0.52607777721624\n              0.192637    0.22437176881273\n              0.077055    0.33392452823303\n              0.030822    0.14446373923556\n p   15 1.00\n              9713.253  5.0529999729804e-05\n              2300.889  0.00026718999857127\n              746.7706  0.0012771799931706\n              284.6806  0.0049975999732766\n              119.9999    0.01561375991651\n              54.07386   0.036897009802703\n              25.37321   0.057964689690049\n              12.20962   0.037919659797235\n              5.757421   -0.11706498937403\n              2.673402   -0.20912256888177\n              1.186835  -0.058005319689832\n              0.481593    0.16430735912141\n              0.192637    0.52885465717209\n              0.077055    0.37373015800158\n              0.030822   0.083998659550839\n d   10 1.00\n              249.3497  0.0013456100021198\n              74.63837   0.010809830017029\n              28.37641   0.047337930074572\n              11.94893    0.13772582021696\n              5.317646    0.26263833041374\n              2.364417    0.33470401052726\n              1.012386    0.31000597048836\n              0.406773    0.21316819033581\n              0.147331   0.078653650123904\n              0.058932  0.0060309600095006\n d   10 1.00\n              249.3497  -0.0015835900069066\n              74.63837  -0.012811160055874\n              28.37641  -0.056426790246098\n              11.94893   -0.16641393072579\n              5.317646    -0.3510601415311\n              2.364417   -0.23717890103442\n              1.012386    0.21994641095927\n              0.406773    0.48841363213015\n              0.147331    0.29537131128822\n              0.058932   0.042955390187344\n\n2 0\n s   14 1.00\n             50557.501  0.00011288740000368\n             7524.7856  0.00052953730001726\n             1694.3276  0.0024500383000799\n             472.82279   0.010053984700328\n             151.71075   0.035453980601156\n             53.918746     0.1044071086034\n             20.659311    0.24128949180787\n              8.383976     0.3834225483125\n              3.577015    0.30785143931004\n              1.547118    0.06872442990224\n              0.613013  0.00022244450000725\n              0.246068  0.0019767489000644\n              0.099087  0.0020578594000671\n               0.03468  0.00041820200001363\n s   14 1.00\n             50557.501  -2.5074200001182e-05\n             7524.7856  -0.00011759450000554\n             1694.3276  -0.00054562750002572\n             472.82279  -0.0022450771001058\n             151.71075  -0.0080434718003791\n             53.918746  -0.024425887101151\n             20.659311  -0.061367911802893\n              8.383976   -0.11777678350555\n              3.577015   -0.15504877830731\n              1.547118  -0.019333168600911\n              0.613013    0.39969306781884\n              0.246068    0.55894209492635\n              0.099087    0.17111950230807\n               0.03468  0.0074562446003515\n s   14 1.00\n             50557.501  1.617879999942e-05\n             7524.7856  7.4971199997312e-05\n             1694.3276  0.00035734669998719\n             472.82279  0.0014349315999486\n             151.71075  0.0055086778998025\n             53.918746   0.016914968999394\n             20.659311   0.051416652398156\n              8.383976    0.11373437409592\n              3.577015    0.23371839439162\n              1.547118  -0.071837825697424\n              0.613013    -1.0490908710624\n              0.246068  -0.066627339897611\n              0.099087     1.0119993797637\n               0.03468    0.16560463859406\n p    9 1.00\n             83.333155  0.0013446559998953\n             19.557611   0.010235554999203\n              6.080365   0.045200670996482\n              2.179317    0.14107561978902\n               0.86515    0.30473880847628\n              0.361944    0.39952810106891\n               0.15474    0.27191634317884\n              0.065429   0.058576693295441\n                0.0229  -0.00012638129999016\n p    9 1.00\n             83.333155  -0.0017715884999539\n             19.557611  -0.014562180999621\n              6.080365  -0.057457335698505\n              2.179317   -0.21265828479447\n               0.86515   -0.52717129238629\n              0.361944  -0.092969772997582\n               0.15474    0.66300316688275\n              0.065429    0.33608777929126\n                0.0229  0.0054695243998577\n\n3 0\n s   14 1.00\n             105374.95  0.00012386000128961\n              15679.24  0.00051201000533097\n             3534.5447  0.0021529100224158\n             987.36516  0.0085284400887969\n             315.97875   0.030180490314235\n             111.65428   0.090997020947448\n             42.699451    0.21779364226764\n             17.395596    0.36862457383806\n              7.438309    0.33667073350537\n              3.222862   0.096576301005538\n              1.253877  0.0021445200223284\n              0.495155  0.0011943500124354\n              0.191665  0.0005390200056122\n              0.067083  0.00021034000219003\n s   14 1.00\n             105374.95  -2.8150000076236e-05\n              15679.24  -0.00011630000031496\n             3534.5447  -0.00049092000132951\n             987.36516  -0.0019461600052706\n             315.97875  -0.0070053000189718\n             111.65428  -0.021678140058709\n             42.699451  -0.056412130152776\n             17.395596   -0.11270530030523\n              7.438309   -0.15891197043037\n              3.222862  -0.033550830090863\n              1.253877    0.35319028095651\n              0.495155    0.55341993149878\n              0.191665    0.23018391062339\n              0.067083   0.011272670030529\n s   14 1.00\n             105374.95  2.6159999812637e-05\n              15679.24  0.00010747999923021\n             3534.5447  0.0004597199967074\n             987.36516  0.0017955499871399\n             315.97875  0.0066757399521871\n             111.65428   0.020534449852928\n             42.699451   0.058286019582544\n             17.395596    0.12129690913125\n              7.438309    0.22641474837837\n              3.222862  -0.042386999696416\n              1.253877    -1.0104553727629\n              0.495155   -0.15386867889796\n              0.191665     0.9934531928847\n              0.067083    0.18587253866874\n p    9 1.00\n                   200  0.00091730000298931\n             46.533367  0.0073771400240407\n             14.621809   0.034835150113521\n              5.313064    0.11443970037294\n              2.102525    0.25549664083262\n              0.850223    0.37225574121311\n              0.337597    0.33233149108301\n              0.128892    0.14008479045651\n              0.045112   0.023957840078074\n p    9 1.00\n                   200  -0.00087213000535403\n             46.533367  -0.0070642400433676\n             14.621809   -0.03330489020446\n              5.313064   -0.11441275070238\n              2.102525   -0.29901068183564\n              0.850223   -0.31986054196363\n              0.337597    0.20550900126163\n              0.128892    0.59359268364408\n              0.045112    0.28229027173299\n\n4 0\n s   17 1.00\n             399432.47  0.00030483999979349\n             56908.833  0.00097689999933823\n             16874.769  0.0021382899985515\n             6010.0278  0.0059694099959562\n              2303.283   0.016181889989038\n             915.65994    0.04523016996936\n             371.72009    0.11792450992012\n             152.89109    0.26154411982282\n             63.436303    0.40192153972773\n             26.481723    0.26874481981795\n             11.104112   0.032816939977769\n             4.6716289  0.0035591799975889\n              1.970452  -0.0017077799988431\n             0.8327946  0.0012973499991211\n             0.3525409  -0.00065904999955354\n             0.1494341  0.0002457899998335\n             0.0597736  -1.459999999011e-06\n s   17 1.00\n             399432.47  -8.5440000252327e-05\n             56908.833  -0.00027415000080964\n             16874.769  -0.00060181000177731\n             6010.0278  -0.001684910004976\n              2303.283  -0.0046144000136276\n             915.65994  -0.013129400038775\n             371.72009  -0.035909770106051\n             152.89109   -0.08838331026102\n             63.436303   -0.17459524051563\n             26.481723   -0.17768036052474\n             11.104112    0.15212083044925\n             4.6716289    0.62550754184729\n              1.970452    0.36355752107368\n             0.8327946  0.0096020400283574\n             0.3525409   0.026352210077825\n             0.1494341  0.0047660600140755\n             0.0597736  0.00086954000256799\n s   17 1.00\n             399432.47  2.8049999954254e-05\n             56908.833  8.9929999853334e-05\n             16874.769   0.000198049999677\n             6010.0278  0.00055164999910032\n              2303.283  0.0015233499975156\n             915.65994  0.0043047099929795\n             371.72009   0.011934569980536\n             152.89109   0.029371349952099\n             63.436303   0.060214619901797\n             26.481723   0.062571659897953\n             11.104112  -0.056611739907673\n             4.6716289   -0.32750974946587\n              1.970452   -0.34199198944225\n             0.8327946    0.31850882948055\n             0.3525409    0.66176116892074\n             0.1494341    0.27830910954611\n             0.0597736   0.016827229972557\n s   17 1.00\n             399432.47  -2.5939999936789e-05\n             56908.833  -8.3269999797086e-05\n             16874.769  -0.00018238999955555\n             6010.0278  -0.00051267999875069\n              2303.283  -0.0013955699965992\n             915.65994  -0.0039968199902605\n             371.72009  -0.010840949973583\n             152.89109  -0.026894559934463\n             63.436303  -0.053084409870643\n             26.481723   -0.05725504986048\n             11.104112   0.064326739843247\n             4.6716289    0.30253799926277\n              1.970452     0.5130468087498\n             0.8327946    -1.1309193472442\n             0.3525409   -0.72817380822557\n             0.1494341     1.1741330371388\n             0.0597736    0.32946195919716\n p   12 1.00\n             1288.9716  0.00093569998795284\n              312.2443   0.006125189921138\n             111.34634   0.025628039670038\n             43.736087   0.092817558804972\n             17.856524    0.24346159686543\n             7.4327659    0.41401587466954\n             3.1282538    0.34722987552941\n             1.3257214   0.076468709015463\n             0.5644191  0.0021224899726729\n             0.2410741  -0.0007908799898174\n             0.1032089  -0.00020295999738689\n             0.0412836  -9.273999880597e-05\n p   12 1.00\n             1288.9716  -0.00024782000099467\n              312.2443  -0.0016265400065284\n             111.34634  -0.0068710200275781\n             43.736087  -0.025357550101777\n             17.856524  -0.068740670275903\n             7.4327659   -0.12202766048978\n             3.1282538   -0.10596481042531\n             1.3257214    0.13708383055021\n             0.5644191    0.42571611170869\n             0.2410741    0.41428846166282\n             0.1032089    0.18204070073065\n             0.0412836   0.030111650120859\n p   12 1.00\n             1288.9716  0.00024047000076546\n              312.2443  0.0015279500048637\n             111.34634  0.0067375300214468\n             43.736087   0.023887840076039\n             17.856524   0.068773230218917\n             7.4327659    0.11190534035621\n             3.1282538    0.12059088038386\n             1.3257214   -0.22523997071698\n             0.5644191   -0.64105309204059\n             0.2410741   0.051740530164699\n             0.1032089    0.69480634221169\n             0.0412836    0.30411632096806\n\n[5d]\n[7f]\n[9g]\n\n[MO]\n Sym= A\n Ene=               0\n Spin= Alpha\n Occup=    1.00000\n   1    2.7290092610882e-13\n   2    1.7614704795672e-11\n   3    1.1890910190107e-09\n   4    5.0452399645507e-09\n   5    8.6779291747203e-11\n   6    9.0819753730072e-07\n   7    2.9358524613238e-13\n   8    2.781915231547e-08\n   9    0.00051556823714343\n  10    2.1135180163874e-10\n  11    1.5792458961058e-05\n  12    0.00015190249046819\n  13    6.2483481068533e-12\n  14    4.6529500981972e-06\n  15       0.0118030134011\n  16    1.6390250638883e-10\n  17    0.00036154005778779\n  18    1.1781575651244e-09\n  19    4.3902359182684e-10\n  20    0.0019440127566392\n  21    3.1310099203318e-08\n  22     0.063465173199461\n  23    6.862732986095e-13\n  24    1.610731926034e-14\n  25    1.9918240533228e-07\n  26    6.6713192824884e-14\n  27    6.5026094713602e-06\n  28    9.7521243760659e-11\n  29    1.0414404614798e-08\n  30    1.2307101965199e-09\n  31    0.0018291801183706\n  32    1.1809626283843e-09\n  33    5.6029813624629e-05\n  34    1.5808408041095e-05\n  35    4.4566897562424e-11\n  36    4.8422649413102e-07\n  37    1.4578089379117e-12\n  38    2.2245157365278e-10\n  39    2.1475049158994e-13\n  40    0.0088008208748026\n  41    4.728029996172e-13\n  42    0.00026957942307174\n  43    0.00021788618357479\n  44    2.4443872163297e-11\n  45    6.6740924887545e-06\n  46    4.249668773895e-14\n  47    4.243092836807e-12\n  48    3.1514440067582e-10\n  49    2.3232846477932e-14\n  50    1.075183206975e-05\n  51    1.5263079272716e-13\n  52    3.2934118782447e-07\n  53      0.86361176755602\n  54    3.7788760397344e-08\n  55     0.026453441652587\n  56    0.0027739184881826\n  57    9.9659623071482e-11\n  58    8.4968386564693e-05\n Sym= A\n Ene=               1\n Spin= Alpha\n Occup=    1.00000\n   1    2.7290093283226e-13\n   2    1.761470519165e-11\n   3    1.1890910370425e-09\n   4    5.0452399479757e-09\n   5    8.6779290410128e-11\n   6    9.0819771753744e-07\n   7    2.9358525514915e-13\n   8    2.7818972078775e-08\n   9    0.0005155683394607\n  10    2.1135180635604e-10\n  11    1.5792356643715e-05\n  12    0.00015190252061401\n  13    6.2483482028335e-12\n  14    4.6529199523732e-06\n  15     0.011803015743468\n  16    1.6390250996429e-10\n  17    0.00036153771541933\n  18    1.1781574649863e-09\n  19    4.3902344313089e-10\n  20    0.0019440001616247\n  21    3.1310099539008e-08\n  22     0.063465185794426\n  23    6.8627037023815e-13\n  24    1.610884391723e-14\n  25    1.9918111486062e-07\n  26    6.6713746389648e-14\n  27     6.50261076184e-06\n  28    9.7521245539486e-11\n  29    1.0414404808652e-08\n  30    1.2307102223483e-09\n  31     0.001829180481376\n  32    1.1809626282762e-09\n  33    5.6029450618354e-05\n  34    1.5808411178235e-05\n  35    4.4566901111469e-11\n  36    4.842233569769e-07\n  37    1.4578088141515e-12\n  38    2.2245156390477e-10\n  39    2.1475036896045e-13\n  40    0.0088008226213608\n  41    4.7280040975795e-13\n  42    0.00026957767650769\n  43    0.00021788622681503\n  44    2.4443874985674e-11\n  45    6.6740492484051e-06\n  46    4.2496688326095e-14\n  47    4.2430928892139e-12\n  48    3.1514440322159e-10\n  49    2.3232852387808e-14\n  50    1.0751834203512e-05\n  51    1.5263078979649e-13\n  52    3.2933905406572e-07\n  53       0.8636119389446\n  54    3.7788760057175e-08\n  55     0.026453270264078\n  56    0.0027739190386824\n  57    9.9659621885155e-11\n  58    8.4967836065064e-05\n Sym= A\n Ene=               2\n Spin= Alpha\n Occup=    1.00000\n   1    1.3077497524142e-16\n   2    7.0129467912375e-15\n   3    2.1772320054608e-13\n   4    5.8324365234626e-14\n   5    1.8367797023273e-14\n   6    2.8758948807852e-08\n   7    2.246656331629e-16\n   8    9.3887976225813e-07\n   9    1.6325971644534e-05\n  10    8.6042284688263e-14\n  11    0.00053298640196386\n  12    4.8101226719812e-06\n  13    1.1696866851667e-15\n  14    0.00015703385659465\n  15    0.00037375264735834\n  16    5.9901634071881e-14\n  17     0.012201728695702\n  18    7.1653632342859e-12\n  19    4.0415958170232e-11\n  20     0.065609263716802\n  21    2.7088113841629e-12\n  22    0.0020096865687753\n  23    1.0058795134667e-11\n  24    1.1600156833534e-10\n  25    6.7222337005789e-06\n  26    3.7007601981977e-12\n  27    2.0590919972057e-07\n  28    2.5845409481311e-14\n  29    2.8898494086736e-12\n  30    4.3407428912344e-13\n  31    5.7921360848959e-05\n  32    4.1728206865556e-17\n  33    0.0018909369939698\n  34    5.005485959554e-07\n  35    2.2730017291182e-13\n  36    1.6341386815813e-05\n  37    8.4259243775796e-15\n  38    3.4311784828784e-13\n  39    5.703980580745e-14\n  40    0.00027868367917864\n  41    1.1403896096325e-11\n  42    0.0090980595565422\n  43    6.8994502318838e-06\n  44    2.636470720449e-13\n  45    0.00022524396827477\n  46    5.9896887429663e-18\n  47    4.784621571529e-16\n  48    1.4878540390665e-14\n  49    1.1105021127427e-15\n  50    3.4046708019753e-07\n  51    3.4624029345701e-17\n  52    1.1115067320698e-05\n  53      0.02734713156012\n  54    2.3444124542865e-12\n  55      0.89278863491697\n  56    8.783897828688e-05\n  57    1.1086687294763e-14\n  58    0.0028676363853546\n Sym= A\n Ene=               3\n Spin= Alpha\n Occup=    1.00000\n   1    1.3077054653857e-16\n   2    7.0126862989428e-15\n   3    2.1771128184766e-13\n   4    5.8337085910132e-14\n   5    1.8368733842714e-14\n   6    2.875882910056e-08\n   7    2.2465961681383e-16\n   8    9.3887988196538e-07\n   9    1.6325903688732e-05\n  10    8.6039126410186e-14\n  11    0.00053298646991953\n  12    4.8101026501226e-06\n  13    1.1696233681049e-15\n  14    0.00015703387661653\n  15    0.00037375109163466\n  16    5.9899313942767e-14\n  17     0.012201730251424\n  18    7.1654327639283e-12\n  19     4.04160538503e-11\n  20     0.065609272081843\n  21    2.7085958708902e-12\n  22    0.0020096782035948\n  23    1.0058797141631e-11\n  24    1.1600156722418e-10\n  25    6.7222345577317e-06\n  26    3.7007598383532e-12\n  27    2.0590834262715e-07\n  28    2.5844232878836e-14\n  29    2.8897208105239e-12\n  30    4.3405715894897e-13\n  31    5.7921119751978e-05\n  32    4.1892952533076e-17\n  33    0.0018909372350628\n  34    5.005465123782e-07\n  35    2.2729781582195e-13\n  36    1.6341388899396e-05\n  37    8.4260066189002e-15\n  38    3.4312432840897e-13\n  39    5.7039887969553e-14\n  40    0.00027868251917146\n  41    1.1403897896966e-11\n  42    0.0090980607165392\n  43    6.8994215131303e-06\n  44    2.6364519098996e-13\n  45    0.00022524399699338\n  46    5.9893152339382e-18\n  47    4.7842880023594e-16\n  48    1.4876936908666e-14\n  49    1.1104984401381e-15\n  50    3.404656630245e-07\n  51    3.4625735148246e-17\n  52    1.1115068737879e-05\n  53     0.027347017729497\n  54    2.344632882242e-12\n  55      0.89278874874777\n  56    8.7838612663134e-05\n  57    1.1087465393273e-14\n  58    0.0028676367509784\n Sym= A\n Ene=               4\n Spin= Alpha\n Occup=    1.00000\n   1    2.4664142291108e-06\n   2    0.00010648840908247\n   3    0.00019769075636699\n   4     0.076968753373934\n   5     0.005121643564889\n   6    3.8787378755777e-17\n   7    5.7824033204372e-06\n   8    8.7744359292086e-17\n   9    9.0710272780338e-10\n  10    0.0047100848883604\n  11    2.1324920312349e-11\n  12    9.8662942721651e-12\n  13    0.00018326217223488\n  14    3.1342310660035e-13\n  15    1.2053771285746e-09\n  16     0.023988105657809\n  17    3.917447482654e-11\n  18      0.03052280528841\n  19    3.4243851005183e-13\n  20    8.0312653224917e-10\n  21     0.091568302566335\n  22    2.4688303755632e-08\n  23    1.3922087389388e-07\n  24    1.8324893926874e-18\n  25    2.1704871467858e-13\n  26    4.1750990405919e-07\n  27    6.8433218914076e-12\n  28    3.5930644521216e-05\n  29    0.00063329974643383\n  30    0.0007589449094886\n  31    3.0344391412432e-09\n  32    0.0022503149994143\n  33    6.8313313120861e-11\n  34    3.8545320937891e-12\n  35    0.00032912606790575\n  36    3.9711983494385e-13\n  37    2.866380517574e-06\n  38    8.7714183632745e-05\n  39    2.5858107208091e-05\n  40    7.2776626134974e-09\n  41    0.00018453790563852\n  42    1.7921479936054e-10\n  43    1.3340968359642e-10\n  44    6.445871750676e-05\n  45    4.774460680937e-12\n  46    7.904432103554e-06\n  47    0.00074584198112129\n  48     0.043085560964112\n  49    0.0012435337998552\n  50    2.9641577032774e-12\n  51    7.1531649004704e-05\n  52    1.0028050634215e-13\n  53    1.1523956561139e-08\n  54      0.57123827643241\n  55    4.1278013583146e-10\n  56    9.3269530820217e-13\n  57    9.0479919723165e-05\n  58    1.8701466379658e-14\n Sym= A\n Ene=               5\n Spin= Alpha\n Occup=    1.00000\n   1    2.466414229111e-06\n   2    0.00010648840908303\n   3    0.00019769075637189\n   4     0.076968753373916\n   5    0.0051216435648888\n   6    3.8787378418228e-17\n   7    5.7824033204079e-06\n   8    8.7744358799686e-17\n   9    9.0710272778542e-10\n  10    0.0047100848883544\n  11    2.1324920310272e-11\n  12    9.8662942747358e-12\n  13    0.00018326217223495\n  14    3.1342310552081e-13\n  15    1.2053771286005e-09\n  16     0.023988105657819\n  17    3.9174474729624e-11\n  18     0.030522805288372\n  19    3.4243858755588e-13\n  20    8.0312653087677e-10\n  21     0.091568302566266\n  22    2.4688303774832e-08\n  23    1.392208738955e-07\n  24    1.8324966940938e-18\n  25    2.1704871413383e-13\n  26    4.1750990406333e-07\n  27    6.8433218798479e-12\n  28    3.5930644521192e-05\n  29    0.00063329974643667\n  30    0.00075894490948862\n  31    3.034439142917e-09\n  32    0.0022503149994179\n  33    6.831331346383e-11\n  34    3.8545320931754e-12\n  35    0.00032912606790616\n  36    3.9711982915162e-13\n  37    2.8663805175723e-06\n  38    8.7714183632616e-05\n  39    2.5858107208101e-05\n  40    7.2776626128796e-09\n  41    0.00018453790563914\n  42    1.7921479829295e-10\n  43    1.3340968361884e-10\n  44    6.4458717506819e-05\n  45    4.7744606656589e-12\n  46    7.9044321035569e-06\n  47    0.00074584198112156\n  48     0.043085560964126\n  49    0.0012435337998556\n  50    2.9641577042455e-12\n  51    7.1531649004736e-05\n  52    1.0028050642197e-13\n  53    1.1523956564518e-08\n  54      0.57123827643252\n  55    4.1278013810485e-10\n  56    9.3269530758918e-13\n  57    9.0479919723087e-05\n  58    1.8701465790749e-14\n Sym= A\n Ene=               6\n Spin= Alpha\n Occup=    1.00000\n   1    2.8467353156212e-07\n   2    1.1937520099177e-05\n   3    2.8724740142182e-05\n   4     0.026497703740492\n   5    0.00041259379333733\n   6    2.0043398715572e-15\n   7    3.5582432075971e-06\n   8    4.7788866486708e-18\n   9    7.9902852346127e-11\n  10    0.0012685623194117\n  11    2.6713203426904e-12\n  12    2.4839814823837e-12\n  13    0.00012523997796866\n  14    4.643626293607e-14\n  15    1.417800266843e-11\n  16     0.014396127387767\n  17    3.2943895717849e-14\n  18       0.1683523339554\n  19    1.1010501119149e-12\n  20    4.4897894708481e-09\n  21       0.5050541507514\n  22    2.074373895079e-07\n  23    0.0003634591178485\n  24    1.827013230951e-19\n  25    1.0360666570718e-11\n  26    0.0010903876931289\n  27    4.7793205198977e-10\n  28    0.00033987607651393\n  29     0.067262135703905\n  30    0.0032823406643169\n  31    4.2431742832282e-09\n  32      0.01833783200332\n  33    3.361745756821e-11\n  34    1.6674977670211e-12\n  35    0.0002419145966828\n  36    4.3704187716109e-13\n  37    2.7211585007202e-05\n  38    0.0025636061203977\n  39    2.3928007130536e-05\n  40    1.3146335539015e-08\n  41     0.015368048324093\n  42    1.6157752055646e-10\n  43    5.3449113624432e-11\n  44    4.6788170818822e-05\n  45    1.2646115270167e-12\n  46    5.6556476414606e-06\n  47    0.00056071182998941\n  48     0.031978721639243\n  49    0.0014382912286755\n  50    3.8436683864242e-11\n  51    8.5088733864796e-05\n  52    1.0883417619858e-12\n  53    1.0781097603367e-07\n  54      0.11905455497323\n  55    2.9698019972156e-09\n  56    4.6863921639006e-11\n  57    0.00042135919368866\n  58    1.4665174186989e-12\n Sym= A\n Ene=               7\n Spin= Alpha\n Occup=    1.00000\n   1    2.8467353156308e-07\n   2    1.1937520099552e-05\n   3    2.872474014571e-05\n   4     0.026497703740517\n   5    0.00041259379333833\n   6    2.004339878122e-15\n   7    3.5582432076397e-06\n   8    4.7788865452162e-18\n   9    7.9902852356976e-11\n  10    0.0012685623194172\n  11    2.6713203410443e-12\n  12    2.4839814866722e-12\n  13    0.00012523997796856\n  14    4.6436262608311e-14\n  15    1.4178002716533e-11\n  16     0.014396127387754\n  17    3.294389491029e-14\n  18      0.16835233395541\n  19    1.1010509626294e-12\n  20    4.4897894332051e-09\n  21      0.50505415075154\n  22    2.0743738917382e-07\n  23    0.00036345911784824\n  24    1.8269262976973e-19\n  25    1.0360666513672e-11\n  26    0.0010903876931296\n  27    4.7793205208907e-10\n  28    0.00033987607651412\n  29      0.06726213570391\n  30    0.0032823406643207\n  31    4.2431742760835e-09\n  32     0.018337832003317\n  33    3.3617456582123e-11\n  34    1.6674977579164e-12\n  35    0.00024191459668216\n  36    4.3704188444417e-13\n  37    2.7211585007212e-05\n  38    0.0025636061203983\n  39    2.3928007130568e-05\n  40    1.3146335531423e-08\n  41     0.015368048324096\n  42    1.6157752142495e-10\n  43    5.3449113490373e-11\n  44    4.6788170818764e-05\n  45    1.2646115197758e-12\n  46    5.6556476414566e-06\n  47    0.00056071182998903\n  48     0.031978721639224\n  49    0.0014382912286748\n  50    3.8436683846066e-11\n  51    8.5088733864748e-05\n  52    1.0883417585813e-12\n  53    1.0781097597152e-07\n  54      0.11905455497308\n  55    2.9698019808287e-09\n  56    4.6863921653345e-11\n  57    0.00042135919368894\n  58    1.4665174246291e-12\n Sym= A\n Ene=               8\n Spin= Alpha\n Occup=    1.00000\n   1    8.255831715179e-19\n   2    9.0249671549258e-16\n   3    1.0134462676923e-14\n   4    1.2227265924105e-13\n   5    2.5605722303045e-15\n   6    5.5393350142517e-15\n   7    5.7282104292715e-17\n   8    1.8346249921173e-16\n   9    1.3873885998688e-12\n  10    1.7158432429053e-15\n  11    5.5385696242912e-14\n  12    7.474100381146e-12\n  13    2.8799072094817e-16\n  14    2.3805213856315e-13\n  15    4.134126051534e-10\n  16    2.682974652947e-14\n  17    1.3377097348961e-11\n  18      0.73221486464703\n  19      0.11680295277972\n  20    3.681814625957e-09\n  21      0.24407315556687\n  22    1.6998717863796e-07\n  23    0.0007571416315509\n  24    0.00012078000334994\n  25    8.6767099059168e-12\n  26    0.00025238802786204\n  27    3.7162689979804e-10\n  28    8.2784662269639e-16\n  29    7.5410944075935e-14\n  30    9.6219392678124e-15\n  31    1.6123310404308e-09\n  32    9.2797739253513e-15\n  33    4.2230561351031e-11\n  34    1.7700218211877e-10\n  35    3.4688252573423e-18\n  36    4.7334924168584e-12\n  37    1.3475334803548e-16\n  38    9.1117946078473e-15\n  39    3.4703666881288e-16\n  40    2.715280536555e-08\n  41    3.8975044912375e-14\n  42    7.7877802002047e-10\n  43    4.323140889309e-10\n  44    4.1723200821278e-17\n  45    1.190291096899e-11\n  46    1.8877304642537e-17\n  47    1.7823969064858e-15\n  48    8.0149835607108e-14\n  49    4.9831408735703e-15\n  50    5.9140686910049e-13\n  51    2.7758234752381e-16\n  52    1.022841435269e-14\n  53    2.8068714842248e-09\n  54    1.8577906007036e-13\n  55    5.5910284468231e-11\n  56    2.754069604532e-12\n  57    2.3946561118576e-15\n  58    1.0204207442208e-13\n Sym= A\n Ene=               9\n Spin= Alpha\n Occup=    1.00000\n   1    8.2558378938893e-19\n   2    9.0249737087654e-16\n   3    1.0134474633486e-14\n   4    1.2227266432938e-13\n   5    2.560572661514e-15\n   6    5.539335015246e-15\n   7    5.7282138939543e-17\n   8    1.8346248605007e-16\n   9    1.3873886046574e-12\n  10    1.7158446163704e-15\n  11    5.5385694619212e-14\n  12    7.4741003887467e-12\n  13    2.8799069049893e-16\n  14    2.3805214639946e-13\n  15    4.1341260558808e-10\n  16    2.6829744056719e-14\n  17    1.3377098066957e-11\n  18      0.73221486464792\n  19      0.11680295277863\n  20    3.6818151028086e-09\n  21      0.24407315556711\n  22    1.6998717881144e-07\n  23    0.00075714163155307\n  24    0.00012078000334871\n  25    8.6767110642421e-12\n  26    0.00025238802786257\n  27    3.716268998035e-10\n  28    8.2784666180224e-16\n  29    7.5410976532096e-14\n  30    9.6219406376744e-15\n  31    1.6123310395143e-09\n  32    9.2797812488502e-15\n  33    4.2230562141822e-11\n  34    1.7700218235507e-10\n  35    3.4688091604681e-18\n  36    4.7334928757754e-12\n  37    1.3475335477193e-16\n  38    9.1117955869162e-15\n  39    3.4703655348834e-16\n  40    2.7152805392691e-08\n  41    3.8975053811466e-14\n  42    7.7877809514224e-10\n  43    4.3231408930204e-10\n  44    4.1723153464915e-17\n  45    1.1902911888427e-11\n  46    1.8877302097683e-17\n  47    1.7823966472799e-15\n  48    8.0149819016424e-14\n  49    4.9831404098799e-15\n  50    5.9140687028781e-13\n  51    2.7758230532043e-16\n  52    1.0228418238745e-14\n  53    2.8068714843041e-09\n  54    1.8577901373904e-13\n  55    5.5910303880514e-11\n  56    2.754069599849e-12\n  57    2.3946560476201e-15\n  58    1.0204208078552e-13\n Sym= A\n Ene=              10\n Spin= Alpha\n Occup=    1.00000\n   1    3.5035594162412e-16\n   2    1.6309714623897e-14\n   3    3.3458789106011e-13\n   4    5.389232245498e-12\n   5    4.3634381638076e-13\n   6    5.697881554054e-13\n   7    3.0676473201373e-16\n   8    2.1960319427906e-11\n   9    1.5745139411564e-07\n  10    6.8770512122797e-14\n  11    6.0685243204543e-06\n  12    2.0206530880818e-07\n  13    2.6048844423759e-14\n  14    7.7880216667129e-06\n  15    3.1753937072287e-05\n  16    2.6695565951262e-12\n  17     0.001223859698668\n  18    1.0221936310106e-05\n  19    0.00011462371802224\n  20       1.1468817020423\n  21    3.4446022046931e-06\n  22     0.029756752390134\n  23    1.4453454697355e-08\n  24    1.621635032151e-07\n  25    0.0026509063375911\n  26    4.8536521773315e-09\n  27    6.8779765025808e-05\n  28    3.5150100224597e-15\n  29    1.1221071292404e-13\n  30    3.1395198896878e-14\n  31    0.00010612305022853\n  32    7.602532209847e-13\n  33    0.0040902027220535\n  34    1.3976148898646e-05\n  35    1.6130963726684e-12\n  36    0.0005386715292346\n  37    1.4583782557927e-13\n  38    5.6448465199137e-12\n  39    9.9088681876546e-13\n  40    0.0021891710527705\n  41    1.0989098988674e-10\n  42     0.084374822468439\n  43    3.2506217481486e-05\n  44    1.306992495755e-12\n  45    0.0012528581427114\n  46    5.4994228868432e-17\n  47    4.2004946719762e-15\n  48    7.5481880460952e-14\n  49    2.6867585110192e-14\n  50    6.1286176329267e-07\n  51    2.0146512198316e-16\n  52    2.3620855126138e-05\n  53     0.001732745002883\n  54    1.1903717339133e-12\n  55     0.066783320347804\n  56    8.8973079999482e-08\n  57    3.164042229303e-17\n  58     3.42914154501e-06\n Sym= A\n Ene=              11\n Spin= Alpha\n Occup=    1.00000\n   1    3.5035532389322e-16\n   2    1.6309673530903e-14\n   3    3.3458661262872e-13\n   4    5.389222418081e-12\n   5    4.3634389452786e-13\n   6    5.6978784736588e-13\n   7    3.0676547971984e-16\n   8    2.196031973471e-11\n   9    1.5745130894364e-07\n  10    6.8770763898572e-14\n  11    6.0685244056631e-06\n  12    2.0206519949857e-07\n  13    2.604877680331e-14\n  14    7.7880217759898e-06\n  15    3.1753919894723e-05\n  16    2.6695484010582e-12\n  17    0.0012238597158441\n  18    1.022193647532e-05\n  19    0.0001146237178881\n  20       1.1468817181395\n  21    3.4446021678387e-06\n  22     0.029756736292787\n  23    1.4453454954769e-08\n  24    1.6216350307657e-07\n  25    0.0026509063747987\n  26    4.853652049388e-09\n  27    6.8779727818307e-05\n  28    3.5150081414927e-15\n  29    1.1221180611712e-13\n  30    3.1395219289405e-14\n  31    0.00010612299282143\n  32    7.6025648003428e-13\n  33    0.0040902027794711\n  34    1.3976141338016e-05\n  35    1.6130956921917e-12\n  36    0.00053867153679447\n  37    1.4583776450898e-13\n  38    5.6448435631305e-12\n  39    9.9088656740414e-13\n  40    0.0021891698685022\n  41    1.0989086997393e-10\n  42      0.08437482365266\n  43    3.2506199896808e-05\n  44    1.3069916284384e-12\n  45    0.0012528581602953\n  46    5.4992545563622e-17\n  47    4.2003448054842e-15\n  48    7.5476670448712e-14\n  49    2.6867014240189e-14\n  50    6.1286143175542e-07\n  51    2.0147939401718e-16\n  52    2.3620855457683e-05\n  53    0.0017327440655315\n  54    1.1904124833348e-12\n  55     0.066783321285267\n  56    8.8973031865202e-08\n  57    3.165265282238e-17\n  58    3.4291415931084e-06\n Sym= A\n Ene=              12\n Spin= Alpha\n Occup=    1.00000\n   1    1.1312051104687e-13\n   2    1.0625778502702e-11\n   3    4.9524326245243e-10\n   4    1.8132466864395e-09\n   5    1.6109096907544e-12\n   6      1.6934652133e-11\n   7    1.8562298118669e-13\n   8    4.3934975237209e-13\n   9    4.682499236112e-06\n  10    9.4246726453847e-11\n  11    1.214908438237e-07\n  12    6.009289128024e-06\n  13    1.8006405567002e-11\n  14    1.5591620441613e-07\n  15    0.00094434276618656\n  16    2.5667084447608e-09\n  17    2.4501812772854e-05\n  18    3.0608335274516e-07\n  19    4.1471658833051e-08\n  20     0.022961409326929\n  21    3.3269852593369e-08\n  22      0.88497039982556\n  23    5.0880771613773e-10\n  24    3.9798535267752e-11\n  25    5.3073084329706e-05\n  26    3.2458676191457e-10\n  27    0.0020455256660042\n  28    9.7516624904008e-14\n  29    1.0398374017395e-09\n  30    1.1612552659154e-12\n  31     0.003156066998356\n  32    1.385806615724e-09\n  33    8.1887188237456e-05\n  34    0.00041564819689876\n  35    2.8454920856931e-11\n  36     1.07843538673e-05\n  37    2.5950688740507e-12\n  38    1.5804184780907e-10\n  39    6.7232346329132e-12\n  40     0.065105811430198\n  41    1.321944881844e-08\n  42    0.0016892325483402\n  43    0.00096673111022882\n  44    5.9300460603551e-11\n  45    2.5082677313205e-05\n  46    5.2544449187352e-12\n  47    5.4532399561866e-10\n  48    3.6686076246901e-08\n  49    1.2357809119104e-09\n  50    1.8226687365726e-05\n  51    1.0306535274172e-10\n  52    4.7290904350074e-07\n  53     0.051531997219734\n  54    1.4232995441055e-07\n  55    0.0013370470884725\n  56    2.6463961767734e-06\n  57    4.8110396172795e-10\n  58    6.8663803893331e-08\n Sym= A\n Ene=              13\n Spin= Alpha\n Occup=    1.00000\n   1    1.1312050951375e-13\n   2    1.0625778402947e-11\n   3    4.9524325969123e-10\n   4    1.8132466733778e-09\n   5    1.6109098263986e-12\n   6    1.6934651515205e-11\n   7    1.8562298327987e-13\n   8    4.3935037057324e-13\n   9    4.6824990653227e-06\n  10    9.4246727178396e-11\n  11    1.2149101459322e-07\n  12    6.0092889088795e-06\n  13    1.8006405459642e-11\n  14    1.5591642357003e-07\n  15    0.00094434273174763\n  16    2.5667084324337e-09\n  17    2.4501847212141e-05\n  18    3.0608370521542e-07\n  19    4.1471225741288e-08\n  20     0.022961441600371\n  21    3.3269785273145e-08\n  22      0.88497036755227\n  23    5.0880825637227e-10\n  24    3.9798030593793e-11\n  25    5.3073158926758e-05\n  26    3.2458651277291e-10\n  27    0.0020455255914056\n  28    9.7516626899532e-14\n  29    1.0398374121286e-09\n  30    1.1612553730341e-12\n  31    0.0031560668832512\n  32    1.3858066265745e-09\n  33    8.1887303337289e-05\n  34    0.00041564818174121\n  35    2.8454919564418e-11\n  36    1.0784369025344e-05\n  37    2.5950687616079e-12\n  38    1.5804184253685e-10\n  39    6.7232341202415e-12\n  40     0.065105809055935\n  41    1.3219448593414e-08\n  42     0.001689234922638\n  43    0.00096673107497376\n  44    5.9300458773075e-11\n  45    2.5082712568491e-05\n  46    5.2544449191229e-12\n  47    5.4532399569617e-10\n  48    3.6686076258662e-08\n  49    1.2357809117877e-09\n  50    1.8226686701029e-05\n  51    1.0306535283704e-10\n  52    4.7290970819615e-07\n  53     0.051531995340434\n  54    1.4232995456172e-07\n  55    0.0013370489677469\n  56    2.6463960802746e-06\n  57    4.8110396217968e-10\n  58    6.8663900403105e-08\n Sym= A\n Ene=              14\n Spin= Alpha\n Occup=    1.00000\n   1    4.8846419502574e-20\n   2    4.5712399824925e-17\n   3    6.0004528460046e-14\n   4    4.614198624001e-14\n   5    2.1752817424975e-15\n   6    1.0905887004142e-15\n   7    1.058003593019e-17\n   8    3.6665301112924e-14\n   9    5.0505252825604e-12\n  10    2.1108624632758e-14\n  11    1.8794377643489e-10\n  12    5.9016825308159e-12\n  13    2.3389943268112e-18\n  14    2.1494500091302e-10\n  15    1.1870007112894e-09\n  16    1.2485632724896e-16\n  17    4.3196226690208e-08\n  18     0.075271962374578\n  19      0.83886947903488\n  20    7.3791211044295e-05\n  21     0.025090307534649\n  22    2.0811268939179e-06\n  23    0.0001123953689887\n  24    0.0012525914882024\n  25    1.7038313873369e-07\n  26    3.7464593266182e-05\n  27    4.7945693573968e-09\n  28    1.5722667068159e-16\n  29    4.8125903609771e-15\n  30    1.1604277345177e-15\n  31    3.4400944349154e-09\n  32    2.154149456672e-14\n  33    1.2256427409502e-07\n  34    4.9499598743075e-10\n  35    7.9212816523176e-16\n  36    1.7667197352266e-08\n  37    9.9758471599664e-17\n  38    5.6501264608692e-15\n  39    6.6329699924253e-16\n  40    1.2589255439412e-07\n  41    4.2654572356887e-16\n  42    4.5213897015982e-06\n  43    1.5350881259298e-09\n  44    6.2533805792085e-16\n  45    5.4966900671346e-08\n  46    5.4021877453274e-19\n  47    5.4851769338529e-17\n  48    1.7514008330351e-15\n  49    2.3061144477505e-16\n  50    4.5720017268929e-11\n  51    1.4621489506344e-17\n  52    1.6262113687528e-09\n  53    1.116500717445e-07\n  54    2.1490867550065e-14\n  55    3.9755677685726e-06\n  56    3.5318384785105e-11\n  57    7.4545602135415e-16\n  58    1.2392935018972e-09\n Sym= A\n Ene=              15\n Spin= Alpha\n Occup=    1.00000\n   1    4.8846409511092e-20\n   2    4.5712319348198e-17\n   3    6.0004509128658e-14\n   4    4.6142017405593e-14\n   5    2.1752822613653e-15\n   6    1.0905886937496e-15\n   7    1.0580023501446e-17\n   8    3.6665301135786e-14\n   9    5.0505252893546e-12\n  10    2.1108618407355e-14\n  11    1.8794377668057e-10\n  12    5.9016825247273e-12\n  13    2.3389785387413e-18\n  14    2.1494500113396e-10\n  15    1.1870007107358e-09\n  16    1.2485531374505e-16\n  17    4.3196226731852e-08\n  18      0.07527196237549\n  19      0.83886947903388\n  20    7.379121109969e-05\n  21     0.025090307534812\n  22    2.0811268934438e-06\n  23    0.00011239536898959\n  24    0.0012525914881982\n  25    1.7038313884639e-07\n  26    3.7464593266271e-05\n  27    4.7945693557866e-09\n  28    1.5722682549544e-16\n  29    4.8125856348071e-15\n  30    1.1604287236486e-15\n  31    3.4400944434447e-09\n  32    2.1541491250697e-14\n  33    1.2256427423429e-07\n  34    4.9499598668739e-10\n  35    7.9212805070547e-16\n  36    1.7667197368134e-08\n  37    9.975850424126e-17\n  38    5.6501284247867e-15\n  39    6.6329726960557e-16\n  40    1.2589255426566e-07\n  41    4.2654675392088e-16\n  42    4.5213897051622e-06\n  43    1.5350881251008e-09\n  44    6.2533811952411e-16\n  45    5.4966900718411e-08\n  46    5.4022024670246e-19\n  47    5.4851921503837e-17\n  48    1.7514081194854e-15\n  49    2.3061190031342e-16\n  50    4.5720017258339e-11\n  51    1.4621519990912e-17\n  52    1.6262113699433e-09\n  53    1.1165007172036e-07\n  54    2.1490825177528e-14\n  55    3.9755677719443e-06\n  56    3.5318384788194e-11\n  57    7.4545651804402e-16\n  58    1.2392935020613e-09\n Sym= A\n Ene=              16\n Spin= Alpha\n Occup=    1.00000\n   1    1.728160777413e-13\n   2    1.3126076041942e-11\n   3    4.5285832291298e-10\n   4    8.9932541071687e-12\n   5    2.5992734619985e-12\n   6    2.9154722779808e-07\n   7    3.4260785907401e-13\n   8    9.1781178626762e-09\n   9    0.00016841417580309\n  10    1.1148396012203e-10\n  11    5.301811882583e-06\n  12    1.0339681766242e-05\n  13    1.9630776417951e-12\n  14    3.2550086222882e-07\n  15    2.2294414796956e-05\n  16    7.5335985817514e-11\n  17    7.0184773357882e-07\n  18    3.9877675438648e-10\n  19    4.6261074379192e-11\n  20    0.00055246730081696\n  21    1.0572775121882e-10\n  22     0.017549352656211\n  23    1.5063549525732e-12\n  24    3.7877723868343e-13\n  25    5.7302329223776e-07\n  26    2.6375458999216e-14\n  27    1.8201959910696e-05\n  28    5.4052402738091e-12\n  29    5.5830758405774e-10\n  30    1.5141067319233e-10\n  31      0.19327285786749\n  32    4.3436227842409e-08\n  33    0.0060843746423859\n  34    0.0027569278548976\n  35    8.0946936638635e-10\n  36    8.6790181293889e-05\n  37    1.2962208610892e-11\n  38    4.2406969844885e-09\n  39    1.0759118245807e-10\n  40      0.55562877042627\n  41    2.336185425683e-08\n  42     0.017491610437143\n  43    6.1826219845004e-06\n  44    7.4106140069738e-11\n  45    1.9463185126931e-07\n  46    5.1853118236364e-14\n  47    4.0589886997246e-12\n  48    6.4736004191336e-11\n  49    2.1711412268549e-11\n  50    2.1418849207426e-07\n  51    4.7514869484714e-13\n  52    6.7428250741258e-09\n  53    6.5260061409908e-08\n  54    6.3886696536968e-11\n  55    2.0548488736012e-09\n  56    1.5899274464059e-05\n  57    7.7813076483945e-12\n  58    5.0052047137914e-07\n Sym= A\n Ene=              17\n Spin= Alpha\n Occup=    1.00000\n   1    1.7281608494546e-13\n   2    1.3126076392177e-11\n   3    4.5285830617584e-10\n   4    8.9932424508495e-12\n   5    2.599275711885e-12\n   6    2.9154720714357e-07\n   7    3.4260787994911e-13\n   8    9.1781385171991e-09\n   9    0.00016841416387182\n  10    1.1148396419617e-10\n  11    5.3018238138049e-06\n  12    1.0339681033728e-05\n  13    1.9630778644485e-12\n  14    3.2550159473897e-07\n  15    2.2294413217472e-05\n  16    7.5336008743746e-11\n  17    7.0184931304276e-07\n  18    3.9877672497392e-10\n  19    4.6261194599241e-11\n  20    0.00055246854409003\n  21    1.0572766616471e-10\n  22     0.017549351412971\n  23    1.5063506570945e-12\n  24    3.7878373782126e-13\n  25    5.7302458181386e-07\n  26    2.6375664564153e-14\n  27    1.8201958621225e-05\n  28    5.4052411698243e-12\n  29    5.5830775224453e-10\n  30    1.5141069150184e-10\n  31      0.19327284417515\n  32    4.3436229267642e-08\n  33    0.0060843883347295\n  34    0.0027569276595838\n  35     8.09469474469e-10\n  36    8.6790376607281e-05\n  37    1.2962210140755e-11\n  38    4.2406976533188e-09\n  39    1.0759119681833e-10\n  40      0.55562873106294\n  41    2.3361850115719e-08\n  42     0.017491649800448\n  43    6.1826215465116e-06\n  44    7.4106155999169e-11\n  45    1.9463228927466e-07\n  46    5.1853115633944e-14\n  47    4.0589883716583e-12\n  48    6.4735981712586e-11\n  49    2.1711411838676e-11\n  50    2.1418847690068e-07\n  51    4.7514864483816e-13\n  52    6.7428402481328e-09\n  53    6.5260056795407e-08\n  54    6.3886713933005e-11\n  55    2.0548534972927e-09\n  56    1.5899273337685e-05\n  57    7.7813069077459e-12\n  58    5.005215977517e-07\n Sym= A\n Ene=              18\n Spin= Alpha\n Occup=    1.00000\n   1    1.4379286076876e-15\n   2    4.4131477002436e-14\n   3    3.6334134036796e-12\n   4    8.3489007913794e-11\n   5    1.0790778362122e-11\n   6    8.8122903836906e-09\n   7    6.5951550465579e-15\n   8    2.7992625273805e-07\n   9    5.0905001740633e-06\n  10    7.4483821104737e-13\n  11    0.00016170108811364\n  12    3.1252648577622e-07\n  13    1.4761207383235e-13\n  14    9.9275323184887e-06\n  15    6.7388337145052e-07\n  16    3.9420855600063e-11\n  17    2.1406129698198e-05\n  18    1.5599563347031e-11\n  19    1.7994180196757e-09\n  20     0.016849886746831\n  21    4.103409863879e-10\n  22    0.00053044591878084\n  23    7.3357906378207e-11\n  24    6.7365919884874e-10\n  25    1.7477729848576e-05\n  26    9.7246041870219e-12\n  27    5.501988173872e-07\n  28    7.906341711512e-13\n  29    2.7625435518651e-10\n  30    1.1624935015297e-11\n  31    0.0058418673635594\n  32    2.3480403289517e-10\n  33      0.18556946012677\n  34    8.3330807727276e-05\n  35    8.0018524825085e-11\n  36     0.002647037212341\n  37    9.7829523282612e-13\n  38    5.7861293424211e-10\n  39    1.0387222402553e-11\n  40      0.01679441699248\n  41    4.1798491389624e-09\n  42      0.53348220902025\n  43    1.8687802181636e-07\n  44    1.8890998721272e-11\n  45    5.9363498718081e-06\n  46    7.3738480468116e-16\n  47    1.4912003694067e-13\n  48    4.3570236122211e-11\n  49    4.8793891719126e-14\n  50    6.4740103174248e-09\n  51    2.9795404389263e-14\n  52    2.0565039491699e-07\n  53    1.9734667481095e-09\n  54    2.6619637595422e-11\n  55    6.2677564090539e-08\n  56    4.8056914933937e-07\n  57    4.0372466064199e-13\n  58    1.5265482642743e-05\n Sym= A\n Ene=              19\n Spin= Alpha\n Occup=    1.00000\n   1    1.4379225008423e-15\n   2    4.4131181440106e-14\n   3    3.6334292886192e-12\n   4    8.3489020238991e-11\n   5    1.0790776475321e-11\n   6    8.8123102343407e-09\n   7    6.5951366573574e-15\n   8    2.7992623288749e-07\n   9    5.0905116409549e-06\n  10    7.4483467243577e-13\n  11    0.00016170107664675\n  12    3.1252718977424e-07\n  13    1.476118640524e-13\n  14    9.9275316144765e-06\n  15    6.7388488940416e-07\n  16    3.9420834775271e-11\n  17    2.1406128180167e-05\n  18    1.5599591268528e-11\n  19    1.7994179076465e-09\n  20     0.016849885551998\n  21    4.1034105904041e-10\n  22    0.00053044711368225\n  23    7.3357910741512e-11\n  24    6.7365919239889e-10\n  25    1.7477728609394e-05\n  26    9.7246039853659e-12\n  27    5.502000567246e-07\n  28    7.9063338171321e-13\n  29    2.7625420661609e-10\n  30    1.1624918907029e-11\n  31    0.0058418805229869\n  32    2.3480279088839e-10\n  33      0.18556944696734\n  34    8.3330995438742e-05\n  35    8.0018426486554e-11\n  36    0.0026470370246288\n  37    9.7829385948031e-13\n  38    5.7861233183594e-10\n  39    1.0387209527691e-11\n  40     0.016794454823687\n  41    4.1798530557251e-09\n  42      0.53348217118897\n  43    1.8687844278651e-07\n  44    1.8890984396165e-11\n  45    5.9363494508787e-06\n  46    7.3738723412766e-16\n  47    1.4912034327548e-13\n  48    4.3570257443845e-11\n  49    4.8794295046116e-14\n  50    6.4740249010592e-09\n  51    2.9795451261378e-14\n  52    2.0565038033373e-07\n  53    1.973471193638e-09\n  54    2.6619621767983e-11\n  55    6.2677559644205e-08\n  56    4.8057023187966e-07\n  57     4.03725358424e-13\n  58    1.5265481560215e-05\n";
-let suppliedMoldenModel = null;
-
-const cubeFiles = new Map();
-
-
-
-let viewerMode = "molecule";
-
-
-
-
-
-
-
-// Stores the two atom indices selected for bond-length editing.
-
-
-
-let selectedBondAtoms = [];
-
-
-
-
-
-
-
-const waterXYZ = `3
-
-
-
-water
-
-
-
-O   0.000000   0.000000   0.117300
-
-
-
-H   0.000000   0.757200  -0.469200
-
-
-
-H   0.000000  -0.757200  -0.469200`;
-
-
-
-
-
-
-
-const benzeneXYZ = `12
-
-
-
-benzene
-
-
-
-C  1.3960  0.0000  0.0000
-
-
-
-C  0.6980  1.2090  0.0000
-
-
-
-C -0.6980  1.2090  0.0000
-
-
-
-C -1.3960  0.0000  0.0000
-
-
-
-C -0.6980 -1.2090  0.0000
-
-
-
-C  0.6980 -1.2090  0.0000
-
-
-
-H  2.4790  0.0000  0.0000
-
-
-
-H  1.2400  2.1480  0.0000
-
-
-
-H -1.2400  2.1480  0.0000
-
-
-
-H -2.4790  0.0000  0.0000
-
-
-
-H -1.2400 -2.1480  0.0000
-
-
-
-H  1.2400 -2.1480  0.0000`;
-
-
-
-
-
-
-
-function initViewer(){
-
-
-
-  viewer = $3Dmol.createViewer("viewer", {
-
-
-
-    backgroundColor: viewerBgColor,
-
-    disableFog: true
-
-
-
-  });
-
-  viewer.setViewStyle({style: "none"});
-
-
-
-
-
-
-
-  document.getElementById("viewer").style.background = viewerBgColor;
-
-
-
-  viewer.render();
-
-
-
-}
-
-
-
-
-
-
-
-function setViewerBackground(color){
-
-
-
-  viewerBgColor = color;
-
-
-
-
-
-
-
-  document.getElementById("viewer").style.background = color;
-
-
-
-
-
-
-
-  if(viewer){
-
-
-
-    viewer.setBackgroundColor(color);
-
-
-
-    viewer.render();
-
-
-
-  }
-
-
-
-}
-
-
-
-
-
-
-
-
-
-
-
-function setOrbitalStatus(message, isError=false){
-
-
-
-  const status = document.getElementById("orbitalStatus");
-
-
-
-  if(!status) return;
-
-
-
-
-
-
-
-  status.textContent = message;
-
-
-
-  status.style.color = isError ? "var(--danger)" : "var(--muted)";
-
-
-
-}
-
-
-
-
-
-
-
-function initOrbitalViewer(){
-
-
-
-  const host = document.getElementById("orbitalViewer");
-
-
-
-  if(!host || orbitalViewerReady) return;
-
-
-
-
-
-
-
-  try{
-
-
-
-    const Info = {
-
-
-
-      width: "100%",
-
-
-
-      height: 430,
-
-
-
-      use: "HTML5",
-
-
-
-      color: viewerBgColor,
-
-
-
-      j2sPath: "https://chemapps.stolaf.edu/jmol/jsmol/j2s",
-
-
-
-      disableInitialConsole: true,
-
-
-
-      script:
-
-
-
-        "set frank off;" +
-
-
-
-        "set antialiasDisplay true;" +
-
-        "set ambientPercent 100; set diffusePercent 0; set specular true; set specularPercent 65; set specularPower 45;" +
-
-
-
-        "spacefill 23%;" +
-
-
-
-        "wireframe 0.15;"
-
-
-
-    };
-
-
-
-
-
-
-
-    Jmol.setDocument(false);
-
-    jmolApplet0 = Jmol.getApplet("jmolApplet0", Info);
-
-
-
-    host.innerHTML = Jmol.getAppletHtml(jmolApplet0);
-
-
-
-    orbitalViewerReady = true;
-
-
-
-
-
-
-
-    setOrbitalStatus("Viewer ready. Click Open Molden.");
-
-
-
-  }catch(err){
-
-
-
-    orbitalViewerReady = false;
-
-
-
-    setOrbitalStatus("Could not start orbital viewer: " + err.message, true);
-
-
-
-  }
-
-
-
-}
-
-
-
-
-
-
-
-function ensureOrbitalViewer(){
-
-
-
-  if(!orbitalViewerReady || !jmolApplet0){
-
-
-
-    setOrbitalStatus("Orbital viewer could not initialize. Reload the page and check that JSmol loaded.", true);
-
-
-
-    return false;
-
-
-
-  }
-
-
-
-  return true;
-
-
-
-}
-
-
-
-
-
-
-
-function jmolColor(hex){
-
-
-
-  return "[x" + hex.replace("#","").toUpperCase() + "]";
-
-
-
-}
-
-
-
-
-
-
-
-function getOrbitalSettings(){
-
-
-
-  let cutoff =
-
-    Number(document.getElementById("orbitalCutoff").value);
-
-  let translucency =
-
-
-    Number(document.getElementById("orbitalTranslucency").value);
-
-  if(!Number.isFinite(cutoff)){
-
-    cutoff = 0.03;
-
-  }
-
-  if(!Number.isFinite(translucency)){
-
-    translucency = 0.35;
-
-  }
-
-  cutoff = Math.min(0.5, Math.max(0.0001, cutoff));
-
-  translucency = Math.min(0.95, Math.max(0, translucency));
-
-  const negative =
-
-    jmolColor(
-
-      document.getElementById("orbitalNegativeColor").value
-
-    );
-
-  const positive =
-
-    jmolColor(
-
-      document.getElementById("orbitalPositiveColor").value
-    
-    );
-
-  return {
-
-    cutoff,
-
-    translucency,
-
-    negative,
-
-    positive
-
-  };
-
-}
-
-
-
-
-function orbitalStyleScript(){
-
-
-  const settings = getOrbitalSettings();
-
-
-
-
-  return (
-
-
-
-    `MO COLOR ${settings.negative} ${settings.positive};` +
-
-
-
-    `MO translucent ${settings.translucency};` +
-
-
-
-    `MO fill nodots nomesh;` +
-
-
-
-    `MO titleformat "";`
-
-
-
-  );
-
-
-
-}
-
-
-
-
-
-
-
-// Parses the [MO] blocks of a Molden file ourselves, independent of Jmol,
-
-
-
-// so the orbital list doesn't depend on Jmol's internal (undocumented)
-
-
-
-// property paths. Each MO block looks like:
-
-
-
-//   Sym= A
-
-
-
-//   Ene=      -1234.56789
-
-
-
-//   Spin= Alpha
-
-
-
-//   Occup=    2.00000
-
-
-
-//   1   0.123...
-
-
-
-//   2  -0.456...
-
-
-
-// "Sym=" is optional in some Molden files, so a new block also starts
-
-
-
-// whenever a second "Ene=" line is seen.
-
-
-
-function parseMoldenOrbitals(text){
-
-
-
-  const orbitals = [];
-
-
-
-  let current = null;
-
-
-
-
-
-
-
-  const flush = ()=>{
-
-
-
-    if(current && current.energy !== null){
-
-
-
-      orbitals.push(current);
-
-
-
-    }
-
-
-
-    current = null;
-
-
-
-  };
-
-
-
-
-
-
-
-  const lines = text.split(/\r?\n/);
-
-
-
-
-
-
-
-  for(const rawLine of lines){
-
-
-
-    const line = rawLine.trim();
-
-
-
-    if(!line) continue;
-
-
-
-
-
-
-
-    const symMatch = line.match(/^Sym\s*=\s*(.+)$/i);
-
-
-
-    if(symMatch){
-
-
-
-      flush();
-
-
-
-      current = {sym: symMatch[1].trim(), energy: null, spin: null, occup: null};
-
-
-
-      continue;
-
-
-
-    }
-
-
-
-
-
-
-
-    const eneMatch = line.match(/^Ene\s*=\s*([-+0-9.eEdD]+)/i);
-
-
-
-    if(eneMatch){
-
-
-
-      if(current && current.energy !== null) flush();
-
-
-
-      if(!current) current = {sym: null, energy: null, spin: null, occup: null};
-
-
-
-      current.energy = Number(eneMatch[1].replace(/[dD]/, "e"));
-
-
-
-      continue;
-
-
-
-    }
-
-
-
-
-
-
-
-    if(!current) continue;
-
-
-
-
-
-
-
-    const spinMatch = line.match(/^Spin\s*=\s*(\w+)/i);
-
-
-
-    if(spinMatch){ current.spin = spinMatch[1]; continue; }
-
-
-
-
-
-
-
-    const occMatch = line.match(/^Occup\s*=\s*([-+0-9.eEdD]+)/i);
-
-
-
-    if(occMatch){ current.occup = Number(occMatch[1].replace(/[dD]/, "e")); continue; }
-
-
-
-  }
-
-
-
-
-
-
-
-  flush();
-
-
-
-  return orbitals;
-
-
-
-}
-
-
-
-
-
-
-
-// Renders the orbital number / energy / occupancy / spin table in the right panel.
-
-
-
-function renderOrbitalList(orbitals){
-
-
-
-  const body = document.getElementById("orbitalListBody");
-
-
-
-  const note = document.getElementById("orbitalListNote");
-
-
-
-  const countLabel = document.getElementById("orbitalListCount");
-
-
-
-  if(!body || !note || !countLabel) return;
-
-
-
-
-
-
-
-  body.innerHTML = "";
-
-
-
-
-
-
-
-  if(!Array.isArray(orbitals) || !orbitals.length){
-
-
-
-    countLabel.textContent = "0 orbitals";
-
-
-
-    note.textContent = "No [MO] energy data found in that file.";
-
-
-
-    note.style.display = "block";
-
-
-
-    return;
-
-
-
-  }
-
-
-
-
-
-
-
-  countLabel.textContent = `${orbitals.length} orbitals`;
-
-
-
-  note.style.display = "block";
-
-  note.textContent = "Ene= values come from this Molden file. They are orbital energies or placeholders, not the total SCF/CASSCF energy. Orbital shape comes from the coefficients below each [MO] entry.";
-
-
-
-
-
-
-
-  const frag = document.createDocumentFragment();
-
-
-
-
-
-
-
-  orbitals.forEach((mo, i)=>{
-
-
-
-    const n = i + 1;
-
-
-
-
-
-
-
-    const energy = Number.isFinite(mo.energy) ? mo.energy.toFixed(5) : "—";
-
-
-
-    const occ = Number.isFinite(mo.occup) ? mo.occup.toFixed(5) : "—";
-
-
-
-    const spin = mo.spin || "—";
-
-
-
-
-
-
-
-    const tr = document.createElement("tr");
-
-
-
-    tr.dataset.orbital = n;
-
-
-
-    tr.innerHTML = `<td>${n}</td><td>${energy}</td><td>${occ}</td><td>${spin}</td>`;
-
-
-
-    tr.addEventListener("click", ()=>{
-
-
-
-      document.getElementById("orbitalNumber").value = n;
-
-
-
-      showOrbitalNumber();
-
-
-
-      markActiveOrbitalRow(n);
-
-
-
-    });
-
-
-
-
-
-
-
-    frag.appendChild(tr);
-
-
-
-  });
-
-
-
-
-
-
-
-  body.appendChild(frag);
-
-
-
-}
-
-
-
-
-
-
-
-function markActiveOrbitalRow(n){
-
-
-
-  const body = document.getElementById("orbitalListBody");
-
-
-
-  if(!body) return;
-
-
-
-
-
-
-
-  body.querySelectorAll("tr.active-orbital").forEach(tr=>
-
-
-
-    tr.classList.remove("active-orbital")
-
-
-
-  );
-
-
-
-
-
-
-
-  const row = body.querySelector(`tr[data-orbital="${n}"]`);
-
-
-
-  if(row){
-
-
-
-    row.classList.add("active-orbital");
-
-
-
-    // Do not move the page or viewer while the animation advances.
-    if(!animationRunning)row.scrollIntoView({block:"nearest"});
-
-
-
-  }
-
-
-
-}
-
-
-
-
-
-
-
-// Handles a Molden file picked via the real <input type="file">. We read
-
-
-
-// and parse it ourselves (for the orbital list) and hand the same raw text
-
-
-
-// to Jmol as inline DATA so it can render the isosurfaces -- this avoids
-
-
-
-// relying on Jmol's "load ?" native file dialog, which is often blocked in
-
-
-
-// sandboxed/embedded previews.
-
-
-
-async function loadEmbeddedOrbital(number){
-  const n = Number(number);
-  if(!suppliedMoldenModel) suppliedMoldenModel=parseMoldenForGrid(SUPPLIED_MOLDEN);
-  if(!Number.isInteger(n) || n<1 || n>suppliedMoldenModel.orbitals.length){
-    setOrbitalStatus(`Choose an orbital from 1 to ${suppliedMoldenModel.orbitals.length}.`,true); return;
-  }
-  embeddedActive=true;
-  const token=++orbitalLoadToken;
-  const detail=gridDimensions();
-  setOrbitalStatus(`Calculating orbital ${n} on the ${detail} grid…`);
-  try{
-    const cube=await moldenOrbitalCube(suppliedMoldenModel,n,detail,(done,total)=>{
-      if(token===orbitalLoadToken)setOrbitalStatus(`Calculating orbital ${n}: ${Math.round(100*done/total)}%`);
-    },()=>token===orbitalLoadToken);
-    if(token!==orbitalLoadToken)return;
-    await handleCubeFile(new File([cube],`orbital_${String(n).padStart(2,"0")}.cube`,{type:"text/plain"}),true,true);
-    renderOrbitalList(suppliedMoldenModel.orbitals);
-    markActiveOrbitalRow(n);
-    setOrbitalStatus(`Orbital ${n} displayed. Change the cutoff to adjust its surface.`);
-  }catch(error){setOrbitalStatus(`Could not display orbital ${n}: ${error.message}`,true);console.error(error)}
-}
-
-const BOHR_TO_ANGSTROM = 0.529177210903;
-// Follow VibeMol's Molden grid convention: use primitive coefficients and
-// Cartesian/spherical angular polynomials directly, without an extra AO norm.
-const ANGULAR_CONSTANTS = {
-  s:1, p:1, d0:1, d1:1, d2:1,
-  f0:1, f1:1, f2:1, f2m:1, f3:1
-};
-function parseMoldenForGrid(text){
-  const section=(name)=>{
-    const match=text.match(new RegExp(`\\[${name}\\]([^]*?)(?=\\n\\s*\\[[A-Za-z0-9]+\\]|$)`,"i"));
-    if(!match)throw new Error(`Missing [${name}] section`);
-    return match[1].trim().split(/\r?\n/);
-  };
-  if(/\[(?:6d|10f|15g)\]/i.test(text))throw new Error("Cartesian d/f/g functions are not supported by this browser viewer.");
-  const atomLines=section("Atoms");
-  const atomHeader=text.match(/\[Atoms\]\s*\(([^)]+)\)/i);
-  const factor=atomHeader && /ang/i.test(atomHeader[1]) ? 1/BOHR_TO_ANGSTROM : 1;
-  const atoms=atomLines.filter(line=>/^\s*[A-Za-z]/.test(line)).map(line=>{
-    const p=line.trim().split(/\s+/);
-    if(p.length<6)throw new Error("Invalid atom row in Molden file");
-    return {symbol:p[0],number:Number(p[2]),x:Number(p[3])*factor,y:Number(p[4])*factor,z:Number(p[5])*factor};
-  });
-  const shells=[];
-  const lines=section("GTO");
-  let atomIndex=-1;
-  for(let i=0;i<lines.length;){
-    const p=lines[i].trim().split(/\s+/);
-    if(!p[0]){i++;continue}
-    if(/^\d+$/.test(p[0])){atomIndex=Number(p[0])-1;i++;continue}
-    const l="spdf".indexOf(p[0].toLowerCase());
-    if(l<0)throw new Error(`Unsupported GTO shell: ${p[0]}`);
-    const count=Number(p[1]),scale=Number(p[2]) || 1;
-    if(!atoms[atomIndex] || !Number.isInteger(count) || count<1)throw new Error("Invalid [GTO] section");
-    const primitives=[];
-    for(let k=0;k<count;k++){
-      const q=lines[++i]?.trim().split(/\s+/);
-      const a=Number(q?.[0]?.replace(/[dD]/g,"E"));
-      const c=Number(q?.[1]?.replace(/[dD]/g,"E"))*scale;
-      if(!(a>0) || !Number.isFinite(c))throw new Error("Invalid Gaussian primitive");
-      primitives.push({a,c});
-    }
-    shells.push({atom:atoms[atomIndex],l,primitives,offset:0});
-    i++;
-  }
-  let nAO=0;
-  for(const shell of shells){shell.offset=nAO;nAO+=2*shell.l+1}
-  const moText=section("MO").join("\n");
-  const orbitals=[];
-  let current=null;
-  for(const line of moText.split(/\r?\n/)){
-    const ene=line.match(/^\s*Ene\s*=\s*(\S+)/i);
-    if(ene){
-      if(current)orbitals.push(current);
-      current={energy:Number(ene[1].replace(/[dD]/g,"E")),occup:null,spin:"Alpha",coeff:new Float64Array(nAO)};
-      continue;
-    }
-    if(!current)continue;
-    const occ=line.match(/^\s*Occup\s*=\s*(\S+)/i);
-    const spin=line.match(/^\s*Spin\s*=\s*(\S+)/i);
-    const c=line.match(/^\s*(\d+)\s+([-+\d.eEdD]+)\s*$/);
-    if(occ)current.occup=Number(occ[1].replace(/[dD]/g,"E"));
-    else if(spin)current.spin=spin[1];
-    else if(c){
-      const idx=Number(c[1])-1;
-      if(idx<0||idx>=nAO)throw new Error("Orbital coefficient index exceeds the basis size");
-      current.coeff[idx]=Number(c[2].replace(/[dD]/g,"E"));
-    }
-  }
-  if(current)orbitals.push(current);
-  if(!orbitals.length || !shells.length)throw new Error("No orbitals or basis functions found");
-  return {atoms,shells,orbitals,nAO};
-}
-function moldenOrbitalAt(model,mo,x,y,z){
-  const A=ANGULAR_CONSTANTS;
-  let value=0;
-  for(const shell of model.shells){
-    const dx=x-shell.atom.x,dy=y-shell.atom.y,dz=z-shell.atom.z;
-    const xx=dx*dx,yy=dy*dy,zz=dz*dz,r2=xx+yy+zz;
-    let radial=0;
-    for(const p of shell.primitives){
-      const t=p.a*r2;
-      if(t<48)radial+=p.c*Math.exp(-t);
-    }
-    if(Math.abs(radial)<1e-18)continue;
-    const c=mo.coeff,o=shell.offset;
-    let angular=0;
-    if(shell.l===0) angular=A.s*c[o];
-    else if(shell.l===1) angular=A.p*(c[o]*dx+c[o+1]*dy+c[o+2]*dz);
-    else if(shell.l===2) angular=
-      c[o]*A.d0*(2*zz-xx-yy)+c[o+1]*A.d1*dx*dz+c[o+2]*A.d1*dy*dz+
-      c[o+3]*A.d2*(xx-yy)+c[o+4]*A.d1*dx*dy;
-    else angular=
-      c[o]*A.f0*dz*(2*zz-3*xx-3*yy)+
-      c[o+1]*A.f1*dx*(4*zz-xx-yy)+c[o+2]*A.f1*dy*(4*zz-xx-yy)+
-      c[o+3]*A.f2*dz*(xx-yy)+c[o+4]*A.f2m*dx*dy*dz+
-      c[o+5]*A.f3*dx*(xx-3*yy)+c[o+6]*A.f3*dy*(3*xx-yy);
-    value+=radial*angular;
-  }
-  return value;
-}
-// Keep the most recently visited grids in memory without growing with every orbital.
-const orbitalCubeCache=new WeakMap();
-function gridDimensions(){
-  return ["gridX","gridY","gridZ"].map(id=>{
-    const input=document.getElementById(id);
-    const value=Math.max(12,Math.min(200,Math.round(Number(input.value)||Number(input.defaultValue))));
-    input.value=value;
-    return value;
-  });
-}
-async function moldenOrbitalCube(model,n,detail,onProgress,isCurrent=()=>true){
-  let cache=orbitalCubeCache.get(model);
-  if(!cache){cache=new Map();orbitalCubeCache.set(model,cache)}
-  const key=`${n}:${detail}`;
-  if(cache.has(key)){
-    const cube=cache.get(key);
-    cache.delete(key);cache.set(key,cube);
-    return cube;
-  }
-  const [nx,ny,nz]=detail;
-  // Allow diffuse lobes to decay before they reach any face of the cube.
-  // A larger domain matters especially at small isosurface cutoffs.
-  const padding=10;
-  const min=["x","y","z"].map(axis=>Math.min(...model.atoms.map(a=>a[axis]))-padding);
-  const max=["x","y","z"].map(axis=>Math.max(...model.atoms.map(a=>a[axis]))+padding);
-  const steps=[(max[0]-min[0])/(nx-1),(max[1]-min[1])/(ny-1),(max[2]-min[2])/(nz-1)];
-  const fmt=v=>v.toExponential(7);
-  const rows=["Orbital value from Molden coefficients","Computed in browser",
-    `${model.atoms.length} ${min.map(fmt).join(" ")}`,
-    `${nx} ${fmt(steps[0])} 0 0`,`${ny} 0 ${fmt(steps[1])} 0`,`${nz} 0 0 ${fmt(steps[2])}`];
-  for(const a of model.atoms)rows.push(`${a.number} 0 ${fmt(a.x)} ${fmt(a.y)} ${fmt(a.z)}`);
-  const mo=model.orbitals[n-1];
-  for(let ix=0;ix<nx;ix++){
-    const x=min[0]+ix*steps[0];
-    for(let iy=0;iy<ny;iy++){
-      const y=min[1]+iy*steps[1];
-      let line=[];
-      for(let iz=0;iz<nz;iz++){
-        line.push(fmt(moldenOrbitalAt(model,mo,x,y,min[2]+iz*steps[2])));
-        if(line.length===6){rows.push(line.join(" "));line=[]}
-      }
-      if(line.length)rows.push(line.join(" "));
-    }
-    if(ix%2===0){
-      if(!isCurrent())return null;
-      onProgress?.(ix+1,nx);
-      await new Promise(resolve=>setTimeout(resolve,0));
-    }
-  }
-  if(!isCurrent())return null;
-  const cube=rows.join("\n")+"\n";
-  cache.set(key,cube);
-  while(cache.size>3)cache.delete(cache.keys().next().value);
-  return cube;
-}
-
-async function loadCalculatedOrbital(number){
-  const model=importedMolden;
-  if(!model)return;
-  const n=Number(number);
-  if(!Number.isInteger(n)||n<1||n>model.orbitals.length){
-    setOrbitalStatus(`Choose an orbital from 1 to ${model.orbitals.length}.`,true);return;
-  }
-  const token=++importLoadToken;
-  const detail=gridDimensions();
-  setOrbitalStatus(`Calculating orbital ${n} on the ${detail} grid…`);
-  try{
-    const cube=await moldenOrbitalCube(model,n,detail,(done,total)=>{
-      if(token===importLoadToken)setOrbitalStatus(`Calculating orbital ${n}: ${Math.round(100*done/total)}%`);
-    },()=>token===importLoadToken);
-    if(token!==importLoadToken)return;
-    await handleCubeFile(new File([cube],`orbital_${String(n).padStart(2,"0")}.cube`,{type:"text/plain"}),true,true);
-    markActiveOrbitalRow(n);
-    setOrbitalStatus(`Orbital ${n} displayed from the selected Molden file.`);
-    document.getElementById("animationFrame").value=n;
-    document.getElementById("animationFrameLabel").textContent=`Frame ${n} of ${model.orbitals.length}`;
-    return true;
-  }catch(error){setOrbitalStatus(`Could not calculate orbital ${n}: ${error.message}`,true);console.error(error)}
-}
-
-async function handleMoldenFile(file){
-  if(!file)return;
-  setOrbitalStatus(`Reading ${file.name}…`);
-  try{
-    const model=parseMoldenForGrid(await file.text());
-    const xyzRows=model.atoms.map(a=>`${a.symbol} ${(a.x*BOHR_TO_ANGSTROM).toFixed(9)} ${(a.y*BOHR_TO_ANGSTROM).toFixed(9)} ${(a.z*BOHR_TO_ANGSTROM).toFixed(9)}`);
-    document.getElementById("xyzInput").value=`${xyzRows.length}\n${file.name}\n${xyzRows.join("\n")}`;
-    loadMolecule();
-    importedMolden=model;
-    embeddedActive=false;
-    cubeData=null;
-    document.getElementById("orbitalListBody").innerHTML="";
-    renderOrbitalList(model.orbitals);
-    document.getElementById("orbitalNumber").value="1";
-    stopOrbitalAnimation();
-    const animation=document.getElementById("orbitalAnimation");
-    showOrbitalPropertiesTab("appearance");
-    document.getElementById("animationFrame").max=model.orbitals.length;
-    document.getElementById("animationFrame").value=1;
-    document.getElementById("animationStart").value=1;
-    document.getElementById("animationEnd").value=model.orbitals.length;
-    document.getElementById("animationEnd").max=model.orbitals.length;
-    document.getElementById("animationStart").max=model.orbitals.length;
-    document.getElementById("animationFrameLabel").textContent=`Frame 1 of ${model.orbitals.length}`;
-    await loadCalculatedOrbital(1);
-  }catch(error){setOrbitalStatus(`Could not read Molden file: ${error.message}`,true);console.error(error)}
-}
-
-function showOrbitalNumber(){
-
-  if(importedMolden){ stopOrbitalAnimation(); loadCalculatedOrbital(document.getElementById("orbitalNumber").value); return; }
-
-  if(embeddedActive){ loadEmbeddedOrbital(document.getElementById("orbitalNumber").value); return; }
-
-
-
-  if(cubeData){
-
-    const n = Number(document.getElementById("orbitalNumber").value);
-
-    const file = cubeFiles.get(n);
-
-    if(file){ handleCubeFile(file); }
-
-    else setOrbitalStatus(`Select the CUBE file for orbital ${n} using Open orbital CUBE.`, true);
-
-    return;
-
-  }
-
-
-
-  if(!ensureOrbitalViewer()) return;
-
-
-
-
-
-
-
-  let n =
-
-
-
-    Number(document.getElementById("orbitalNumber").value);
-
-
-
-
-
-
-
-  if(!Number.isInteger(n) || n < 1){
-
-
-
-    n = 1;
-
-
-
-    document.getElementById("orbitalNumber").value = "1";
-
-
-
-  }
-
-
-
-
-
-
-
-  const settings = getOrbitalSettings();
-
-
-
-
-
-
-
-  Jmol.script(
-
-
-
-    jmolApplet0,
-
-
-
-    `MO cutoff ${settings.cutoff}; MO ${n};` +
-
-    orbitalStyleScript()
-
-
-
-  );
-
-
-
-
-
-
-
-  markActiveOrbitalRow(n);
-
-
-
-  setOrbitalStatus(`Showing molecular orbital ${n}.`);
-
-
-
-}
-
-
-
-
-
-
-
-function fitOrbitalViewer(){
-
-
-
-  if(cubeData){ viewer.zoomTo(); viewer.render(); return; }
-
-  if(!ensureOrbitalViewer()) return;
-
-
-
-  Jmol.script(jmolApplet0, "center *; zoom 100;");
-
-
-
-}
-
-
-
-
-
-
-
-function updateOrbitalAppearance(){
-
-
-
-  if(cubeData){ renderCube(); return; }
-
-
-
-  if(!ensureOrbitalViewer()) return;
-
-
-
-
-
-
-
-  const n =
-
-
-
-    Number(document.getElementById("orbitalNumber").value);
-
-
-
-
-
-
-
-  const settings = getOrbitalSettings();
-
-
-
-
-
-
-
-  Jmol.script(
-
-
-
-    jmolApplet0,
-
-
-
-    orbitalStyleScript() +
-
-
-
-    (
-
-
-
-      Number.isInteger(n) && n > 0
-
-
-
-        ? `MO cutoff ${settings.cutoff}; MO ${n};`
-
-
-
-        : `MO cutoff ${settings.cutoff}; MO 1;`
-
-
-
-    )
-
-
-
-  );
-
-
-
-}
-
-
-
-
-
-
-
-function normalizeXYZ(raw){
-
-
-
-  const lines = raw
-
-
-
-    .split(/\r?\n/)
-
-
-
-    .map(line => line.trim())
-
-
-
-    .filter(line => line.length > 0);
-
-
-
-
-
-
-
-  if(!lines.length){
-
-
-
-    throw new Error("No coordinates found");
-
-
-
-  }
-
-
-
-
-
-
-
-  let coordinateLines = lines;
-
-
-
-
-
-
-
-  // Standard XYZ input:
-
-
-
-  // first line = atom count
-
-
-
-  // second line = comment/title
-
-
-
-  if(/^\d+$/.test(lines[0])){
-
-
-
-    coordinateLines = lines.slice(2);
-
-
-
-  }
-
-
-
-
-
-
-
-  const atomLines = [];
-
-
-
-
-
-
-
-  for(const line of coordinateLines){
-
-
-
-    const p = line.split(/\s+/);
-
-
-
-
-
-
-
-    if(p.length < 4) continue;
-
-
-
-
-
-
-
-    const element = p[0];
-
-
-
-    const x = Number(p[1]);
-
-
-
-    const y = Number(p[2]);
-
-
-
-    const z = Number(p[3]);
-
-
-
-
-
-
-
-    if(
-
-
-
-      /^[A-Za-z]{1,3}$/.test(element) &&
-
-
-
-      Number.isFinite(x) &&
-
-
-
-      Number.isFinite(y) &&
-
-
-
-      Number.isFinite(z)
-
-
-
-    ){
-
-
-
-      atomLines.push(`${element}   ${x}   ${y}   ${z}`);
-
-
-
-    }
-
-
-
-  }
-
-
-
-
-
-
-
-  if(atomLines.length === 0){
-
-
-
-    throw new Error("No valid atom coordinates found");
-
-
-
-  }
-
-
-
-
-
-
-
-  // Rebuild the atom count automatically.
-
-
-
-  return `${atomLines.length}\nGenerated by BeeMol\n${atomLines.join("\n")}`;
-
-
-
-}
-
-
-
-
-
-
-
-function getAtomLines(raw){
-
-
-
-  const normalized = normalizeXYZ(raw);
-
-
-
-  const lines = normalized.trim().split(/\r?\n/);
-
-
-
-  return lines.slice(2).filter(l=>l.trim());
-
-
-
-}
-
-
-
-
-
-
-
-
-
-
-
-function getXYZAtoms(){
-
-
-
-  const xyz = normalizeXYZ(document.getElementById("xyzInput").value);
-
-
-
-  const lines = xyz.trim().split(/\r?\n/).slice(2);
-
-
-
-
-
-
-
-  return lines.map((line, index)=>{
-
-
-
-    const p = line.trim().split(/\s+/);
-
-
-
-
-
-
-
-    return {
-
-
-
-      index,
-
-
-
-      element:p[0],
-
-
-
-      x:Number(p[1]),
-
-
-
-      y:Number(p[2]),
-
-
-
-      z:Number(p[3])
-
-
-
-    };
-
-
-
-  });
-
-
-
-}
-
-
-
-
-
-
-
-function writeXYZAtoms(atoms){
-
-
-
-  const lines = atoms.map(atom =>
-
-
-
-    `${atom.element}   ${atom.x.toFixed(8)}   ${atom.y.toFixed(8)}   ${atom.z.toFixed(8)}`
-
-
-
-  );
-
-
-
-
-
-
-
-  document.getElementById("xyzInput").value =
-
-
-
-    `${atoms.length}\nGenerated by BeeMol\n${lines.join("\n")}`;
-
-
-
-}
-
-
-
-
-
-
-
-function atomLabel(atom, index){
-
-
-
-  return `${atom.element}${index + 1}`;
-
-
-
-}
-
-
-
-
-
-
-
-function updateBondSelectionStatus(){
-
-
-
-  const status = document.getElementById("bondSelectionStatus");
-
-
-
-  const atoms = getXYZAtoms();
-
-
-
-
-
-
-
-  if(selectedBondAtoms.length === 0){
-
-
-
-    status.textContent = "Bond edit: click two atoms in the 3D viewer";
-
-
-
-    return;
-
-
-
-  }
-
-
-
-
-
-
-
-  if(selectedBondAtoms.length === 1){
-
-
-
-    const i = selectedBondAtoms[0];
-
-
-
-    status.textContent =
-
-
-
-      `Atom 1: ${atomLabel(atoms[i], i)} selected. Now click atom 2.`;
-
-
-
-    return;
-
-
-
-  }
-
-
-
-
-
-
-
-  const i = selectedBondAtoms[0];
-
-
-
-  const j = selectedBondAtoms[1];
-
-
-
-
-
-
-
-  const a = atoms[i];
-
-
-
-  const b = atoms[j];
-
-
-
-
-
-
-
-  const dx = b.x - a.x;
-
-
-
-  const dy = b.y - a.y;
-
-
-
-  const dz = b.z - a.z;
-
-
-
-  const distance = Math.hypot(dx, dy, dz);
-
-
-
-
-
-
-
-  status.textContent =
-
-
-
-    `${atomLabel(a, i)} ↔ ${atomLabel(b, j)} selected. Current distance: ${distance.toFixed(4)} Å`;
-
-
-
-
-
-
-
-  document.getElementById("bondLengthInput").value =
-
-
-
-    distance.toFixed(4);
-
-
-
-}
-
-
-
-
-
-
-
-function applySelectionStyle(){
-
-
-
-  if(!viewer) return;
-
-
-
-
-
-
-
-  viewer.setStyle(
-
-
-
-    {},
-
-
-
-    ballStick
-
-
-
-      ? {stick:{radius:0.18}, sphere:{scale:0.28}}
-
-
-
-      : {line:{}}
-
-
-
-  );
-
-
-
-
-
-
-
-    colorMoleculeAtoms();
-
-selectedBondAtoms.forEach((atomIndex, selectionNumber)=>{
-
-
-
-    viewer.setStyle(
-
-
-
-      {index:atomIndex},
-
-
-
-      {
-
-
-
-        stick:{radius:0.24},
-
-
-
-        sphere:{
-
-
-
-          scale:0.42,
-
-
-
-          color: selectionNumber === 0 ? "yellow" : "cyan"
-
-
-
-        }
-
-
-
-      }
-
-
-
-    );
-
-
-
-  });
-
-
-
-
-
-
-
-  viewer.render();
-
-
-
-}
-
-
-
-
-
-
-
-function enableBondAtomSelection(){
-
-
-
-  if(!viewer || typeof viewer.setClickable !== "function") return;
-
-
-
-
-
-
-
-  viewer.setClickable({}, true, function(atom){
-
-
-
-    let index;
-
-
-
-
-
-
-
-    if(Number.isInteger(atom.index)){
-
-
-
-      index = atom.index;
-
-
-
-    }else if(Number.isFinite(Number(atom.serial))){
-
-
-
-      index = Number(atom.serial) - 1;
-
-
-
-    }else{
-
-
-
-      return;
-
-
-
-    }
-
-
-
-
-
-
-
-    if(selectedBondAtoms.length >= 2){
-
-
-
-      selectedBondAtoms = [];
-
-
-
-    }
-
-
-
-
-
-
-
-    if(selectedBondAtoms.includes(index)){
-
-
-
-      // Clicking the same selected atom removes it.
-
-
-
-      selectedBondAtoms =
-
-
-
-        selectedBondAtoms.filter(i => i !== index);
-
-
-
-    }else{
-
-
-
-      selectedBondAtoms.push(index);
-
-
-
-    }
-
-
-
-
-
-
-
-    updateBondSelectionStatus();
-
-
-
-    applySelectionStyle();
-
-
-
-  });
-
-
-
-}
-
-
-
-
-
-
-
-function clearBondSelection(){
-
-
-
-  selectedBondAtoms = [];
-
-
-
-  updateBondSelectionStatus();
-
-
-
-  applySelectionStyle();
-
-
-
-}
-
-
-
-
-
-
-
-function applySelectedBondLength(){
-
-
-
-  if(selectedBondAtoms.length !== 2){
-
-
-
-    alert("Select two atoms in the 3D viewer first.");
-
-
-
-    return;
-
-
-
-  }
-
-
-
-
-
-
-
-  const targetLength =
-
-
-
-    Number(document.getElementById("bondLengthInput").value);
-
-
-
-
-
-
-
-  if(!Number.isFinite(targetLength) || targetLength <= 0){
-
-
-
-    alert("Enter a valid positive bond length.");
-
-
-
-    return;
-
-
-
-  }
-
-
-
-
-
-
-
-  const atoms = getXYZAtoms();
-
-
-
-
-
-
-
-  const fixedIndex = selectedBondAtoms[0];
-
-
-
-  const movingIndex = selectedBondAtoms[1];
-
-
-
-
-
-
-
-  const atom1 = atoms[fixedIndex];
-
-
-
-  const atom2 = atoms[movingIndex];
-
-
-
-
-
-
-
-  const dx = atom2.x - atom1.x;
-
-
-
-  const dy = atom2.y - atom1.y;
-
-
-
-  const dz = atom2.z - atom1.z;
-
-
-
-
-
-
-
-  const currentLength = Math.hypot(dx, dy, dz);
-
-
-
-
-
-
-
-  if(currentLength < 1.0e-10){
-
-
-
-    alert("The selected atoms are at the same coordinates, so the bond direction is undefined.");
-
-
-
-    return;
-
-
-
-  }
-
-
-
-
-
-
-
-  // Unit vector from atom 1 to atom 2.
-
-
-
-  const ux = dx / currentLength;
-
-
-
-  const uy = dy / currentLength;
-
-
-
-  const uz = dz / currentLength;
-
-
-
-
-
-
-
-  // Keep atom 1 fixed and move atom 2 along the same direction.
-
-
-
-  atom2.x = atom1.x + targetLength * ux;
-
-
-
-  atom2.y = atom1.y + targetLength * uy;
-
-
-
-  atom2.z = atom1.z + targetLength * uz;
-
-
-
-
-
-
-
-  writeXYZAtoms(atoms);
-
-
-
-
-
-
-
-  // Refresh the 3D structure and generated PySCF input.
-
-
-
-  loadMolecule();
-
-
-
-
-
-
-
-  // Keep the same two atoms selected after rebuilding.
-
-
-
-  selectedBondAtoms = [fixedIndex, movingIndex];
-
-
-
-  updateBondSelectionStatus();
-
-
-
-  applySelectionStyle();
-
-
-
-}
-
-
-
-
-
-
-
-function loadMolecule(){
-
-
-
-  try{
-
-
-
-    const raw = document.getElementById("xyzInput").value;
-
-
-
-    const xyz = normalizeXYZ(raw);
-
-
-
-    viewer.clear();
-
-
-
-    viewer.addModel(xyz, "xyz");
-
-
-
-
-
-
-
-    viewer.setStyle(
-
-
-
-      {},
-
-
-
-      ballStick
-
-
-
-        ? {stick:{radius:0.18}, sphere:{scale:0.28}}
-
-
-
-        : {line:{}}
-
-
-
-    );
-
-
-
-
-
-
-
-        colorMoleculeAtoms();
-
-enableBondAtomSelection();
-
-
-
-
-
-
-
-    viewer.zoomTo();
-
-
-
-    viewer.resize();
-
-
-
-    viewer.render();
-
-
-
-
-
-
-
-    // Reapply selection highlighting after the model is rebuilt.
-
-
-
-    if(selectedBondAtoms.length){
-
-
-
-      applySelectionStyle();
-
-
-
-    }
-
-
-
-
-
-
-
-    const n = getAtomLines(raw).length;
-
-
-
-    document.getElementById("atomCount").textContent = `${n} atom${n===1?"":"s"}`;
-
-
-
-    const s = document.getElementById("geomStatus");
-
-
-
-    s.textContent = "Geometry loaded";
-
-
-
-    s.className = "status ok";
-
-
-
-    generateCode();
-
-
-
-  }catch(err){
-
-
-
-    const s = document.getElementById("geomStatus");
-
-
-
-    s.textContent = err.message;
-
-
-
-    s.className = "status err";
-
-
-
-  }
-
-
-
-}
-
-
-
-
-
-
-
-function atomBlock(){
-
-
-
-  const lines = getAtomLines(document.getElementById("xyzInput").value);
-
-
-
-  return lines.map(line => {
-
-
-
-    const p = line.trim().split(/\s+/);
-
-
-
-    return `    ${p[0]}   ${p[1]}   ${p[2]}   ${p[3]}`;
-
-
-
-  }).join("\n");
-
-
-
-}
-
-
-
-
-
-
-
-function commonMolCode(){
-
-
-
-  const basis = document.getElementById("basis").value;
-
-
-
-  const charge = document.getElementById("charge").value;
-
-
-
-  const spin = document.getElementById("spin").value;
-
-
-
-  const memory = document.getElementById("memory").value;
-
-
-
-  const verbose = document.getElementById("verbose").value;
-
-
-
-  const chk = document.getElementById("checkpoint").checked;
-
-
-
-  const jobName = document.getElementById("jobName").value.trim() || "pyscf_job";
-
-
-
-
-
-
-
-  return `mol = gto.M(
-    atom='''\n${atomBlock()}\n    ''',
-    basis='${basis}',
-    charge=${charge},
-    spin=${spin},
-    max_memory=${memory},
-    verbose=${verbose},
-)${chk ? `\n\nchkfile = '${jobName}.chk'` : ""}`;
-
-
-
-}
-
-
-
-
-
-
-
-function scfSetup(type="RHF"){
-
-
-
-  const convTol = document.getElementById("convTol").value;
-
-
-
-  const maxCycle = document.getElementById("maxCycle").value;
-
-
-
-  const densityFit = document.getElementById("densityFit").checked;
-
-
-
-  let code = `mf = scf.${type}(mol)`;
-
-
-
-  if(densityFit) code += `.density_fit()`;
-
-
-
-  code += `\nmf.conv_tol = ${convTol}\nmf.max_cycle = ${maxCycle}`;
-
-
-
-  if(document.getElementById("checkpoint").checked) code += `\nmf.chkfile = chkfile`;
-
-
-
-  code += `\nmf.kernel()`;
-
-
-
-  return code;
-
-
-
-}
-
-
-
-
-
-
-
-function generateCode(){
-
-
-
-  try{
-
-
-
-    const method1 = document.getElementById("method1").value;
-
-
-
-    const method2 = document.getElementById("method2").value;
-
-
-
-    const functional = document.getElementById("functional").value;
-
-
-
-    const optimize = document.getElementById("optimize").checked;
-
-
-
-    const ncas = document.getElementById("ncas").value;
-
-
-
-    const nelecas = document.getElementById("nelecas").value;
-
-
-
-    const nroots = document.getElementById("nroots").value;
-
-
-
-    const adcMethod = document.getElementById("adcMethod").value;
-
-
-
-    const adcType = document.getElementById("adcType").value;
-
-
-
-
-
-
-
-    let imports = ["from pyscf import gto, scf"];
-
-
-
-    let body = "";
-
-
-
-    let post = "";
-
-  let moldenExport = "";
-
-
-
-
-
-
-
- if(method1==="DFT"){
-
-
-
-  imports = ["from pyscf import gto, dft"];
-
-
-
-  body = `mf = dft.${Number(document.getElementById("spin").value)===0 ? "RKS" : "UKS"}(mol)\nmf.xc = '${functional}'`;
-
-
-
-  if(document.getElementById("densityFit").checked) body += `\nmf = mf.density_fit()`;
-
-
-
-  body += `\nmf.conv_tol = ${document.getElementById("convTol").value}\nmf.max_cycle = ${document.getElementById("maxCycle").value}`;
-
-
-
-  if(document.getElementById("checkpoint").checked) body += `\nmf.chkfile = chkfile`;
-
-
-
-  body += `\nmf.kernel()`;
-
-
-
-} else {
-
-
-
-  // RHF / ROHF / UHF reference (also used as the base for MP2/CCSD/CASSCF/CASCI/NEVPT2/ADC below)
-
-
-
-  body = scfSetup(method1);
-
-
-
-}
-
-
-
-
-
-
-
-if(method2==="MP2"){
-
-
-
-  imports.push("from pyscf import mp");
-
-
-
-  post = `\n\npt = mp.MP2(mf)\nemp2, t2 = pt.kernel()\nprint("MP2 correlation energy =", emp2)`;
-
-
-
-} else if(method2==="CCSD"){
-
-
-
-  imports.push("from pyscf import cc");
-
-
-
-  post = `\n\nmycc = cc.CCSD(mf)\nmycc.kernel()\nprint("CCSD correlation energy =", mycc.e_corr)`;
-
-
-
-} else if(["CASSCF","CASCI","NEVPT2"].includes(method2)){
-
-
-
-  imports.push("from pyscf import mcscf");
-
-
-
-  if(method2==="NEVPT2") imports.push("from pyscf import mrpt");
-
-
-
-  if(method2==="CASSCF"){
-
-
-
-    post = `\n\nmc = mcscf.CASSCF(mf, ${ncas}, ${nelecas})\nmc.verbose = mol.verbose\nmc.kernel()`;
-
-
-
-  } else if(method2==="CASCI"){
-
-
-
-    post = `\n\nmc = mcscf.CASCI(mf, ${ncas}, ${nelecas})\nmc.verbose = mol.verbose\nmc.kernel()`;
-
-
-
-  } else {
-
-
-
-    post = `\n\nmc = mcscf.CASSCF(mf, ${ncas}, ${nelecas})\nmc.verbose = mol.verbose\nmc.kernel()\n\nnev = mrpt.NEVPT(mc)\nnev.kernel()`;
-
-
-
-  }
-
-
-
-} else if(method2==="ADC"){
-
-
-
-  imports.push("from pyscf import adc");
-
-
-
-  let call = adcType==="IP" ? "ip_adc" : adcType==="EA" ? "ea_adc" : "kernel";
-
-
-
-  post = `\n\nmyadc = adc.ADC(mf)\nmyadc.method = '${adcMethod}'\nmyadc.kernel_gs()\n# ${adcType}-ADC calculation\nresults = myadc.${call}(nroots=${nroots})`;
-
-
-
-}
-
-
-
-    // Export the coefficients of the chosen calculation for the Orbitals viewer.
-
-  // CASSCF/CASCI MO energies are not generally the SCF eigenvalues, so do
-
-  // not attach mf.mo_energy to mc.mo_coeff.
-
-  imports.push("from pyscf.tools import molden");
-
-  const jobName = document.getElementById("jobName").value.trim() || "pyscf_job";
-
-  moldenExport = `\n\n# Open this file in BeeMol's Orbitals tab\nmolden.from_scf(mf, '${jobName}_scf.molden')`;
-
-  if(["CASSCF", "CASCI", "NEVPT2"].includes(method2)){
-
-    moldenExport += `\n# CASSCF/CASCI optimized orbitals; no SCF energy assigned to them\nmolden.from_mo(mol, '${jobName}_cas.molden', mc.mo_coeff)`;
-
-  }
-
-
-
-  if(optimize){
-
-
-
-      imports.push("from pyscf.geomopt.geometric_solver import optimize");
-
-
-
-      post += `\n\n# Geometry optimization\nmol_eq = optimize(mf)`;
-
-
-
-    }
-
-
-
-
-
-
-
-    imports.push("import pyscf\npyscf.lib.num_threads(" + document.getElementById("threads").value + ")");
-
-
-
-
-
-
-
-    const code = `${imports.join("\n")}\n\n${commonMolCode()}\n\n${body}${post}${moldenExport}\n`;
-
-
-
-    document.getElementById("codeOutput").textContent =
-      code.replace(/\n[ \t]*\n(?:[ \t]*\n)+/g, "\n\n").trim() + "\n";
-
-
-
-    const s = document.getElementById("codeStatus");
-
-
-
-    s.textContent = "Ready";
-
-
-
-    s.className = "status ok";
-
-
-
-  }catch(err){
-
-
-
-    document.getElementById("codeOutput").textContent = "# Error while generating input:\n# " + err.message;
-
-
-
-    const s = document.getElementById("codeStatus");
-
-
-
-    s.textContent = "Check geometry";
-
-
-
-    s.className = "status err";
-
-
-
-  }
-
-
-
-}
-
-
-
-
-
-
-
-function updateConditionalUI(){
-
-
-
-  const method1 = document.getElementById("method1").value;
-
-
-
-  const method2 = document.getElementById("method2").value;
-
-
-
-
-
-
-
-  document.getElementById("functionalWrap").style.display =
-
-
-
-    method1 === "DFT" ? "block" : "none";
-
-
-
-
-
-
-
-  document.getElementById("casOptions").style.display =
-
-
-
-    ["CASSCF", "CASCI", "NEVPT2"].includes(method2)
-
-
-
-      ? "block"
-
-
-
-      : "none";
-
-
-
-
-
-
-
-  document.getElementById("adcOptions").style.display =
-
-
-
-    method2 === "ADC"
-
-
-
-      ? "block"
-
-
-
-      : "none";
-
-
-
-
-
-
-
-  generateCode();
-
-
-
-}
-
-
-
-
-
-
-
-document.querySelectorAll("input,select,textarea").forEach(el=>{
-
-
-
-  el.addEventListener("input", ()=>{
-
-
-
-
-
-
-
-    // Live-update the 3D molecule when XYZ coordinates are edited.
-
-
-
-    if(el.id === "xyzInput"){
-
-
-
-      clearTimeout(coordinateUpdateTimer);
-
-
-
-
-
-
-
-      coordinateUpdateTimer = setTimeout(()=>{
-
-
-
-        loadMolecule();
-
-
-
-      }, 300);
-
-
-
-
-
-
-
-      return;  
-
-
-
-    }
-
-
-
-    generateCode();
-
-
-
-  });
-
-
-
-
-
-
-
-  el.addEventListener("change", ()=>{
-
-
-
-    if(el.id === "method1" || el.id === "method2"){
-
-
-
-      updateConditionalUI();
-
-
-
-    } else if(el.id === "xyzInput"){
-
-
-
-      clearTimeout(coordinateUpdateTimer);
-
-
-
-      loadMolecule();
-
-
-
-    } else {
-
-
-
-      generateCode();
-
-
-
-    }
-
-
-
-  });
-
-
-
-});
-
-
-
-
-
-
-
-document.querySelectorAll(".tab").forEach(tab=>{
-
-
-
-  tab.addEventListener("click", ()=>{
-
-
-
-    document.querySelectorAll(".tab").forEach(t=>t.classList.remove("active"));
-
-
-
-    document.querySelectorAll(".tab-panel").forEach(p=>p.classList.remove("active"));
-
-
-
-
-
-
-
-    tab.classList.add("active");
-
-
-
-    document.getElementById(tab.dataset.tab).classList.add("active");
-
-
-
-  });
-
-
-
-});
-
-
-
-
-
-
-
-// Switches the single 3D viewer between showing the molecule (3Dmol.js) and
-
-
-
-// showing molecular orbitals (Jmol). Both live in the same #viewerStack slot.
-
-
-
-// Reuse the existing coordinate editor and its event handlers in the scene panel.
-document.getElementById("moleculeSceneHost").append(document.getElementById("xyzInput").closest(".card"));
-const orbitalViewerCard=document.querySelector(".left > .card");
-const orbitalViewerHome=document.createComment("viewer card location");
-orbitalViewerCard.parentNode.insertBefore(orbitalViewerHome,orbitalViewerCard);
-const orbitalListCard=document.getElementById("orbitalListCard");
-const orbitalListHome=document.createComment("orbital list location");
-orbitalListCard.parentNode.insertBefore(orbitalListHome,orbitalListCard);
-const orbitalControls=document.getElementById("orbitalControlsWrap");
-const orbitalControlsHome=document.createComment("orbital controls location");
-orbitalControls.parentNode.insertBefore(orbitalControlsHome,orbitalControls);
-const orbitalAnimationPanel=document.getElementById("orbitalAnimation");
-document.getElementById("orbitalPropertiesHost").append(orbitalAnimationPanel);
-function arrangeOrbitalWorkspace(isMolecule){
-  document.getElementById("orbitalWorkspace").classList.toggle("hidden",isMolecule);
-  document.querySelector("main.container").classList.toggle("hidden",!isMolecule);
-  if(isMolecule){
-    orbitalViewerHome.parentNode.insertBefore(orbitalViewerCard,orbitalViewerHome.nextSibling);
-    orbitalListHome.parentNode.insertBefore(orbitalListCard,orbitalListHome.nextSibling);
-    orbitalControlsHome.parentNode.insertBefore(orbitalControls,orbitalControlsHome.nextSibling);
-  }else{
-    document.getElementById("orbitalSceneHost").append(orbitalListCard);
-    document.getElementById("orbitalViewHost").append(orbitalViewerCard);
-    document.getElementById("orbitalPropertiesHost").append(orbitalControls);
-  }
-}
-function switchViewerMode(mode){
-
-  document.getElementById("waterBoxWorkspace").classList.add("hidden");
-  document.querySelector("main.container").classList.remove("waterbox-active");
-  document.getElementById("viewerStack").classList.remove("hidden");
-  document.getElementById("wbViewer").classList.add("hidden");
-  document.getElementById("wbOpen").classList.remove("active");
-  document.getElementById("orientationControls").style.display = "flex";
-
-
-
-  viewerMode = mode;
-
-
-
-
-
-
-
-  const isMolecule = mode === "molecule";
-  arrangeOrbitalWorkspace(isMolecule);
-
-
-
-
-
-
-
-  document.getElementById("modeMoleculeBtn").classList.toggle("active", isMolecule);
-
-
-
-  document.getElementById("modeOrbitalsBtn").classList.toggle("active", !isMolecule);
-
-
-
-
-
-
-
-  document.getElementById("viewer").classList.toggle("hidden", !isMolecule);
-
-
-
-  document.getElementById("orbitalViewer").classList.toggle("hidden", isMolecule);
-
-
-
-
-
-
-
-  document.getElementById("moleculeControls").classList.toggle("hidden", !isMolecule);
-
-
-
-  document.getElementById("orbitalControlsWrap").classList.toggle("hidden", isMolecule);
-
-
-
-
-
-
-
-  // The Basic/Advanced/Job PySCF setup and the generated input aren't
-
-
-
-  // relevant while just browsing orbitals -- show the orbital list instead.
-
-
-
-  document.getElementById("tabsCard").classList.toggle("hidden", !isMolecule);
-
-
-
-  document.getElementById("codeCard").classList.toggle("hidden", !isMolecule);
-
-
-
-  document.getElementById("orbitalListCard").classList.toggle("hidden", isMolecule);
-
-
-
-
-
-
-
-  if(!isMolecule){
-
-    document.getElementById("viewer").classList.toggle("hidden", !cubeData);
-
-    document.getElementById("orbitalViewer").classList.toggle("hidden", !!cubeData);
-
-    if(cubeData){ setTimeout(()=>{ viewer.resize(); viewer.render(); },100); return; }
-    if(!embeddedActive && !importedMolden){
-      setOrbitalStatus("Open a Molden or CUBE file to display orbitals.");
-      return;
-    }
-
-
-
-    if(!orbitalViewerReady){
-
-
-
-      initOrbitalViewer();
-
-
-
-    }else if(jmolApplet0){
-
-
-
-      setTimeout(()=>{ Jmol.script(jmolApplet0, "refresh;"); }, 100);
-
-
-
-    }
-
-
-
-  }else if(viewer){
-
-    if(cubeData && document.getElementById("xyzInput").value.trim()) loadMolecule();
-
-
-
-    setTimeout(()=>{ viewer.resize(); viewer.render(); }, 100);
-
-
-
-  }
-
-
-
-}
-
-
-
-
-
-
-
-function unitVector(v){
-  const norm=Math.hypot(...v);
-  return norm>1e-12?v.map(x=>x/norm):[1,0,0];
-}
-function quaternionMultiply(a,b){
-  const [x,y,z,w]=a,[u,v,t,r]=b;
-  return [w*u+x*r+y*t-z*v,w*v-x*t+y*r+z*u,w*t+x*v-y*u+z*r,w*r-x*u-y*v-z*t];
-}
-function rotateVectorByQuaternion(v,q){
-  const p=quaternionMultiply(quaternionMultiply(q,[...v,0]),[-q[0],-q[1],-q[2],q[3]]);
-  return p.slice(0,3);
-}
-function quaternionBetween(from,to){
-  const a=unitVector(from),b=unitVector(to);
-  const d=Math.max(-1,Math.min(1,a.reduce((sum,x,i)=>sum+x*b[i],0)));
-  if(d < -0.999999){
-    const perpendicular=unitVector(Math.abs(a[0])<0.9?[0,-a[2],a[1]]:[-a[1],a[0],0]);
-    return [...perpendicular,0];
-  }
-  const cross=[a[1]*b[2]-a[2]*b[1],a[2]*b[0]-a[0]*b[2],a[0]*b[1]-a[1]*b[0]];
-  const q=[...cross,1+d],length=Math.hypot(...q);
-  return q.map(x=>x/length);
-}
-function setOrientation(q){
-  const view=viewer.getView();
-  const norm=Math.hypot(...q);
-  viewer.setView([...view.slice(0,4),...q.map(x=>x/norm)]);
-  if(animationRunning)animationFixedView=viewer.getView();
-  viewer.render();
-}
-function alignMolecule(axis){
-  const atoms=viewer.selectedAtoms({});
-  if(atoms.length<2)return;
-  let first=atoms[0],last=atoms[1],distance=-1;
-  for(let i=0;i<atoms.length;i++)for(let j=i+1;j<atoms.length;j++){
-    const d=(atoms[i].x-atoms[j].x)**2+(atoms[i].y-atoms[j].y)**2+(atoms[i].z-atoms[j].z)**2;
-    if(d>distance){distance=d;first=atoms[i];last=atoms[j]}
-  }
-  const direction=unitVector([last.x-first.x,last.y-first.y,last.z-first.z]);
-  const view=viewer.getView();
-  const current=rotateVectorByQuaternion(direction,view.slice(4));
-  const target=axis==="x"?[1,0,0]:[0,1,0];
-  if(current[0]*target[0]+current[1]*target[1]<0)target[0]*=-1,target[1]*=-1;
-  setOrientation(quaternionMultiply(quaternionBetween(current,target),view.slice(4)));
-}
-document.getElementById("alignHorizontal").onclick=()=>alignMolecule("x");
-document.getElementById("alignVertical").onclick=()=>alignMolecule("y");
-document.getElementById("applyAxisView").onclick=()=>{
-  const q={"+z":[0,0,0,1],"-z":[0,1,0,0],"+x":[0,-Math.SQRT1_2,0,Math.SQRT1_2],"-x":[0,Math.SQRT1_2,0,Math.SQRT1_2],"+y":[Math.SQRT1_2,0,0,Math.SQRT1_2],"-y":[-Math.SQRT1_2,0,0,Math.SQRT1_2]};
-  setOrientation(q[document.getElementById("axisView").value]);
-};
-document.querySelectorAll("[data-rotate-axis]").forEach(button=>button.onclick=e=>{
-  const angle=Math.max(1,Math.min(180,Number(document.getElementById("orientationDegrees").value)||15));
-  viewer.rotate(e.shiftKey?-angle:angle,button.dataset.rotateAxis);
-  if(animationRunning)animationFixedView=viewer.getView();
-  viewer.render();
-});
-
-document.getElementById("modeMoleculeBtn").onclick = ()=>switchViewerMode("molecule");
-
-
-
-document.getElementById("modeOrbitalsBtn").onclick = ()=>switchViewerMode("orbitals");
-
-
-
-
-
-
-
-
-
-const periodicSymbols = "H He Li Be B C N O F Ne Na Mg Al Si P S Cl Ar K Ca Sc Ti V Cr Mn Fe Co Ni Cu Zn Ga Ge As Se Br Kr Rb Sr Y Zr Nb Mo Tc Ru Rh Pd Ag Cd In Sn Sb Te I Xe Cs Ba La Ce Pr Nd Pm Sm Eu Gd Tb Dy Ho Er Tm Yb Lu Hf Ta W Re Os Ir Pt Au Hg Tl Pb Bi Po At Rn Fr Ra Ac Th Pa U Np Pu Am Cm Bk Cf Es Fm Md No Lr Rf Db Sg Bh Hs Mt Ds Rg Cn Nh Fl Mc Lv Ts Og".split(" ");
-const cubeElements = Object.fromEntries(periodicSymbols.map((symbol,index)=>[index+1,symbol]));
-
-
-
-// Consistent element colors for both molecule and orbital views.
-const elementColors={H:"#ffffff",He:"#d9ffff",Li:"#cc80ff",Be:"#c2ff00",B:"#ffb5b5",C:"#909090",N:"#3050f8",O:"#ff0d0d",F:"#90e050",Ne:"#b3e3f5",Na:"#ab5cf2",Mg:"#8aff00",Al:"#bfa6a6",Si:"#f0c8a0",P:"#ff8000",S:"#ffff30",Cl:"#1ff01f",Ar:"#80d1e3",K:"#8f40d4",Ca:"#3dff00",Fe:"#e06633",Co:"#f090a0",Ni:"#50d050",Cu:"#c88033",Zn:"#7d80b0",Br:"#a62929",Ag:"#c0c0c0",I:"#940094",Au:"#ffd123",Pt:"#d0d0e0"};
-function colorMoleculeAtoms(){
-  for(const [elem,color] of Object.entries(elementColors)){
-    viewer.setStyle({elem},ballStick?{stick:{radius:0.18,color},sphere:{scale:0.28,color}}:{line:{color}});
-  }
-}
-function styleOrbitalAtoms(){
-  if(!cubeData)return;
-  const visible=document.getElementById("showOrbitalAtoms").checked;
-  viewer.setStyle({},visible ? {stick:{radius:0.18},sphere:{scale:0.28}} : {});
-  if(visible)for(const [elem,color] of Object.entries(elementColors)){
-    viewer.setStyle({elem},{stick:{radius:0.18,color},sphere:{scale:0.28,color}});
-  }
-  viewer.render();
-}
-// Recolor the actual isosurface vertices. The basic shader displays these
-// colors directly, so both controls visibly affect the orbital lobes.
-function setOrbitalSurfaceLighting(shape){
-  const originalGlobj = shape.globj;
-  shape.globj = function(group, exts){
-    originalGlobj.call(this, group, exts);
-    for(const object of [this.shapeObj, this.renderedShapeObj]){
-      const material = object?.children?.[0]?.material;
-      if(!material) continue;
-      material.shaderID = "basic";
-      material.needsUpdate = true;
-    }
-    // Map the displayed 0–100% range to gentle shading, never a black rim.
-    const depth = Number(document.getElementById("orbitalDepth").value) / 250;
-    const gloss = Number(document.getElementById("orbitalGloss").value) / 100;
-    const base = this.color;
-    for(const geoGroup of Object.values(this.geo.geometryGroups)){
-      const colors = geoGroup.colorArray;
-      const normals = geoGroup.normalArray;
-      if(!colors || !normals) continue;
-      for(let i=0; i<geoGroup.vertices; i++){
-        const j = i * 3;
-        const nx = normals[j], ny = normals[j+1], nz = normals[j+2];
-        const diffuse = Math.max(0, nx*0.45 + ny*0.3 + nz*0.84);
-        const brightness = 1 - depth * (1 - diffuse);
-        const highlight = gloss * Math.pow(Math.max(0, nx*0.24 + ny*0.34 + nz*0.91), 96);
-        colors[j]   = Math.min(1, base.r * brightness + (1-base.r * brightness) * highlight);
-        colors[j+1] = Math.min(1, base.g * brightness + (1-base.g * brightness) * highlight);
-        colors[j+2] = Math.min(1, base.b * brightness + (1-base.b * brightness) * highlight);
-      }
-    }
-    this.geo.colorsNeedUpdate = true;
-  };
-  return shape;
-}
-
-function renderCube(){
-
-  if(!cubeData) return;
-
-  const settings = getOrbitalSettings();
-
-  viewer.removeAllShapes();
-
-  const flip=document.getElementById("orbitalFlipPhase").checked;
-  const positiveColor=document.getElementById("orbitalPositiveColor").value;
-  const negativeColor=document.getElementById("orbitalNegativeColor").value;
-  const posColor = flip ? negativeColor : positiveColor;
-  const negColor = flip ? positiveColor : negativeColor;
-  const rawCutoff=settings.cutoff;
-  const positiveShape = viewer.addVolumetricData(cubeData.text, "cube", {
-
-    isoval: rawCutoff, color: posColor,
-
-    opacity: 1 - settings.translucency,
-    smoothness: 12, wireframe: false
-
-  });
-
-  setOrbitalSurfaceLighting(positiveShape);
-  const negativeShape = viewer.addVolumetricData(cubeData.text, "cube", {
-
-    isoval: -rawCutoff, color: negColor,
-
-    opacity: 1 - settings.translucency,
-    smoothness: 12, wireframe: false
-
-  });
-
-  setOrbitalSurfaceLighting(negativeShape);
-
-  if(animationFixedView)viewer.setView(animationFixedView);
-  viewer.render();
-
-  setOrbitalStatus(`Showing ${cubeData.name}. Positive and negative phases at isovalues ±${rawCutoff}.`);
-
-}
-
-
-
-async function handleCubeFile(file,preserveMolecule=false,fromMolden=false){
-
-  const text = await file.text();
-
-  const lines = text.trim().split(/\r?\n/);
-
-  const header = lines[2]?.trim().split(/\s+/).map(Number);
-
-  const nAtoms = Math.abs(header?.[0] || 0);
-
-  if(!nAtoms || lines.length < 6 + nAtoms){
-
-    setOrbitalStatus("This does not look like a valid CUBE file.", true); return;
-
-  }
-
-  const bohrToAngstrom = 0.529177210903;
-
-  const xyz = [];
-
-  for(let k=0;k<nAtoms;k++){
-
-    const a = lines[6+k].trim().split(/\s+/).map(Number);
-
-    xyz.push(`${cubeElements[a[0]] || a[0]} ${a[2]*bohrToAngstrom} ${a[3]*bohrToAngstrom} ${a[4]*bohrToAngstrom}`);
-
-  }
-
-  const sameMolecule=preserveMolecule && !!cubeData && viewerMode==="orbitals";
-  cubeData = {text,name:file.name,fromMolden};
-  // Match the clean, white canvas in the orbital reference on first load.
-  if(viewerBgColor==="#070d17"){
-    setViewerBackground("#ffffff");
-    orbitalBackgroundIndex=1;
-    document.getElementById("orbitalBackgroundBtn").textContent="Background: White";
-    document.getElementById("bgColorPicker").value="#ffffff";
-  }
-
-
-  const match = file.name.match(/orbital[_-]?(\d+)/i);
-
-  if(match){ document.getElementById("orbitalNumber").value = Number(match[1]); }
-
-  if(!document.querySelector("#orbitalListBody tr") && match){
-
-    renderOrbitalList(Array.from({length:embeddedActive ? 20 : cubeFiles.size},(_,i)=>({energy:embeddedActive ? i : null,occup:embeddedActive ? 1 : null,spin:embeddedActive ? "Alpha" : null})));
-
-  }
-
-  if(sameMolecule){
-    // Atom positions and bonds stay fixed throughout a Molden orbital sequence.
-    // Update only the volumetric surfaces, preserving the camera and bond model.
-    renderCube();
-    return;
-  }
-  if(viewerMode!=="orbitals")switchViewerMode("orbitals");
-
-  document.getElementById("viewer").classList.remove("hidden");
-
-  document.getElementById("orbitalViewer").classList.add("hidden");
-
-  viewer.clear();
-
-  viewer.addModel(`${nAtoms}\n${file.name}\n${xyz.join("\n")}`, "xyz");
-
-  styleOrbitalAtoms();
-
-  renderCube();
-
-  viewer.zoomTo(); viewer.resize(); viewer.render();
-  document.getElementById("orbitalZoom").value=100;
-
-}
-
-
-
-
-for(const id of ["gridX","gridY","gridZ"]){
-  document.getElementById(id).addEventListener("change",()=>{
-    gridDimensions();
-    if(importedMolden) loadCalculatedOrbital(document.getElementById("orbitalNumber").value);
-    else if(embeddedActive) loadEmbeddedOrbital(document.getElementById("orbitalNumber").value);
-  });
-}
-function showOrbitalPropertiesTab(tab){
-  const animation=tab==="animation";
-  orbitalControls.classList.toggle("hidden",animation);
-  orbitalAnimationPanel.classList.toggle("hidden",!animation);
-  const appearanceButton=document.getElementById("showOrbitalAppearance");
-  const animationButton=document.getElementById("toggleOrbitalAnimation");
-  appearanceButton.classList.toggle("active",!animation);
-  animationButton.classList.toggle("active",animation);
-  appearanceButton.setAttribute("aria-selected",String(!animation));
-  animationButton.setAttribute("aria-selected",String(animation));
-}
-document.getElementById("showOrbitalAppearance").onclick=()=>showOrbitalPropertiesTab("appearance");
-document.getElementById("toggleOrbitalAnimation").onclick=()=>showOrbitalPropertiesTab("animation");
-document.getElementById("downloadOrbitalCube").onclick=()=>{
-  if(!cubeData){setOrbitalStatus("Display an orbital before downloading its CUBE file.",true);return}
-  const url=URL.createObjectURL(new Blob([cubeData.text],{type:"text/plain"}));
-  const link=document.createElement("a");
-  link.href=url;link.download=/\.cub(e)?$/i.test(cubeData.name)?cubeData.name:`${cubeData.name.replace(/\.[^.]+$/,'')}.cube`;
-  document.body.append(link);link.click();link.remove();
-  setTimeout(()=>URL.revokeObjectURL(url),60000);
-};
-
-
-let animationRunning=false;
-let animationRecorder=null;
-let animationFixedView=null;
-function stopOrbitalAnimation(){
-  animationRunning=false;
-  animationFixedView=null;
-  document.getElementById("animationPlay").textContent="Play";
-  ++importLoadToken;
-}
-function animationRange(){
-  const count=importedMolden?.orbitals.length || 0;
-  const first=Math.max(1,Math.min(count,Math.round(Number(document.getElementById("animationStart").value))||1));
-  const last=Math.max(first,Math.min(count,Math.round(Number(document.getElementById("animationEnd").value))||count));
-  const fps=Math.max(1,Math.min(12,Number(document.getElementById("animationFps").value)||6));
-  const step=Math.max(1,Number(document.getElementById("animationStep").value)||1);
-  return {first,last,fps,step};
-}
-async function runOrbitalAnimation(record=false){
-  if(!importedMolden)return;
-  stopOrbitalAnimation();
-  const {first,last,fps,step}=animationRange();
-  if(record && Math.floor((last-first)/step)+1>120){
-    setOrbitalStatus("For a WebM, select at most 120 frames using First and Last.",true);return;
-  }
-  let recorder=null,stream=null,recordCanvas=null,recordContext=null;
-  if(record){
-    const source=document.querySelector("#viewer canvas");
-    if(!source || !HTMLCanvasElement.prototype.captureStream || !window.MediaRecorder){
-      setOrbitalStatus("WebM recording needs Chrome with canvas recording support.",true);return;
-    }
-    // Capture a 2D copy. Direct WebGL capture can produce an empty WebM.
-    recordCanvas=document.createElement("canvas");
-    recordCanvas.width=source.width;
-    recordCanvas.height=source.height;
-    recordContext=recordCanvas.getContext("2d",{alpha:false});
-    recordContext.fillStyle=viewerBgColor;
-    recordContext.fillRect(0,0,recordCanvas.width,recordCanvas.height);
-    stream=recordCanvas.captureStream(fps);
-    const mime=MediaRecorder.isTypeSupported("video/webm;codecs=vp9")?"video/webm;codecs=vp9":"video/webm";
-    const parts=[];
-    recorder=new MediaRecorder(stream,{mimeType:mime});
-    animationRecorder=recorder;
-    recorder.ondataavailable=e=>{if(e.data.size)parts.push(e.data)};
-    recorder.onerror=()=>setOrbitalStatus("WebM recording failed in this browser.",true);
-    recorder.onstop=()=>{
-      stream.getTracks().forEach(track=>track.stop());
-      animationRecorder=null;
-      const movie=new Blob(parts,{type:mime});
-      if(movie.size<1024){
-        setOrbitalStatus("No video frames were captured. Please try Save WebM again in Chrome.",true);
-        return;
-      }
-      const url=URL.createObjectURL(movie);
-      const link=document.createElement("a");link.href=url;link.download="orbital_animation.webm";link.click();
-      setTimeout(()=>URL.revokeObjectURL(url),60000);
-      setOrbitalStatus(`Saved ${Math.floor((last-first)/step)+1} frames as WebM.`);
-    };
-    recorder.start();
-  }
-  animationRunning=true;
-  // Keep the same camera projection and molecule geometry for every frame.
-  animationFixedView=viewer.getView();
-  document.getElementById("animationPlay").textContent="Pause";
-  for(let n=first;n<=last && animationRunning;n+=step){
-    const start=performance.now();
-    const shown=await loadCalculatedOrbital(n);
-    if(!animationRunning || !shown)break;
-    if(animationFixedView){viewer.setView(animationFixedView);viewer.render()}
-    if(record){
-      const source=document.querySelector("#viewer canvas");
-      if(source){
-        recordContext.fillStyle=viewerBgColor;
-        recordContext.fillRect(0,0,recordCanvas.width,recordCanvas.height);
-        recordContext.drawImage(source,0,0,recordCanvas.width,recordCanvas.height);
-        stream.getVideoTracks()[0]?.requestFrame?.();
-      }
-    }
-    await new Promise(resolve=>setTimeout(resolve,Math.max(30,1000/fps-(performance.now()-start))));
-  }
-  animationRunning=false;
-  animationFixedView=null;
-  document.getElementById("animationPlay").textContent="Play";
-  if(recorder?.state==="recording"){
-    await new Promise(resolve=>setTimeout(resolve,Math.max(200,1000/fps)));
-    recorder.requestData();
-    recorder.stop();
-  }
-}
-document.getElementById("animationPlay").onclick=()=>animationRunning?stopOrbitalAnimation():runOrbitalAnimation();
-document.getElementById("animationRecord").onclick=()=>runOrbitalAnimation(true);
-document.getElementById("animationFrame").onchange=e=>{
-  stopOrbitalAnimation();
-  document.getElementById("orbitalNumber").value=e.target.value;
-  loadCalculatedOrbital(e.target.value);
-};
-
-
-
-document.getElementById("fitOrbitalBtn").onclick = fitOrbitalViewer;
-const orbitalBackgrounds = [
-  {name:"Dark", color:"#070d17"},
-  {name:"White", color:"#ffffff"},
-  {name:"Gray", color:"#dce5f0"}
-];
-let orbitalBackgroundIndex = 0;
-document.getElementById("orbitalBackgroundBtn").onclick = ()=>{
-  orbitalBackgroundIndex = (orbitalBackgroundIndex + 1) % orbitalBackgrounds.length;
-  const choice = orbitalBackgrounds[orbitalBackgroundIndex];
-  setViewerBackground(choice.color);
-  document.getElementById("orbitalViewer").style.background = choice.color;
-  document.getElementById("orbitalBackgroundBtn").textContent = `Background: ${choice.name}`;
-  document.getElementById("bgColorPicker").value = choice.color;
-  if(orbitalViewerReady && jmolApplet0){
-    Jmol.script(jmolApplet0, `background [x${choice.color.slice(1).toUpperCase()}];`);
-  }
-  viewer.render();
-};
-
-
-
-
-
-
-
-document.getElementById("orbitalNumber").addEventListener(
-
-
-
-  "change", showOrbitalNumber
-
-
-
-);
-
-
-
-
-
-
-
-function activeOrbitalModel(){return importedMolden || (embeddedActive ? suppliedMoldenModel : null)}
-function selectOrbitalOffset(offset){
-  const input=document.getElementById("orbitalNumber");
-  const model=activeOrbitalModel();
-  input.value=Math.max(1,Math.min(model?.orbitals.length || 999,Number(input.value)+offset));
-  showOrbitalNumber();
-}
-document.getElementById("orbitalPrev").onclick=()=>selectOrbitalOffset(-1);
-document.getElementById("orbitalNext").onclick=()=>selectOrbitalOffset(1);
-document.getElementById("showOrbitalAtoms").onchange=styleOrbitalAtoms;
-document.getElementById("orbitalFlipPhase").onchange=renderCube;
-document.getElementById("orbitalCutoff").addEventListener(
-
-
-
-  "change", updateOrbitalAppearance
-
-
-
-);
-
-
-
-
-
-
-
-for(const [id, fallback] of [["orbitalDepth", 18], ["orbitalGloss", 30]]){
-  document.getElementById(id).addEventListener("change", event => {
-    const value = Number(event.target.value);
-    event.target.value = Number.isFinite(value) ? Math.max(0, Math.min(100, value)) : fallback;
-    if(cubeData) viewer.render();
-  });
-}
-
-document.getElementById("orbitalTranslucency").addEventListener(
-
-
-
-  "change", updateOrbitalAppearance
-
-
-
-);
-
-
-
-
-
-
-
-document.getElementById("orbitalNegativeColor").addEventListener(
-
-
-
-  "input", updateOrbitalAppearance
-
-
-
-);
-
-
-
-
-
-
-
-document.getElementById("orbitalPositiveColor").addEventListener(
-
-
-
-  "input", updateOrbitalAppearance
-
-
-
-);
-
-
-
-
-
-
-
-document.getElementById("applyBondLengthBtn").onclick =
-
-
-
-  applySelectedBondLength;
-
-
-
-
-
-
-
-document.getElementById("clearBondSelectionBtn").onclick =
-
-
-
-  clearBondSelection;
-
-
-
-
-
-
-
-document.getElementById("updateMol").onclick = ()=>{
-
-
-
-  loadMolecule();
-
-
-
-  clearBondSelection();
-
-
-
-};
-
-
-
-document.getElementById("fitBtn").onclick = ()=>{viewer.zoomTo();viewer.render();document.getElementById("orbitalZoom").value=100;}
-document.getElementById("applyOrbitalZoom").onclick=()=>{
-  const input=document.getElementById("orbitalZoom");
-  const percent=Math.max(10,Math.min(500,Number(input.value)||100));
-  input.value=percent;
-  if(!cubeData && viewerMode!=="orbitals")return;
-  viewer.zoomTo();
-  viewer.zoom(percent/100);
-  viewer.render();
-};
-document.getElementById("orbitalZoom").addEventListener("keydown",e=>{if(e.key==="Enter")document.getElementById("applyOrbitalZoom").click()});
-
-
-
-document.getElementById("spinBtn").onclick = ()=>{
-
-
-
-  spinning = !spinning; viewer.spin(spinning ? "y" : false);
-
-
-
-  document.getElementById("spinBtn").textContent = spinning ? "Stop Spin" : "Spin";
-
-
-
-}
-
-
-
-document.getElementById("bgColorPicker").addEventListener("input", (e)=>{
-
-
-
-  setViewerBackground(e.target.value);
-
-
-
-
-
-
-
-  if(orbitalViewerReady && jmolApplet0){
-
-
-
-    const bg =
-
-
-
-      "[x" + e.target.value.replace("#","").toUpperCase() + "]";
-
-
-
-
-
-
-
-    Jmol.script(jmolApplet0, "background " + bg + ";");
-
-
-
-  }
-
-
-
-});
-
-
-
-document.getElementById("styleBtn").onclick = ()=>{
-
-
-
-  ballStick = !ballStick;
-
-
-
-  applySelectionStyle();
-
-
-
-  document.getElementById("styleBtn").textContent =
-
-
-
-    ballStick ? "Ball & Stick" : "Line";
-
-
-
-}
-
-document.getElementById("orbitalFileInput").addEventListener("change", async e => {
-  const files = Array.from(e.target.files);
-  e.target.value = "";
-  if (!files.length) return;
-
-  const cubes = files.filter(file => /\.cub(e)?$/i.test(file.name));
-
-  if (cubes.length && cubes.length !== files.length) {
-    setOrbitalStatus("Choose CUBE files separately from XYZ or Molden files.", true);
-    return;
-  }
-
-  if (!cubes.length) {
-    const file = files[0];
-    const isXYZ = /\.xyz$/i.test(file.name) ||
-      (/\.txt$/i.test(file.name) &&
-       /^\s*\d+\s*$/.test((await file.text()).split(/\r?\n/, 1)[0]));
-
-    if (isXYZ) {
-      switchViewerMode("molecule");
-      selectedBondAtoms = [];
-      document.getElementById("xyzInput").value = await file.text();
-      loadMolecule();
-    } else {
-      await handleMoldenFile(file);
-    }
-    return;
-  }
-
-  embeddedActive = false;
-  for (const file of cubes) {
-    const match = file.name.match(/orbital[_-]?(\d+)/i);
-    if (match) cubeFiles.set(Number(match[1]), file);
-  }
-  await handleCubeFile(cubes[0]);
-});
-
-
-document.getElementById("copyCode").onclick = async ()=>{
-
-
-
-  await navigator.clipboard.writeText(document.getElementById("codeOutput").textContent);
-
-
-
-  const b = document.getElementById("copyCode");
-
-
-
-  const old=b.textContent;b.textContent="Copied";
-
-
-
-  setTimeout(()=>b.textContent=old,1000);
-
-
-
-}
-
-
-
-
-
-
-
-document.getElementById("downloadPy").onclick = ()=>{
-
-
-
-  const code = document.getElementById("codeOutput").textContent;
-
-
-
-  const blob = new Blob([code],{type:"text/x-python"});
-
-
-
-  const a = document.createElement("a");
-
-
-
-  a.href=URL.createObjectURL(blob);
-
-
-
-  a.download=(document.getElementById("jobName").value.trim() || "pyscf_job")+".py";
-
-
-
-  a.click();
-
-
-
-  URL.revokeObjectURL(a.href);
-
-
-
-}
-
-
-
-
-
-
-
-window.addEventListener("load", ()=>{
-
-
-
-  initViewer();
-
-
-
-  updateConditionalUI();
-  document.getElementById("codeOutput").textContent="Open a Molden or XYZ file to generate PySCF input.";
-  document.getElementById("atomCount").textContent="0 atoms";
-
-
-
-});
-
-// Water box viewer. Does not change the PySCF input coordinates.
-let waterBoxViewer = null;
-let waterBoxXYZ = null;
-
-const wb = id => document.getElementById(id);
-
-function wbParseXYZ(input, label) {
-  const lines = input.trim().split(/\r?\n/);
-  let rows = lines;
-
-  if (/^\d+$/.test((lines[0] || "").trim())) {
-    const count = Number(lines[0].trim());
-    rows = lines.slice(2).filter(line => line.trim());
-
-    if (rows.length !== count) {
-      throw Error(`${label}: expected ${count} atoms, found ${rows.length}.`);
-    }
-  } else {
-    rows = lines.filter(line => line.trim());
-  }
-
-  if (!rows.length) {
-    throw Error(`${label}: add atom coordinates.`);
-  }
-
-  return rows.map((row, i) => {
-    const fields = row.trim().split(/\s+/);
-    const elem = fields[0].charAt(0).toUpperCase()
-      + fields[0].slice(1).toLowerCase();
-    const position = fields.slice(1, 4).map(Number);
-
-    if (
-      !/^[A-Z][a-z]?$/.test(elem) ||
-      fields.length < 4 ||
-      position.some(n => !Number.isFinite(n))
-    ) {
-      throw Error(`${label}: invalid atom on line ${i + 1}.`);
-    }
-
-    return {elem, p: position};
-  });
-}
-
-function wbText(atoms, title) {
-  return `${atoms.length}\n${title}\n`
-    + atoms.map(atom =>
-        `${atom.elem} ${atom.p.map(v => v.toFixed(6)).join(" ")}`
-      ).join("\n")
-    + "\n";
-}
-
-function wbRandomRotation() {
-  const a = Math.random() * 2 * Math.PI;
-  const b = Math.random() * 2 * Math.PI;
-  const c = Math.random();
-
-  const q = [
-    Math.sqrt(1 - c) * Math.sin(a),
-    Math.sqrt(1 - c) * Math.cos(a),
-    Math.sqrt(c) * Math.sin(b),
-    Math.sqrt(c) * Math.cos(b)
-  ];
-
-  const [x, y, z, w] = q;
-
-  return p => [
-    (1 - 2 * (y*y + z*z)) * p[0]
-      + 2 * (x*y - z*w) * p[1]
-      + 2 * (x*z + y*w) * p[2],
-
-    2 * (x*y + z*w) * p[0]
-      + (1 - 2 * (x*x + z*z)) * p[1]
-      + 2 * (y*z - x*w) * p[2],
-
-    2 * (x*z - y*w) * p[0]
-      + 2 * (y*z + x*w) * p[1]
-      + (1 - 2 * (x*x + y*y)) * p[2]
-  ];
-}
-
-function wbEdges(lengths) {
-  for (let axis = 0; axis < 3; axis++) {
-    for (let u = 0; u < 2; u++) {
-      for (let v = 0; v < 2; v++) {
-        const start = [0, 0, 0];
-        const end = [0, 0, 0];
-        const other = [0, 1, 2].filter(i => i !== axis);
-
-        start[other[0]] = end[other[0]] = u * lengths[other[0]];
-        start[other[1]] = end[other[1]] = v * lengths[other[1]];
-        end[axis] = lengths[axis];
-
-        waterBoxViewer.addLine({
-          start: {x:start[0], y:start[1], z:start[2]},
-          end: {x:end[0], y:end[1], z:end[2]},
-          color: "#7890a8",
-          opacity: 0.8
-        });
-      }
-    }
-  }
-}
-
-function generateWaterBox() {
-  const status = wb("wbStatus");
-  waterBoxXYZ = null;
-  wb("wbDownload").disabled = true;
-  wb("wbDownloadPDB").disabled = true;
-  wb("wbDownloadPDB").disabled = false;
-
-  try {
-    const solute = wbParseXYZ(wb("wbSolute").value, "Molecule");
-    const water = wbParseXYZ(wb("wbWater").value, "Water");
-
-    if (
-      water.length !== 3 ||
-      water.filter(a => a.elem === "O").length !== 1 ||
-      water.filter(a => a.elem === "H").length !== 2
-    ) {
-      throw Error("Water must contain one O and two H atoms.");
-    }
-
-    const lengths = ["wbX", "wbY", "wbZ"]
-      .map(id => Number(wb(id).value));
-    const count = Number(wb("wbCount").value);
-
-    if (lengths.some(v => !Number.isFinite(v) || v < 6 || v > 150)) {
-      throw Error("Box lengths must be from 6 to 150 Å.");
-    }
-
-    if (!Number.isInteger(count) || count < 0 || count > 800) {
-      throw Error("Water count must be from 0 to 800.");
-    }
-
-    // Put the midpoint of HCCI's bounds at the center of the box.
-    const midpoint = [0, 1, 2].map(k =>
-      (
-        Math.min(...solute.map(a => a.p[k])) +
-        Math.max(...solute.map(a => a.p[k]))
-      ) / 2
-    );
-
-    const centered = solute.map(atom => ({
-      elem: atom.elem,
-      p: atom.p.map((value, k) =>
-        value - midpoint[k] + lengths[k] / 2
-      )
-    }));
-
-    if (
-      centered.some(atom =>
-        atom.p.some((value, k) =>
-          value < 1 || value > lengths[k] - 1
-        )
-      )
-    ) {
-      throw Error("HCCI does not fit inside this box with a 1 Å margin.");
-    }
-
-    // Keep the supplied water bond lengths and angle unchanged.
-    const oxygen = water.find(atom => atom.elem === "O").p;
-    const rigid = water.map(atom => ({
-      elem: atom.elem,
-      p: atom.p.map((value, k) => value - oxygen[k])
-    }));
-
-    const waters = [];
-    const oxygens = [];
-    let attempts = 0;
-
-    const distance2 = (p, q) =>
-      p.reduce((total, value, k) =>
-        total + (value - q[k]) ** 2, 0
-      );
-
-    while (
-      waters.length < count &&
-      attempts < Math.max(2000, count * 130)
-    ) {
-      attempts++;
-
-      const position = lengths.map(length =>
-        1.1 + Math.random() * (length - 2.2)
-      );
-
-      const rotate = wbRandomRotation();
-
-      const candidate = rigid.map(atom => ({
-        elem: atom.elem,
-        p: rotate(atom.p).map((value, k) =>
-          value + position[k]
-        )
-      }));
-
-      if (
-        candidate.some(atom =>
-          atom.p.some((value, k) =>
-            value < 0.4 || value > lengths[k] - 0.4
-          )
-        )
-      ) continue;
-
-      if (
-        candidate.some(atom =>
-          centered.some(coreAtom =>
-            distance2(atom.p, coreAtom.p) <
-              (atom.elem === "O" && coreAtom.elem !== "H"
-                ? 2.75 : 1.9) ** 2
-          )
-        )
-      ) continue;
-
-      if (
-        oxygens.some(p =>
-          distance2(p, position) < 2.65 ** 2
-        )
-      ) continue;
-
-      if (
-        waters.some(molecule =>
-          candidate.some(atom =>
-            molecule.some(other => {
-              const minimum =
-                atom.elem === "O" && other.elem === "O" ? 2.65 :
-                atom.elem === "H" && other.elem === "H" ? 1.45 :
-                1.80;
-
-              return distance2(atom.p, other.p) < minimum ** 2;
-            })
-          )
-        )
-      ) continue;
-
-      waters.push(candidate);
-      oxygens.push(position);
-    }
-
-    const allAtoms = centered.concat(waters.flat());
-
-    waterBoxXYZ = wbText(
-      allAtoms,
-      `HCCI + ${waters.length} H2O; box ${lengths.join(" x ")} Angstrom; HCCI centered`
-    );
-
-    wb("xyzInput").value = waterBoxXYZ;
-
-    if (!waterBoxViewer) {
-      waterBoxViewer = $3Dmol.createViewer("wbViewer", {
-        backgroundColor: "#f8fbff",
-        disableFog: true
-      });
-    }
-
-    waterBoxViewer.clear();
-
-    const core = waterBoxViewer.addModel(
-      wbText(centered, "HCCI"), "xyz"
-    );
-
-    core.setStyle({}, {
-      stick: {radius:0.16},
-      sphere: {scale:0.33}
-    });
-
-    if (waters.length) {
-      const shell = waterBoxViewer.addModel(
-        wbText(waters.flat(), "Water"), "xyz"
-      );
-
-      shell.setStyle({}, {
-        stick: {radius:0.075},
-        sphere: {scale:0.15}
-      });
-    }
-
-    wbEdges(lengths);
-    waterBoxViewer.zoomTo();
-    waterBoxViewer.resize();
-    waterBoxViewer.render();
-
-    wb("wbDownload").disabled = false;
-
-
-  } catch (error) {
-    status.textContent = error.message;
-  }
-}
-
-wb("wbOpen").onclick = () => {
-  switchViewerMode("molecule");
-
-  if (waterBoxXYZ) wb("xyzInput").value = waterBoxXYZ;
-
-  wb("wbOpen").classList.add("active");
-  wb("modeMoleculeBtn").classList.remove("active");
-
-  document.querySelector("main.container")
-    .classList.add("waterbox-active");
-
-  wb("viewer").classList.add("hidden");
-  wb("orbitalViewer").classList.add("hidden");
-  wb("wbViewer").classList.remove("hidden");
-  wb("waterBoxWorkspace").classList.remove("hidden");
-  wb("moleculeControls").classList.add("hidden");
-
-  wb("orientationControls").style.display = "none";
-  wb("tabsCard").classList.add("hidden");
-  wb("codeCard").classList.add("hidden");
-
-  if (!waterBoxXYZ) {
-    generateWaterBox();
-  } else if (waterBoxViewer) {
-    waterBoxViewer.resize();
-    waterBoxViewer.render();
-  }
-};
-
-wb("wbOpen").onkeydown = event => {
-  if (event.key === "Enter" || event.key === " ") {
-    event.preventDefault();
-    wb("wbOpen").click();
-  }
-};
-
-wb("wbGenerate").onclick = generateWaterBox;
-
-for (const [inputId, textareaId] of [
-  ["wbSoluteFile", "wbSolute"],
-  ["wbWaterFile", "wbWater"]
-]) {
-  wb(inputId).onchange = async event => {
-    const file = event.target.files[0];
-    if (file) wb(textareaId).value = await file.text();
-    event.target.value = "";
-  };
-}
-
-function wbPDBFromXYZ(xyz) {
-  const lines = xyz.trim().split(/\r?\n/);
-  const match = (lines[1] || "").match(
-    /box\s+([\d.]+)\s*x\s*([\d.]+)\s*x\s*([\d.]+)\s+Angstrom/i
-  );
-
-  if (!match) {
-    throw Error("XYZ comment does not contain box lengths.");
-  }
-
-  const box = match.slice(1).map(Number);
-  const atoms = wbParseXYZ(xyz, "Water box");
-
-  if (atoms.length < 4 || (atoms.length - 4) % 3 !== 0) {
-    throw Error("Expected HCCI followed by complete water molecules.");
-  }
-
-  const output = [
-    "CRYST1"
-      + box.map(v => v.toFixed(3).padStart(9)).join("")
-      + [90, 90, 90].map(v => v.toFixed(2).padStart(7)).join("")
-      + " P 1           1",
-    "REMARK   1 HCCI WATER BOX GENERATED BY BeeMol"
-  ];
-
-  for (let i = 0; i < atoms.length; i++) {
-    const atom = atoms[i];
-    const atomName = i < 4
-      ? ["H1", "C1", "C2", "I1"][i]
-      : ["O", "H1", "H2"][(i - 4) % 3];
-    const residue = i < 4 ? "HCI" : "HOH";
-    const residueNumber = i < 4
-      ? 1
-      : Math.floor((i - 4) / 3) + 2;
-
-    output.push(
-      "HETATM"
-      + String(i + 1).padStart(5)
-      + " "
-      + atomName.padEnd(4)
-      + " "
-      + residue
-      + " A"
-      + String(residueNumber).padStart(4)
-      + "    "
-      + atom.p.map(v => v.toFixed(3).padStart(8)).join("")
-      + "  1.00  0.00          "
-      + atom.elem.padStart(2)
-    );
-  }
-
-  const conect = (atom, ...neighbors) =>
-    "CONECT"
-    + [atom, ...neighbors]
-        .map(number => String(number).padStart(5))
-        .join("");
-
-  output.push(
-    conect(1, 2),
-    conect(2, 3, 3, 3),
-    conect(3, 4)
-  );
-
-  for (let i = 5; i <= atoms.length; i += 3) {
-    output.push(conect(i, i + 1, i + 2));
-  }
-
-  output.push("END");
-  return output.join("\n") + "\n";
-}
-
-wb("wbDownloadPDB").onclick = () => {
-  if (!waterBoxXYZ) return;
-
-  try {
-    const pdb = wbPDBFromXYZ(waterBoxXYZ);
-    const url = URL.createObjectURL(
-      new Blob([pdb], {type: "chemical/x-pdb"})
-    );
-
-    const link = document.createElement("a");
-    link.href = url;
-    link.download = "HCCI_water_box.pdb";
-    link.click();
-
-    setTimeout(() => URL.revokeObjectURL(url), 1000);
-  } catch (error) {
-    wb("wbStatus").textContent = error.message;
-  }
-};
-
-wb("wbDownload").onclick = () => {
-  if (!waterBoxXYZ) return;
-
-  const url = URL.createObjectURL(
-    new Blob([waterBoxXYZ], {type:"chemical/x-xyz"})
-  );
-
-  const link = document.createElement("a");
-  link.href = url;
-  link.download = "HCCI_water_box.xyz";
-  link.click();
-
-  setTimeout(() => URL.revokeObjectURL(url), 1000);
-};
-
+})();
 
 </script>
 
-
-
 </body>
-
-
 
 </html>
