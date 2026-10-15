@@ -324,19 +324,29 @@ for(const [sign,color] of [[1,options.positive||'#ffbf00'],[-1,options.negative|
 
 // Fit only visible orbitals and atoms, not the full padded CUBE grid.
 
-const bounds=new THREE.Box3().setFromObject(group);
+// Keep camera framing fixed when switching orbitals
+if (!window.beeMolViewInitialized || !options.preserveView) {
 
-if(!bounds.isEmpty()){
+    const bounds = new THREE.Box3().setFromObject(group);
 
- const size=bounds.getSize(new THREE.Vector3());
+    if (!bounds.isEmpty()) {
+        const size = bounds.getSize(new THREE.Vector3());
+        baseExtent = Math.max(2.5, size.x, size.y, size.z);
+    } else {
+        baseExtent = 8;
+    }
 
- baseExtent=Math.max(2.5,size.x,size.y,size.z);
+    window.beeMolViewInitialized = true;
+}
 
-}else baseExtent=8;
+if (!options.preserveView) {
+    rotation = {x:0,y:0};
+    group.quaternion.identity();
+    zoom = 1;
+}
 
-if(!options.preserveView){rotation={x:0,y:0};group.quaternion.identity();zoom=1}
-
-resize();return level}
+resize();
+return level}
 
 // Orient the active Three.js orbital scene without using the 3Dmol.js camera.
 

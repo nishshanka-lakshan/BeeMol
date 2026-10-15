@@ -583,3 +583,31 @@
 /* Three.js canvas fills the actual orbital viewport */
 
 #orbitalViewer > canvas { width:100% !important; height:100% !important; display:block; }
+
+#analysisWorkspace { display:grid;grid-template-columns:minmax(240px,285px) minmax(420px,1fr) minmax(290px,335px);gap:12px;padding:12px;align-items:start;min-height:calc(100vh - 70px); }
+#analysisWorkspace.hidden { display:none; }
+#analysisWorkspace .card { margin:0;min-width:0; }
+.analysis-pad { padding:16px; }
+
+#analysisPlot {
+  padding: 12px;
+  background: white;
+  margin: 12px;
+  border-radius: 8px;
+  min-height: 0;
+  overflow: auto;
+}
+
+#analysisPlot svg {
+  display: block;
+  width: auto;
+  height: auto;
+  max-width: none;
+  max-height: none;
+}
+
+.analysis-actions { display:flex;flex-wrap:wrap;gap:8px;margin-top:12px; }
+.analysis-series { border-bottom:1px solid var(--border);padding:12px 0; }
+.analysis-series input:not([type=checkbox]) { width:100%; }
+@media(max-width:1050px){#analysisWorkspace{grid-template-columns:minmax(180px,240px) minmax(300px,1fr)}#analysisWorkspace>aside:last-child{grid-column:1/-1}}
+@media(max-width:660px){#analysisWorkspace{grid-template-columns:1fr}#analysisWorkspace>aside:last-child{grid-column:auto}}

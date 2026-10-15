@@ -793,6 +793,9 @@ function arrangeOrbitalWorkspace(isMolecule){
 }
 
 function switchViewerMode(mode) {
+  document.getElementById("analysisWorkspace")?.classList.add("hidden");
+  document.getElementById("analysisOpen")?.classList.remove("active");
+  document.querySelector("main.container")?.classList.remove("analysis-active");
 
   const isMolecule = mode === "molecule";
 

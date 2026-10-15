@@ -78,6 +78,28 @@
 
   </div>
 
+
+  <div id="analysisWorkspace" class="hidden" aria-label="Analysis workspace">
+  <aside class="card"><div class="card-header"><h2>Datasets</h2></div><div class="analysis-pad"><label>Upload CSV files<input id="analysisFiles" type="file" accept=".csv,.tsv,.txt" multiple></label><p class="mini-note">First column: time. Remaining columns: real numeric series. Include a header row. Multiple files can be overlaid.</p><div id="analysisDatasets"></div><button id="analysisClear" type="button">Clear datasets</button></div></aside>
+  <section class="card"><div class="card-header"><h2>Autocorrelation</h2></div><div class="mode-tabs"><button data-analysis-mode="molecule" type="button">Molecule</button><button data-analysis-mode="orbitals" type="button">Orbitals</button><button id="analysisWater" type="button">Water box</button><button class="active" type="button">Analysis</button></div><div id="analysisPlot"></div><p id="analysisResult" role="status" aria-live="polite" class="analysis-pad">Upload CSV files to begin.</p></section>
+  <aside class="card"><div class="card-header"><h2>Plot settings</h2></div><div class="analysis-pad">
+  <label>Title<input id="plotTitle" value="Autocorrelation function"></label>
+
+  <!-- Fixed layout: overlay all selected curves in one figure -->
+  <input id="plotLayout" type="hidden" value="overlay">
+  <input id="plotColumns" type="hidden" value="1">
+  <input id="plotExportFigure" type="hidden" value="0">
+
+  <label>
+    <input id="plotTwoTone" type="checkbox" checked>
+    Two-tone lines
+  </label>  
+
+  <label>Y-axis label<input id="plotYLabel" value="|A(t)|"></label>
+  <label>Y values<select id="plotTransform"><option value="raw">As provided</option><option value="abs">Absolute value</option><option value="square">Square of real value</option></select></label>
+  <label>X minimum<input id="plotXMin" type="number" placeholder="Auto"></label><label>X maximum<input id="plotXMax" type="number" placeholder="Auto"></label><label>Y minimum<input id="plotYMin" type="number" placeholder="Auto"></label><label>Y maximum<input id="plotYMax" type="number" placeholder="Auto"></label>
+  <label>Line width<input id="plotWidth" type="number" min="0.5" max="8" step="0.5" value="3"></label><label><input id="plotLegend" type="checkbox" checked> Show legend</label><div class="analysis-actions"><button id="analysisSVG" type="button">Download SVG</button><button id="analysisPNG" type="button">Download PNG</button></div></div></aside></div>
+
   <main class="container">
 
     <aside id="moleculeSceneHost" aria-label="Molecule coordinates"></aside>
@@ -101,6 +123,7 @@
           <div id="modeOrbitalsBtn" class="mode-tab">Orbitals</div>
 
           <div id="wbOpen" class="mode-tab" role="button" tabindex="0">Water box</div>
+          <button id="analysisOpen" class="mode-tab" type="button">Analysis</button>
 
         </div>
 
@@ -930,6 +953,11 @@ H -0.757200  0.000000  0.586500</textarea>
 <script src="orbital-visualization/orbital-renderer.js"></script>
 
 <script src="assets/js/waterbox.js"></script>
+
+
+<!-- Individual analysis tools -->
+<script src="assets/js/analysis-tools/autocorrelation.js"></script>
+<script src="assets/js/analysis.js"></script>
 
 <script>
 
