@@ -11,8 +11,9 @@ function init(){
  <form id="aiComposer"><div class="ai-context"><label><input id="aiData" type="checkbox" checked> Visible autocorrelation datasets</label><label><input id="aiMetadata" type="checkbox"> Geometry and orbital metadata</label><span id="aiContextCount"></span></div><label class="ai-sr" for="aiQuestion">Message BeeMol AI</label><textarea id="aiQuestion" rows="3" placeholder="Ask about your molecular data or calculation results…"></textarea><div class="ai-actions"><small>Selected data is sent to the backend and its configured model. Raw plot transforms are not applied.</small><button id="aiCancel" type="button" disabled>Stop</button><button id="aiExport" type="button">Download chat</button><button id="aiSend" type="submit">Send ↑</button></div><p id="aiError" role="status"></p></form></div>`;
  document.body.append(workspace);
  const localPage=['localhost','127.0.0.1'].includes(window.location.hostname);
- $('aiEndpoint').value=window.BEEMOL_API_ENDPOINT || (localPage?'http://127.0.0.1:8787/api/analyze':'');
- if(!localPage&&!window.BEEMOL_API_ENDPOINT)$('aiState').textContent='AI backend has not been configured by the site owner';
+ // Keep the public site usable even if the separate config script is cached or unavailable.
+ const defaultEndpoint=localPage?'http://127.0.0.1:8787/api/analyze':'https://beemol-ai.onrender.com/api/analyze';
+ $('aiEndpoint').value=window.BEEMOL_API_ENDPOINT || defaultEndpoint;
  let chats=[],current=null,busy=false,controller=null;
  function newChat(){if(busy)return;current={id:Date.now()+'-'+Math.random(),title:'New chat',messages:[]};chats.unshift(current);render();}
  function render(){
@@ -47,7 +48,7 @@ function init(){
  e.preventDefault();if(busy)return;const question=$('aiQuestion').value.trim();if(!question)return;
  let timer;const chat=current;
  try{
-  if(!$('aiEndpoint').value.trim())throw Error('The site owner must configure the hosted AI backend. Visualization tools work without it.');
+  if(!$('aiEndpoint').value.trim())$('aiEndpoint').value=window.BEEMOL_API_ENDPOINT || defaultEndpoint;
   const datasets=$('aiData').checked?(window.BeeMolAnalysis?.getDatasets?.().filter(d=>d.visible)||[]):[];const context={};
   if($('aiMetadata').checked){if(typeof getXYZAtoms==='function'&&$('xyzInput')?.value.trim())context.geometry={unit:'angstrom',atoms:getXYZAtoms()};if(typeof importedMolden!=='undefined'&&importedMolden){context.orbitals=importedMolden.orbitals.map((o,i)=>({number:i+1,energy:o.energy,occup:o.occup,spin:o.spin}));context.caution='Molden energies may be placeholders. Verify units and meaning from calculation provenance. No orbital coefficients supplied.';}}
   const history=chat.messages.filter(m=>!m.failed).map(m=>({role:m.role,content:m.content})).slice(-20);
