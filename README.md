@@ -1,6 +1,25 @@
 # BeeMol Three.js orbital edition
 
-## Running
+## Public website (visitors do not need Python)
+
+The interface runs on GitHub Pages; the AI backend runs separately on Render.
+
+1. Push this repository to GitHub. In **Settings → Pages**, select **GitHub Actions** as the source. The existing Pages workflow publishes only the interface files.
+2. In [Render](https://dashboard.render.com/), create a **Blueprint** connected to this repository. It reads `render.yaml`.
+3. When prompted, set `BEEMOL_MODEL` to a model ID available in your Google AI Studio project and `BEEMOL_MODEL_API_KEY` to a new private Gemini key. Do not commit the key.
+4. Once deployed, check `https://YOUR-SERVICE.onrender.com/health`; it should return `{"status":"ok"}`.
+5. Edit `assets/js/beemol-config.js` and set `window.BEEMOL_API_ENDPOINT` to `https://YOUR-SERVICE.onrender.com/api/analyze`. Commit and push that public URL.
+6. Share `https://nishshanka-lakshan.github.io/pyBuilder/` after the Pages workflow succeeds.
+
+For forks or custom domains, update `BEEMOL_ALLOWED_ORIGIN` in Render to the website's exact origin (scheme and hostname, without a path or trailing slash).
+
+Visitors' selected data is sent to your backend and Gemini. All AI usage consumes your Gemini project's quota. This basic public backend has no user authentication or rate limiting; CORS is not an access control mechanism for non-browser callers. Set provider spending/quota limits before sharing widely. Render's free service can take time to wake up after inactivity.
+
+Render configuration reference: https://render.com/docs/blueprint-spec
+
+### Local development
+
+On macOS, double-click `Start BeeMol.command` to start the AI backend. It asks privately for your Gemini key if it is not already set; the key is not saved. Keep the terminal open while using BeeMol. The default model is `gemini-3.8-flash`, so no model export is needed. Set `BEEMOL_MODEL` to override it. The interface can still be opened with Live Server.
 
 Extract the ZIP, then serve the `BeeMol_ThreeJS` directory with:
 

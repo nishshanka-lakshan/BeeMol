@@ -1,0 +1,19 @@
+services:
+  - type: web
+    name: beemol-ai
+    runtime: python
+    plan: free
+    buildCommand: python -m pip install --upgrade certifi
+    startCommand: python ai/backend/server.py
+    healthCheckPath: /health
+    envVars:
+      - key: BEEMOL_HOST
+        value: 0.0.0.0
+      - key: BEEMOL_ALLOWED_ORIGIN
+        value: https://nishshanka-lakshan.github.io
+      - key: BEEMOL_MODEL_BASE_URL
+        value: https://generativelanguage.googleapis.com/v1beta/openai
+      - key: BEEMOL_MODEL
+        sync: false
+      - key: BEEMOL_MODEL_API_KEY
+        sync: false
