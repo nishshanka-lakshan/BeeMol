@@ -4,6 +4,7 @@ from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from urllib.request import Request, urlopen
 from urllib.error import HTTPError, URLError
 import ssl
+import time
 
 AU_TO_FS = 0.024188843265857
 DEFAULT_MODEL = 'gemini-3.8-flash'
@@ -69,8 +70,21 @@ def explain(question, evidence, context, history):
     headers = {'Content-Type':'application/json'}
     if key: headers['Authorization'] = 'Bearer '+key
     req = Request(base+'/chat/completions', data=json.dumps(payload).encode(), headers=headers)
-    with urlopen(req, timeout=90) as response:
-        result = json.load(response)
+    deadline = time.monotonic() + 90
+    for attempt in range(3):
+        remaining = deadline - time.monotonic()
+        if remaining <= 0:
+            raise TimeoutError('Model request time budget exhausted')
+        try:
+            with urlopen(req, timeout=remaining) as response:
+                result = json.load(response)
+            break
+        except HTTPError as error:
+            delay = 2 ** attempt
+            if error.code != 503 or attempt == 2 or deadline - time.monotonic() <= delay:
+                raise
+            error.close()
+            time.sleep(delay)
     answer = result['choices'][0]['message']['content']
     if not isinstance(answer,str): raise ValueError('Model returned no text.')
     return answer
@@ -139,6 +153,7 @@ class Handler(BaseHTTPRequestHandler):
                 403: 'Check the API key permissions and whether this model is available to your project.',
                 404: 'Check BEEMOL_MODEL and BEEMOL_MODEL_BASE_URL; the model or endpoint was not found.',
                 429: 'The provider rate limit or quota was reached. Check your project quota and billing, then retry.',
+                503: 'The model is temporarily unavailable after automatic retries. Try again later, or select another available model in Render\'s BEEMOL_MODEL setting.',
             }
             message = 'Model provider returned HTTP %s. %s' % (
                 error.code, hints.get(error.code, 'The provider could not complete the request. Retry later.'))
