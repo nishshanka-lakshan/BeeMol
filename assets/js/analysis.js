@@ -693,18 +693,27 @@
 
 
 
-  window.BeeMolAnalysis = { parseCSV };
+  window.BeeMolAnalysis = {
+    parseCSV,
 
-
+    getDatasets() {
+      return series.map(dataset => ({
+        file: dataset.file,
+        label: dataset.label,
+        visible: dataset.visible,
+        timeUnit: 'atomic_unit',
+        points: dataset.points.map(([time, value]) => [
+          time,
+          value
+        ])
+      }));
+    }
+  };
 
   if (document.readyState === 'loading') {
-
     document.addEventListener('DOMContentLoaded', initialize);
-
   } else {
-
     initialize();
-
   }
 
 })();

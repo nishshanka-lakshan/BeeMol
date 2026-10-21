@@ -173,13 +173,42 @@
 
 
 
-    // Two controls: choose a text element, then adjust its font size.
+    // Legend placement settings.
+    if (!$('plotLegendPosition')) {
+      const panel = document.createElement('div');
+      panel.id = 'plotLegendPositionPanel';
+      panel.innerHTML = `
+        <label>Legend position
+          <select id="plotLegendPosition">
+            <option value="top">Top center</option>
+            <option value="top-left">Top left</option>
+            <option value="top-right">Top right</option>
+            <option value="inside-top-left">Inside top left</option>
+            <option value="inside-top-right">Inside top right</option>
+            <option value="bottom">Bottom center</option>
+          </select>
+        </label>
+        <label>Legend horizontal offset (px)
+          <input id="plotLegendX" type="number" step="5" value="0">
+        </label>
+        <label>Legend vertical offset (px)
+          <input id="plotLegendY" type="number" step="5" value="0">
+        </label>
+      `;
+      widthLabel.after(panel);
+      panel.querySelectorAll('input, select').forEach(control => {
+        control.addEventListener('input', draw);
+      });
+    }
+
+    // Font size and bold controls for individual text elements.
     if (!$('plotFontTarget')) {
       const panel = document.createElement('div');
       panel.id = 'plotFontPanel';
       panel.innerHTML = `
         <label for="plotFontTarget">Select font
           <select id="plotFontTarget">
+            <option value="plotTitleFontSize">Plot title</option>
             <option value="plotLegendFontSize">Legend</option>
             <option value="plotXLabelFontSize">X-axis label</option>
             <option value="plotYLabelFontSize">Y-axis label</option>
@@ -195,8 +224,12 @@
             <button type="button" id="plotFontPlus" aria-label="Increase selected font size">+</button>
           </div>
         </div>
+        <label class="plot-font-bold-label" for="plotFontBold">
+          <input id="plotFontBold" type="checkbox"> Bold selected text
+        </label>
       `;
       for (const [id, value] of [
+        ['plotTitleFontSize', 23],
         ['plotLegendFontSize', 20],
         ['plotXLabelFontSize', 22],
         ['plotYLabelFontSize', 22],
@@ -209,13 +242,30 @@
         input.value = String(value);
         panel.append(input);
       }
+      // Preserve the existing bold legend as the default.
+      for (const id of [
+        'plotTitleFontSize', 'plotLegendFontSize',
+        'plotXLabelFontSize', 'plotYLabelFontSize',
+        'plotXTickFontSize', 'plotYTickFontSize'
+      ]) {
+        const bold = document.createElement('input');
+        bold.type = 'hidden';
+        bold.id = id.replace('FontSize', 'FontBold');
+        bold.value = id === 'plotLegendFontSize' ? 'true' : 'false';
+        panel.append(bold);
+      }
       widthLabel.after(panel);
 
       const target = $('plotFontTarget');
       const value = $('plotFontSizeValue');
+      const boldCheckbox = $('plotFontBold');
       const selectedInput = () => $(target.value);
       const clamp = n => Math.max(8, Math.min(48, n));
-      const sync = () => { value.value = selectedInput().value; };
+      const selectedBoldInput = () => $(target.value.replace('FontSize', 'FontBold'));
+      const sync = () => {
+        value.value = selectedInput().value;
+        boldCheckbox.checked = selectedBoldInput().value === 'true';
+      };
       const update = n => {
         if (!Number.isFinite(n)) return;
         const v = clamp(n);
@@ -224,6 +274,10 @@
         draw();
       };
       target.onchange = sync;
+      boldCheckbox.onchange = () => {
+        selectedBoldInput().value = String(boldCheckbox.checked);
+        draw();
+      };
       value.oninput = () => {
         if (value.value !== '') update(Number(value.value));
       };
@@ -258,6 +312,18 @@
         min-width: 0;
       }
       #analysisWorkspace > aside:last-child #plotFontPanel {
+        display: contents;
+      }
+      #analysisWorkspace > aside:last-child .plot-font-bold-label {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+      }
+      #analysisWorkspace > aside:last-child .plot-font-bold-label input {
+        width: auto;
+        min-width: auto;
+      }
+      #analysisWorkspace > aside:last-child #plotLegendPositionPanel {
         display: contents;
       }
       #analysisWorkspace > aside:last-child .plot-font-size-row {
@@ -525,11 +591,15 @@
       const PW = setting('plotBoxWidth', 1200, 300, 2000);
 
       const PH = setting('plotBoxHeight', 300, 150, 1200);
-    const legendFontSize = setting('plotLegendFontSize', 20, 8, 48);
+      const titleFontSize = setting('plotTitleFontSize', 22, 8, 48);
+      const legendFontSize = setting('plotLegendFontSize', 20, 8, 48);
       const xLabelFontSize = setting('plotXLabelFontSize', 22, 8, 48);
       const yLabelFontSize = setting('plotYLabelFontSize', 22, 8, 48);
       const xTickFontSize = setting('plotXTickFontSize', 18, 8, 48);
       const yTickFontSize = setting('plotYTickFontSize', 18, 8, 48);
+
+      const fontWeight = name =>
+        $(name)?.value === 'true' ? 'bold' : 'normal';
 
       const border = setting('plotBorderWidth', 2, 0.2, 4);
 
@@ -567,7 +637,7 @@
 
 
 
-      measure.font = `${legendFontSize}px Arial`;
+      measure.font = `${fontWeight('plotLegendFontBold')} ${legendFontSize}px Arial`;
 
 
 
@@ -641,25 +711,27 @@
 
 
 
-      // Title, centered legend, then plot.
-
+      // Reserve room for legends outside the axes.
+      const legendPosition = $('plotLegendPosition')?.value || 'top';
+      const legendOffsetX = Number($('plotLegendX')?.value || 0);
+      const legendOffsetY = Number($('plotLegendY')?.value || 0);
+      if (!Number.isFinite(legendOffsetX) || !Number.isFinite(legendOffsetY)) {
+        throw Error('Legend offsets must be numbers.');
+      }
       const legendRowHeight = Math.max(28, legendFontSize + 10);
-    const legendStartY = Math.max(65, legendFontSize + 45);
-
-
-
-      const T = legendRows.length
-
-        ? legendStartY + 25 + (legendRows.length - 1) * legendRowHeight
-
+      const legendStartY = Math.max(65, legendFontSize + 45);
+      const legendHeight = legendRows.length
+        ? legendFontSize + (legendRows.length - 1) * legendRowHeight
+        : 0;
+      const isTopLegend = ['top', 'top-left', 'top-right'].includes(legendPosition);
+      const T = isTopLegend && legendRows.length
+        ? legendStartY + legendHeight + 10
         : 65;
-
-
-
       const xLabelY = T + PH + 65;
-
-      const H = xLabelY + 30;
-
+      const bottomLegendHeight = legendPosition === 'bottom' && legendRows.length
+        ? legendHeight + 40
+        : 0;
+      const H = xLabelY + 30 + bottomLegendHeight;
 
 
       const X = value =>
@@ -724,61 +796,14 @@
 
             <text x="${L + PW / 2}" y="32"
 
-                  text-anchor="middle" font-size="23">
+                  text-anchor="middle" font-size="${titleFontSize}"
+                   font-weight="${fontWeight('plotTitleFontBold')}">
 
               ${esc($('plotTitle').value)}
 
             </text>
 
       `;
-
-
-
-      legendRows.forEach((row, index) => {
-
-        let x = L + (PW - row.width) / 2;
-
-        const y = legendStartY + index * legendRowHeight;
-
-
-
-        for (const entry of row.entries) {
-
-          const dataset = entry.dataset;
-
-
-
-          svg += `
-
-            <path d="M${x} ${y - 5}h32"
-
-                  stroke="${dataset.color}"
-
-                  stroke-width="${legendLineWidth}"
-
-                  stroke-linecap="round"
-
-                  stroke-dasharray="${dataset.dash}"
-
-                  fill="none"/>
-
-
-
-            <text x="${x + 42}" y="${y}" font-size="${legendFontSize}">
-
-              ${esc(dataset.label)}
-
-            </text>
-
-          `;
-
-
-
-          x += entry.width + 28;
-
-        }
-
-      });
 
 
 
@@ -806,7 +831,8 @@
 
           <text x="${x}" y="${T + PH + 28}"
 
-                text-anchor="middle" font-size="${xTickFontSize}">${tick(value)}</text>
+                text-anchor="middle" font-size="${xTickFontSize}"
+                 font-weight="${fontWeight('plotXTickFontBold')}">${tick(value)}</text>
 
         `;
 
@@ -838,7 +864,8 @@
 
           <text x="${L - 14}" y="${y + 6}"
 
-                text-anchor="end" font-size="${yTickFontSize}">${tick(value)}</text>
+                text-anchor="end" font-size="${yTickFontSize}"
+                 font-weight="${fontWeight('plotYTickFontBold')}">${tick(value)}</text>
 
         `;
 
@@ -862,7 +889,8 @@
 
         <text x="${L + PW / 2}" y="${xLabelY}"
 
-              text-anchor="middle" font-size="${xLabelFontSize}">
+              text-anchor="middle" font-size="${xLabelFontSize}"
+               font-weight="${fontWeight('plotXLabelFontBold')}">
 
           ${esc($('plotXLabel').value)}
 
@@ -872,7 +900,8 @@
 
         <text transform="translate(25 ${T + PH / 2}) rotate(-90)"
 
-              text-anchor="middle" font-size="${yLabelFontSize}">
+              text-anchor="middle" font-size="${yLabelFontSize}"
+               font-weight="${fontWeight('plotYLabelFontBold')}">
 
           ${esc($('plotYLabel').value)}
 
@@ -948,7 +977,83 @@
 
 
 
-      svg += '</g></g></svg>';
+      svg += '</g>'; // End clipped plot curves.
+
+      legendRows.forEach((row, index) => {
+
+        let x;
+        let y;
+        switch (legendPosition) {
+          case 'top-left':
+            x = L;
+            y = legendStartY + index * legendRowHeight;
+            break;
+          case 'top-right':
+            x = L + PW - row.width;
+            y = legendStartY + index * legendRowHeight;
+            break;
+          case 'inside-top-left':
+            x = L + 15;
+            y = T + 30 + index * legendRowHeight;
+            break;
+          case 'inside-top-right':
+            x = L + PW - row.width - 15;
+            y = T + 30 + index * legendRowHeight;
+            break;
+          case 'bottom':
+            x = L + (PW - row.width) / 2;
+            y = xLabelY + 45 + index * legendRowHeight;
+            break;
+          default:
+            x = L + (PW - row.width) / 2;
+            y = legendStartY + index * legendRowHeight;
+        }
+        x += legendOffsetX;
+        y += legendOffsetY;
+
+
+
+        for (const entry of row.entries) {
+
+          const dataset = entry.dataset;
+
+
+
+          svg += `
+
+            <path d="M${x} ${y - 5}h32"
+
+                  stroke="${dataset.color}"
+
+                  stroke-width="${legendLineWidth}"
+
+                  stroke-linecap="round"
+
+                  stroke-dasharray="${dataset.dash}"
+
+                  fill="none"/>
+
+
+
+            <text x="${x + 42}" y="${y}" font-size="${legendFontSize}" font-weight="${fontWeight('plotLegendFontBold')}">
+
+              ${esc(dataset.label)}
+
+            </text>
+
+          `;
+
+
+
+          x += entry.width + 28;
+
+        }
+
+      });
+
+
+
+      svg += '</g></svg>';
 
 
 
