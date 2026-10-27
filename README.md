@@ -4,7 +4,7 @@
 
 BeeMol brings molecular structure editing, molecular orbital visualization, PySCF input preparation, water-box construction, and autocorrelation analysis into a single browser interface. It is designed to help researchers inspect structures and electronic-structure data, prepare calculations, and create figures without switching between several separate tools.
 
-[Open BeeMol](https://nishshanka-lakshan.github.io/pyBuilder/) · [Report an issue](https://github.com/nishshanka-lakshan/pyBuilder/issues)
+[Open BeeMol](https://nishshanka-lakshan.github.io/BeeMol/) · [Report an issue](https://github.com/nishshanka-lakshan/BeeMol/issues)
 
 ## Features
 
@@ -23,7 +23,7 @@ BeeMol generates calculation inputs. Running electronic-structure calculations r
 
 ### Use the website
 
-Open [BeeMol](https://nishshanka-lakshan.github.io/pyBuilder/) in a modern browser with WebGL support. Visitors do not need to install Python to use the browser interface.
+Open [BeeMol](https://nishshanka-lakshan.github.io/BeeMol/) in a modern browser with WebGL support. Visitors do not need to install Python to use the browser interface.
 
 An internet connection is required for external visualization dependencies. The AI assistant additionally requires a running, configured backend.
 
@@ -32,8 +32,8 @@ An internet connection is required for external visualization dependencies. The 
 Install Python 3, then clone and serve the repository:
 
 ```bash
-git clone https://github.com/nishshanka-lakshan/pyBuilder.git
-cd pyBuilder
+git clone https://github.com/nishshanka-lakshan/BeeMol.git
+cd BeeMol
 python3 -m http.server 8000
 ```
 
@@ -172,7 +172,7 @@ The included backend has no user authentication or rate limiting. CORS restricts
 ## Project structure
 
 ```text
-pyBuilder/
+BeeMol/
 ├── index.html                         # Application interface
 ├── assets/
 │   ├── css/                           # Interface styles
@@ -220,5 +220,5 @@ Orbital surfaces are extracted with marching tetrahedra and rendered using Three
 
 ## Contributing
 
-Bug reports and focused improvements are welcome through [GitHub Issues](https://github.com/nishshanka-lakshan/pyBuilder/issues) and pull requests. Include the relevant workspace, reproduction steps, browser version, and a small non-sensitive example file when possible. For visualization issues, include the grid and isovalue settings and a reference image if available.
+Bug reports and focused improvements are welcome through [GitHub Issues](https://github.com/nishshanka-lakshan/BeeMol/issues) and pull requests. Include the relevant workspace, reproduction steps, browser version, and a small non-sensitive example file when possible. For visualization issues, include the grid and isovalue settings and a reference image if available.
 
