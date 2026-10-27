@@ -2,17 +2,34 @@
 
 const BOHR_TO_ANGSTROM = 0.529177210903;
 
-// Follow VibeMol's Molden grid convention: use primitive coefficients and
-
-// Cartesian/spherical angular polynomials directly, without an extra AO norm.
+// Normalized real solid harmonics in Molden order: 0, +1, -1, +2, -2, ... .
+// The shared radial factor uses (2*l-1)!!; these factors normalize each component.
 
 const ANGULAR_CONSTANTS = {
 
-  s:1, p:1, d0:1, d1:1, d2:1,
+  s:1, p:1, d0:0.5, d1:Math.sqrt(3), d2:Math.sqrt(3)/2,
 
-  f0:1, f1:1, f2:1, f2m:1, f3:1
+  f0:0.5, f1:Math.sqrt(6)/4, f2:Math.sqrt(15)/2,
+  f2m:Math.sqrt(15), f3:Math.sqrt(10)/4
 
 };
+
+function normalizeMoldenShell(l, primitives){
+  // Molden contraction coefficients multiply normalized primitives. Normalize
+  // the contraction as well, retaining the signs of its coefficients.
+  let overlap=0;
+  for(const p of primitives)for(const q of primitives){
+    overlap+=p.c*q.c*Math.pow(2*Math.sqrt(p.a*q.a)/(p.a+q.a),l+1.5);
+  }
+  if(!(overlap>0) || !Number.isFinite(overlap)){
+    throw new Error("Invalid Gaussian contraction normalization");
+  }
+  let oddFactorial=1;
+  for(let k=1;k<=l;k++)oddFactorial*=2*k-1;
+  const contractionNorm=1/Math.sqrt(overlap);
+  return primitives.map(p=>({a:p.a,c:p.c*contractionNorm*
+    Math.pow(2*p.a/Math.PI,0.75)*Math.pow(4*p.a,l/2)/Math.sqrt(oddFactorial)}));
+}
 
 function parseMoldenForGrid(text){
 
@@ -85,7 +102,7 @@ function parseMoldenForGrid(text){
 
     }
 
-    shells.push({atom:atoms[atomIndex],l,primitives,offset:0});
+    shells.push({atom:atoms[atomIndex],l,primitives:normalizeMoldenShell(l,primitives),offset:0});
 
     i++;
 
