@@ -58,6 +58,32 @@ function resize(){if(!renderer||!holder)return;let w=Math.max(1,holder.clientWid
 
 function draw(){if(renderer&&scene&&camera)renderer.render(scene,camera)}
 
+async function exportFigure(){
+ if(!renderer||!lastCube)throw Error('Load an orbital before downloading a figure.');
+ let output;
+ try{
+  output=new THREE.WebGLRenderer({antialias:true,alpha:false});
+  output.outputColorSpace=renderer.outputColorSpace;
+  output.setClearColor(bg);
+  const gl=output.getContext(),viewport=gl.getParameter(gl.MAX_VIEWPORT_DIMS);
+  const limit=Math.min(6000,gl.getParameter(gl.MAX_RENDERBUFFER_SIZE),viewport[0],viewport[1]);
+  const aspect=camera.aspect;
+  const width=Math.max(1,Math.round(aspect>=1?limit:limit*aspect));
+  const height=Math.max(1,Math.round(aspect>=1?limit/aspect:limit));
+  output.setPixelRatio(1);
+  output.setSize(width,height,false);
+  const exportCamera=camera.clone();
+  exportCamera.aspect=width/height;
+  exportCamera.updateProjectionMatrix();
+  output.render(scene,exportCamera);
+  const blob=await new Promise((resolve,reject)=>output.domElement.toBlob(
+   value=>value?resolve(value):reject(Error('Could not encode the figure as PNG.')),'image/png'));
+  return {blob,width,height};
+ }finally{
+  if(output){output.dispose();output.forceContextLoss()}
+ }
+}
+
 function fitCamera(){if(!camera)return;const fov=camera.fov*Math.PI/180;const aspect=Math.max(0.1,camera.aspect||1);const distance=Math.max(2,(baseExtent/2)/Math.tan(fov/2)/Math.min(1,aspect)*1.35/zoom);camera.position.set(0,0,distance);camera.lookAt(0,0,0);camera.near=Math.max(.001,distance/10000);camera.far=Math.max(100,distance+baseExtent*20);camera.updateProjectionMatrix();draw()}
 
 function clear(){if(!group)return;for(const child of [...group.children]){group.remove(child);child.geometry?.dispose();if(child.material){if(Array.isArray(child.material))child.material.forEach(m=>m.dispose());else child.material.dispose()}}}
@@ -422,6 +448,6 @@ function alignLongAxis(axis){
 
 }
 
-window.BeeMolThree={show,ready:promise,background(c){bg=c;if(renderer){renderer.setClearColor(c);draw()}},resize,fit(){zoom=1;fitCamera()},axisView:setAxisView,align:alignLongAxis,rotateView:turnAroundViewAxis,zoom(pct){zoom=Math.max(.1,pct/100);fitCamera()},rotate(axis,deg){if(axis==='x')rotation.x+=deg*Math.PI/180;else rotation.y+=deg*Math.PI/180;if(group){group.rotation.set(rotation.x,rotation.y,0);draw()}},redraw:draw, getCanvas(){return renderer?.domElement},get isReady(){return!!renderer}};
+window.BeeMolThree={show,exportFigure,ready:promise,background(c){bg=c;if(renderer){renderer.setClearColor(c);draw()}},resize,fit(){zoom=1;fitCamera()},axisView:setAxisView,align:alignLongAxis,rotateView:turnAroundViewAxis,zoom(pct){zoom=Math.max(.1,pct/100);fitCamera()},rotate(axis,deg){if(axis==='x')rotation.x+=deg*Math.PI/180;else rotation.y+=deg*Math.PI/180;if(group){group.rotation.set(rotation.x,rotation.y,0);draw()}},redraw:draw, getCanvas(){return renderer?.domElement},get isReady(){return!!renderer}};
 
 })();

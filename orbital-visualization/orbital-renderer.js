@@ -4,6 +4,18 @@ function colorMoleculeAtoms(){ /* Three.js molecule viewer uses CPK atom colors 
 function showOrbitalPropertiesTab(tab){const appearance=tab==='appearance';document.getElementById('orbitalControlsWrap').classList.toggle('hidden',!appearance);document.getElementById('orbitalAnimation').classList.toggle('hidden',appearance);for(const [id,on] of [['showOrbitalAppearance',appearance],['toggleOrbitalAnimation',!appearance]]){const el=document.getElementById(id);el.classList.toggle('active',on);el.setAttribute('aria-selected',String(on))}}
 function stopOrbitalAnimation(){animationRunning=false;animationToken++;document.getElementById('animationPlay').textContent='Play'}
 function downloadBlob(blob,name){const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download=name;a.click();setTimeout(()=>URL.revokeObjectURL(a.href),1000)}
+async function downloadOrbitalFigure(){
+ const button=document.getElementById('downloadOrbitalFigure');
+ if(recording){setOrbitalStatus('Wait for movie recording to finish before downloading a figure.',true);return}
+ stopOrbitalAnimation();
+ button.disabled=true;
+ try{
+  const {blob,width,height}=await window.BeeMolThree.exportFigure();
+  const name=(cubeData?.name||'orbital').replace(/\.(cube|cub)$/i,'');
+  downloadBlob(blob,`${name}_figure.png`);
+  setOrbitalStatus(`Figure downloaded as PNG (${width} × ${height} pixels).`);
+ }catch(e){setOrbitalStatus(e.message,true)}finally{button.disabled=false}
+}
 function orbitalOptions(){const s=getOrbitalSettings(),flip=document.getElementById('orbitalFlipPhase').checked;return{iso:s.cutoff,auto:document.getElementById('autoOrbitalIso').checked,positive:flip?s.negative:s.positive,negative:flip?s.positive:s.negative,opacity:1-s.translucency,gloss:Number(document.getElementById('orbitalGloss').value),showAtoms:document.getElementById('showOrbitalAtoms').checked,depth:Number(document.getElementById('orbitalDepth').value),preserveView:true}}
 async function renderCube(){if(!cubeData)return;await window.BeeMolThree.show(cubeData.text,orbitalOptions());window.BeeMolThree.background(orbitalBackground)}
 async function handleCubeFile(file,fromMolden=false,preserveView=false){if(!fromMolden){stopOrbitalAnimation();importedMolden=null;embeddedActive=false;switchViewerMode('orbitals')}if(!await initOrbitalIfNeeded())throw Error('Orbital viewer failed to start');const text=await file.text();await window.BeeMolThree.show(text,{...orbitalOptions(),preserveView});cubeData={text,name:file.name};window.BeeMolThree.background(orbitalBackground);if(!fromMolden)setOrbitalStatus(`${file.name} loaded`)}
@@ -17,7 +29,8 @@ function bindControls(){const $=id=>document.getElementById(id),on=(id,fn)=>{if(
  on('showOrbitalAppearance',()=>showOrbitalPropertiesTab('appearance'));on('toggleOrbitalAnimation',()=>showOrbitalPropertiesTab('animation'));on('animationPlay',playAnimation);on('animationRecord',recordMovie);$('animationFrame').onchange=async()=>{stopOrbitalAnimation();await displayFrame(Number($('animationFrame').value))};
  $('orbitalNumber').onchange=showOrbitalNumber;for(const [id,delta]of [['orbitalPrev',-1],['orbitalNext',1]])on(id,()=>{const n=Math.max(1,Math.min(importedMolden?.orbitals.length||cubeFiles.size||1,Number($('orbitalNumber').value)+delta));$('orbitalNumber').value=n;showOrbitalNumber()});
  for(const id of ['orbitalCutoff','autoOrbitalIso','orbitalNegativeColor','orbitalPositiveColor','orbitalFlipPhase','orbitalGloss','orbitalDepth','orbitalTranslucency','showOrbitalAtoms'])$(id).onchange=()=>{if(id==='orbitalCutoff')$('autoOrbitalIso').checked=false;renderCube().catch(e=>setOrbitalStatus(e.message,true))};for(const id of ['gridX','gridY','gridZ'])$(id).onchange=()=>{if(importedMolden)showOrbitalNumber()};
- on('downloadOrbitalCube',()=>{if(cubeData)downloadBlob(new Blob([cubeData.text],{type:'text/plain'}),cubeData.name||'orbital.cube')});on('orbitalBackgroundBtn',()=>{orbitalBackground=orbitalBackground==='#ffffff'?'#070d17':'#ffffff';window.BeeMolThree.background(orbitalBackground);$('orbitalBackgroundBtn').textContent=orbitalBackground==='#ffffff'?'Background: Light':'Background: Dark'});
+ on('downloadOrbitalFigure',downloadOrbitalFigure);
+ on('downloadOrbitalCube',()=>{if(cubeData)downloadBlob(new Blob([cubeData.text],{type:'text/plain'}),cubeData.name||'orbital.cube')});$('orbitalBgColorPicker').oninput=e=>{orbitalBackground=e.target.value;window.BeeMolThree.background(orbitalBackground)};
  on('applyOrbitalZoom',()=>window.BeeMolThree.zoom(Number($('orbitalZoom').value)));on('updateMol',loadMolecule);on('fitBtn',()=>{viewer.zoomTo();viewer.render()});on('styleBtn',()=>{ballStick=!ballStick;loadMolecule()});on('spinBtn',()=>{spinning=!spinning;$('spinBtn').textContent=spinning?'Stop spin':'Spin';const tick=()=>{if(!spinning)return;viewer.rotate(.5,'y');requestAnimationFrame(tick)};if(spinning)tick()});$('bgColorPicker').oninput=e=>setViewerBackground(e.target.value);
  on('applyBondLengthBtn',applySelectedBondLength);on('clearBondSelectionBtn',clearBondSelection);on('copyCode',async()=>{try{await navigator.clipboard.writeText($('codeOutput').textContent);$('codeStatus').textContent='Copied'}catch(e){$('codeStatus').textContent='Clipboard unavailable. Select and copy the code.'}});on('downloadPy',()=>downloadBlob(new Blob([$('codeOutput').textContent],{type:'text/plain'}),($('jobName').value||'calculation')+'.py'));
 }

@@ -1,6 +1,6 @@
 /* Analysis workspace.
 
-   Only Autocorrelation is currently implemented.
+   Autocorrelation curves and energy-based phase alignment.
 
    CSV time: atomic units. Plot time: femtoseconds.
 
@@ -62,8 +62,20 @@
   if (!window.BeeMolAutocorrelation) {
     throw Error('Missing assets/js/analysis-tools/autocorrelation.js. Load it before analysis.js.');
   }
-  const { addControls, draw, exportSVG, exportPNG } =
-    window.BeeMolAutocorrelation.create({ series, AU_TO_FS, esc, status });
+  let renderAnalytical = () => {};
+  const phaseMode = () => $('analysisPlotType')?.value === 'autocorrelation-phase';
+  const autocorrelation = window.BeeMolAutocorrelation.create({
+    series, AU_TO_FS, esc, status,
+    exportName: () => phaseMode() ? 'phase_alignment' : 'autocorrelation',
+    redrawPhase: () => { phase.draw(); renderAnalytical(); }
+  });
+  if (!window.BeeMolAutocorrelationPhase) throw Error('Missing autocorrelation-phase.js.');
+  const phase = window.BeeMolAutocorrelationPhase.create({ esc, status });
+  const draw = () => {
+    (phaseMode() ? phase : autocorrelation).draw();
+    if (phaseMode()) renderAnalytical();
+  };
+  const { exportSVG, exportPNG } = autocorrelation;
 
   // ------------------------------------------------------------
 
@@ -431,7 +443,383 @@
 
     try {
 
-      addControls();
+      autocorrelation.addControls();
+      phase.addControls();
+
+      const theoretical = document.createElement('section');
+      theoretical.id = 'analysisTheoreticalControls';
+      theoretical.hidden = true;
+      theoretical.setAttribute('aria-labelledby', 'analyticalHeading');
+      theoretical.innerHTML = `<header class="analytical-heading"><span>ENERGY MODEL</span><h3 id="analyticalHeading">Analytical autocorrelation</h3></header>
+        <p class="analytical-formula">A(t) = (1/N) Σ exp(−i Eₙ t / ℏ)</p>
+        <p class="mini-note">Equal population per state. Repeat energies for degeneracy. ℏ = 0.6582119569 eV·fs.</p>
+        <p class="mini-note">Uses the energies entered in the left sidebar. End time and time step apply only to the analytical solution. Uploaded CSV curves retain their original time points and ranges.</p>
+        <div class="analytical-fields">
+          <label>End time (fs)<input id="analyticalEnd" type="number" min="0" value="25" step="0.1"></label>
+          <label>Time step (a.u.)<input id="analyticalStep" type="number" min="0" value="0.002" step="0.001"></label>
+        </div>
+        <button id="analyticalFindExtrema" type="button">Find maxima</button>
+        <pre id="analyticalExtremaReport" hidden style="white-space:pre-wrap" aria-live="polite"></pre>
+        <div class="analytical-actions">
+          <button id="analyticalCSV" type="button">Download CSV</button>
+        </div>`;
+      $('analysisEnergyPanel').append(theoretical);
+      const analyticalStyle = {};
+      const analyticalOptions = document.createElement('fieldset');
+      analyticalOptions.className = 'analysis-individual-style';
+      const analyticalOptionsHeading = document.createElement('legend');
+      analyticalOptionsHeading.textContent = 'Analytical plot options';
+      analyticalOptions.append(analyticalOptionsHeading);
+      $('analysisEnergyPanel').append(analyticalOptions);
+      // Analytical-only options must not read shared plot controls.
+      for (const [id, value, checked] of [
+        ['plotTransform', 'none'], ['plotTwoTone', '', false], ['plotLegend', '', true],
+        ['plotXMin', ''], ['plotXMax', ''], ['plotYMin', '0'], ['plotYMax', '1'],
+        ['plotBoxWidth', '1200'], ['plotBoxHeight', '300'],
+        ['plotLegendPosition', 'top'], ['plotLegendX', '0'], ['plotLegendY', '0']
+      ]) analyticalStyle[id] = { value, checked };
+      const analyticalFields = $('analysisEnergyPanel').querySelector('.analysis-individual-style');
+      for (const [id, name] of [
+        ['plotXMin', 'X minimum'], ['plotXMax', 'X maximum'],
+        ['plotYMin', 'Y minimum'], ['plotYMax', 'Y maximum'],
+        ['plotBoxWidth', 'Plot width'], ['plotBoxHeight', 'Plot height'],
+        ['plotLegendX', 'Legend horizontal offset'], ['plotLegendY', 'Legend vertical offset']
+      ]) {
+        const label = document.createElement('label');
+        label.textContent = name;
+        const input = document.createElement('input');
+        Object.assign(input, { id: `analyticalStyle_${id}`, type: 'number', value: analyticalStyle[id].value, step: 'any', placeholder: 'Auto' });
+        analyticalStyle[id] = input;
+        input.addEventListener('input', () => renderAnalytical());
+        label.append(input);
+        analyticalFields.append(label);
+      }
+      for (const [id, name] of [['plotLegend', 'Show legend'], ['plotTwoTone', 'Two-tone line']]) {
+        const label = document.createElement('label');
+        label.className = 'analysis-style-bold';
+        const input = document.createElement('input');
+        Object.assign(input, { type: 'checkbox', checked: analyticalStyle[id].checked });
+        analyticalStyle[id] = input;
+        input.addEventListener('input', () => renderAnalytical());
+        label.append(input, document.createTextNode(name));
+        analyticalFields.append(label);
+      }
+      for (const id of ['phaseMovieFontTarget', 'phaseMovieFontSize']) $(id).closest('label').hidden = true;
+      const analyticalPreview = document.createElement('div');
+      analyticalPreview.id = 'analyticalPreview';
+      analyticalPreview.hidden = true;
+      $('analysisPlot').before(analyticalPreview);
+      const figureArea = document.createElement('div');
+      figureArea.id = 'analysisFigureArea';
+      analyticalPreview.before(figureArea);
+      figureArea.append(analyticalPreview, $('analysisPlot'));
+      figureArea.after($('analyticalExtremaReport'));
+      figureArea.setAttribute('aria-label', 'Combined figure. Pinch on the touchpad to zoom.');
+      let figureZoom = 1;
+      figureArea.addEventListener('wheel', event => {
+        if (!phaseMode() || !event.ctrlKey) return;
+        event.preventDefault();
+        figureZoom = Math.max(0.5, Math.min(4, figureZoom * Math.exp(-event.deltaY * 0.01)));
+        alignMovieAxes();
+      }, { passive: false });
+      figureArea.addEventListener('dblclick', () => {
+        figureZoom = 1;
+        alignMovieAxes();
+      });
+      let settingsFrame = 0;
+      const redrawSettings = event => {
+        if (!phaseMode() || !event.target.matches('input, select, textarea, button')) return;
+        cancelAnimationFrame(settingsFrame);
+        settingsFrame = requestAnimationFrame(draw);
+      };
+      for (const name of ['input', 'change', 'click']) {
+        $('analysisSettingsPanel').addEventListener(name, redrawSettings);
+      }
+      $('phaseMoviePlotGap').addEventListener('input', () => {
+        const gap = Number($('phaseMoviePlotGap').value);
+        if (Number.isFinite(gap)) figureArea.style.setProperty('--movie-plot-gap', `${Math.max(0, Math.min(300, gap))}px`);
+      });
+      const syncMovieFont = () => {
+        const source = $(`plot${$('phaseMovieFontTarget').value}FontSize`);
+        $('phaseMovieFontSize').value = source.value;
+      };
+      $('phaseMovieFontTarget').addEventListener('change', syncMovieFont);
+      $('analysisMovieTab').addEventListener('click', syncMovieFont);
+      $('phaseMovieFontSize').addEventListener('input', () => {
+        const size = Number($('phaseMovieFontSize').value);
+        if (!Number.isFinite(size) || size < 8 || size > 48) return;
+        $(`plot${$('phaseMovieFontTarget').value}FontSize`).value = String(size);
+        $('plotFontTarget').dispatchEvent(new Event('change'));
+        draw();
+      });
+      syncMovieFont();
+      let selectedFigureView = 'phase';
+      function alignMovieAxes() {
+        const movie = phaseMode() && selectedFigureView === 'movie';
+        figureArea.style.transform = movie ? `scale(${figureZoom})` : 'none';
+        const setHidden = (element, hidden) => { if (element.hidden !== hidden) element.hidden = hidden; };
+        if (movie) {
+          setHidden(analyticalPreview, !$('phaseMovieShowAnalytical').checked || !analyticalPreview.querySelector('svg'));
+          setHidden($('analysisPlot'), !$('phaseMovieShowPhase').checked);
+        } else {
+          const analytical = phaseMode() && selectedFigureView === 'analytical';
+          setHidden($('analysisPlot'), analytical);
+          setHidden(analyticalPreview, !analytical || !analyticalPreview.querySelector('svg'));
+        }
+        const figures = [analyticalPreview.querySelector('svg'), $('analysisPlot').querySelector('svg')];
+        for (const svg of figures.filter(Boolean)) {
+          let content = svg.querySelector('[data-figure-zoom]');
+          if (!content) {
+            content = document.createElementNS('http://www.w3.org/2000/svg', 'g');
+            content.setAttribute('data-figure-zoom', 'true');
+            for (const child of Array.from(svg.children)) {
+              const background = child.tagName.toLowerCase() === 'rect' && child.getAttribute('fill') === 'white';
+              if (!background && child.tagName.toLowerCase() !== 'defs') content.append(child);
+            }
+            svg.append(content);
+          }
+          const zoom = phaseMode() && !movie ? figureZoom : 1;
+          const { x, y } = svg.viewBox.baseVal;
+          content.setAttribute('transform', `translate(${x} ${y}) scale(${zoom}) translate(${-x} ${-y})`);
+        }
+
+        const comparing = phaseMode() && !analyticalPreview.hidden && !$('analysisPlot').hidden && figures.every(Boolean);
+        figureArea.classList.toggle('analysis-aligned-figures', comparing);
+        const phaseFigure = figures[1];
+        if (phaseFigure) {
+          if (!phaseFigure.dataset.fullViewBox) phaseFigure.dataset.fullViewBox = phaseFigure.getAttribute('viewBox');
+          const [x, y, width, height] = phaseFigure.dataset.fullViewBox.split(/\s+/).map(Number);
+          const crop = comparing && phaseFigure.dataset.hasTitle === 'false' ? Math.max(0, Number(phaseFigure.dataset.axesTop) - 2) : 0;
+          phaseFigure.setAttribute('viewBox', `${x} ${y + crop} ${width} ${height - crop}`);
+        }
+        if (!comparing) {
+          figures.filter(Boolean).forEach(svg => {
+            svg.style.width = ''; svg.style.height = ''; svg.style.marginLeft = '';
+            svg.querySelectorAll('text[data-original-font-size]').forEach(text => {
+              text.setAttribute('font-size', text.dataset.originalFontSize);
+            });
+          });
+          return;
+        }
+        const geometry = figures.map(svg => ({
+          svg, width: svg.viewBox.baseVal.width, height: svg.viewBox.baseVal.height,
+          left: Number(svg.dataset.axesLeft) - svg.viewBox.baseVal.x, axes: Number(svg.dataset.axesWidth)
+        }));
+        if (geometry.some(g => !g.axes)) return;
+        const left = Math.max(...geometry.map(g => g.left / g.axes));
+        const right = Math.max(...geometry.map(g => (g.width - g.left - g.axes) / g.axes));
+        const availableWidth = Math.max(100, figureArea.clientWidth - 40);
+        const axisLength = availableWidth / (1 + left + right);
+        for (const g of geometry) {
+          const scale = axisLength / g.axes;
+          g.svg.style.width = `${g.width * scale}px`;
+          g.svg.style.height = `${g.height * scale}px`;
+          g.svg.style.marginLeft = `${left * axisLength - g.left * scale}px`;
+          g.svg.querySelectorAll('text').forEach(text => {
+            if (!text.dataset.originalFontSize) {
+              text.dataset.originalFontSize = String(parseFloat(getComputedStyle(text).fontSize));
+            }
+            text.setAttribute('font-size', String(Number(text.dataset.originalFontSize) / scale));
+          });
+        }
+      }
+      const movieLayoutObserver = new MutationObserver(alignMovieAxes);
+      movieLayoutObserver.observe($('analysisPlot'), { childList: true });
+      movieLayoutObserver.observe(analyticalPreview, { childList: true, attributes: true, attributeFilter: ['hidden'] });
+      movieLayoutObserver.observe($('analysisWorkspace'), { attributes: true, attributeFilter: ['class'] });
+      new ResizeObserver(alignMovieAxes).observe(figureArea);
+      window.addEventListener('resize', alignMovieAxes);
+      document.addEventListener('analysisfigureview', event => {
+        const views = { analysisPhaseTab: 'phase', analysisEnergyTab: 'analytical', analysisMovieTab: 'movie' };
+        const next = views[event.detail];
+        if (!next) return;
+        const leavingMovie = selectedFigureView === 'movie' && next !== 'movie';
+        selectedFigureView = next;
+        updateAnalyticalMarker();
+        if (leavingMovie) phase.stopAnimation();
+        if (next === 'movie') phase.seekMovie(Number($('phaseMovieCurrent').value));
+        if (phaseMode() && (next === 'analytical' || (next === 'movie' && $('phaseMovieShowAnalytical').checked)) && !analyticalPreview.querySelector('svg')) {
+          generateAnalytical();
+        }
+        alignMovieAxes();
+      });
+      for (const id of ['phaseMovieShowAnalytical', 'phaseMovieShowPhase']) {
+        $(id).addEventListener('change', () => {
+          if (id === 'phaseMovieShowAnalytical' && $(id).checked && !analyticalPreview.querySelector('svg')) generateAnalytical();
+          alignMovieAxes();
+        });
+      }
+      $('analysisMovieTab').addEventListener('click', () => {
+        if ($('phaseMovieShowAnalytical').checked && !analyticalPreview.querySelector('svg')) generateAnalytical();
+        alignMovieAxes();
+      });
+      // Both analytical views use the same energy list.
+      $('phaseEnergies').addEventListener('input', () => {
+        analyticalPreview.hidden = true;
+      });
+
+      function analyticalSettings() {
+        const energies = window.BeeMolAutocorrelationPhase.parseEnergies($('phaseEnergies').value);
+        const end = Number($('analyticalEnd').value);
+        const stepAU = Number($('analyticalStep').value);
+        if (energies.length > 100) throw Error('Use at most 100 energy states.');
+        if (!Number.isFinite(end) || end <= 0 || !Number.isFinite(stepAU) || stepAU <= 0) {
+          throw Error('End time and time step must be positive finite numbers.');
+        }
+        const count = Math.ceil(end / (stepAU * AU_TO_FS));
+        if (count < 2 || count > 1000000) throw Error('Choose a time step giving between 2 and 1,000,000 samples.');
+        return { energies, end, stepAU, count };
+      }
+
+      function analyticalSamples() {
+        const { energies, stepAU, count } = analyticalSettings();
+        const weights = energies.map(() => 1 / energies.length);
+        return Array.from({ length: count }, (_, i) => {
+          const timeAU = i * stepAU;
+          const timeFS = timeAU * AU_TO_FS;
+          const value = window.BeeMolAutocorrelationPhase.calculate(energies, weights, timeFS);
+          return [timeAU, timeFS, value.real, value.imaginary, value.magnitude];
+        });
+      }
+
+      let analyticalDataset = null;
+      let analyticalCoordinates = null;
+      let analyticalEnergies = [];
+      let markerTime = 0;
+      function updateAnalyticalMarker() {
+        if (!analyticalDataset || !analyticalCoordinates || !analyticalEnergies.length) return;
+        const svg = analyticalPreview.querySelector('svg');
+        if (!svg) return;
+        let dot = svg.querySelector('.analytical-movie-marker');
+        if (!dot) {
+          dot = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
+          dot.setAttribute('class', 'analytical-movie-marker');
+          dot.setAttribute('r', '5');
+          dot.setAttribute('fill', 'black');
+          dot.setAttribute('stroke', 'white');
+          dot.setAttribute('stroke-width', '1');
+          (svg.querySelector('[data-figure-zoom]') || svg).append(dot);
+        }
+        const { X, Y, xmin, xmax, ymin, ymax } = analyticalCoordinates;
+        const dotSize = Number($('phaseMovieDotSize').value);
+        dot.setAttribute('r', String(Math.max(1, Math.min(40, Number.isFinite(dotSize) ? dotSize : 10)) / 2));
+        let magnitude = window.BeeMolAutocorrelationPhase.calculate(
+          analyticalEnergies, analyticalEnergies.map(() => 1 / analyticalEnergies.length), markerTime
+        ).magnitude;
+        if (analyticalStyle.plotTransform.value === 'square') magnitude *= magnitude;
+        const points = analyticalDataset.points;
+        const inRange = markerTime >= points[0][0] * AU_TO_FS && markerTime <= points[points.length - 1][0] * AU_TO_FS;
+        dot.style.display = selectedFigureView === 'movie' && inRange && markerTime >= xmin && markerTime <= xmax && magnitude >= ymin && magnitude <= ymax ? '' : 'none';
+        dot.setAttribute('cx', X(markerTime));
+        dot.setAttribute('cy', Y(magnitude));
+        dot.setAttribute('aria-label', `Movie time ${markerTime.toFixed(6)} fs`);
+
+      }
+      document.addEventListener('phasemovietime', event => {
+        markerTime = event.detail;
+        updateAnalyticalMarker();
+      });
+      $('phaseMovieDotSize').addEventListener('input', updateAnalyticalMarker);
+      renderAnalytical = () => {
+        if (!phaseMode()) return;
+        const datasets = [
+          ...(analyticalDataset ? [analyticalDataset] : []),
+          ...series
+        ];
+        if (!datasets.some(dataset => dataset.visible)) {
+          analyticalPreview.replaceChildren();
+          return;
+        }
+        autocorrelation.draw({
+          datasets, target: analyticalPreview,
+          settings: analyticalStyle,
+          onCoordinates: coordinates => {
+            analyticalCoordinates = coordinates;
+            updateAnalyticalMarker();
+          },
+          title: $('analyticalFigureTitle').value, xLabel: 'Time (fs)', yLabel: '|A(t)|'
+        });
+        alignMovieAxes();
+      };
+      document.addEventListener('analyticaltitlechange', () => renderAnalytical());
+      function generateAnalytical() {
+        try {
+          const samples = analyticalSamples();
+          analyticalEnergies = analyticalSettings().energies;
+          analyticalDataset = {
+            label: 'Analytical |A(t)|', visible: true, color: '#008080', dash: '',
+            samplesOnly: true,
+            points: samples.map(row => [row[0], row[4]])
+          };
+          analyticalPreview.hidden = false;
+          renderAnalytical();
+        } catch (error) {
+          analyticalDataset = null;
+          analyticalCoordinates = null;
+          analyticalEnergies = [];
+          renderAnalytical();
+          status(error.message);
+        }
+      };
+      let analyticalSamplingFrame = 0;
+      for (const id of ['analyticalEnd', 'analyticalStep']) {
+        $(id).addEventListener('input', () => {
+          cancelAnimationFrame(analyticalSamplingFrame);
+          analyticalSamplingFrame = requestAnimationFrame(() => generateAnalytical());
+        });
+      }
+
+      const clearAnalyticalExtrema = () => {
+        $('analyticalExtremaReport').textContent = '';
+        $('analyticalExtremaReport').hidden = true;
+      };
+      for (const id of ['analyticalEnd', 'analyticalStep', 'phaseEnergies']) {
+        $(id).addEventListener('input', clearAnalyticalExtrema);
+      }
+      $('analyticalFindExtrema').onclick = () => {
+        try {
+          const samples = analyticalSamples();
+          const findPeaks = sign => {
+            const values = samples.map(row => sign * row[4]);
+            const candidates = [];
+            for (let i = 1; i < values.length - 1; i++) {
+              if (values[i] <= values[i - 1]) continue;
+              let end = i;
+              while (end + 1 < values.length && values[end + 1] === values[i]) end++;
+              if (end < values.length - 1 && values[end] > values[end + 1]) candidates.push(Math.floor((i + end) / 2));
+              i = end;
+            }
+            return candidates;
+          };
+          const report = (title, name, indices) => [
+            `===== AUTOCORRELATION ${title} =====`,
+            ...(indices.length ? indices.map((idx, n) => `${name} ${n + 1}: Time = ${samples[idx][1].toFixed(6)} fs | |A(t)| = ${samples[idx][4].toFixed(6)}`) : ['None found.'])
+          ].join('\n');
+          $('analyticalExtremaReport').textContent = report('MAXIMA', 'Peak', findPeaks(1)) + '\n\n' + report('MINIMA', 'Minimum', findPeaks(-1)) + `\n\nRange: 0–${Number($('analyticalEnd').value)} fs. All sampled local extrema; endpoints excluded.`;
+          $('analyticalExtremaReport').hidden = false;
+        } catch (error) {
+          clearAnalyticalExtrema();
+          status(error.message);
+        }
+      };
+
+      $('analyticalCSV').onclick = () => {
+        try {
+          const samples = analyticalSamples();
+          const csv = 'Time (a.u.),Time (fs),Real A(t),Imag A(t),Autocorrelation\n' +
+            samples.map(row => row.map(value => value.toPrecision(16)).join(',')).join('\n');
+          const url = URL.createObjectURL(new Blob([csv], { type: 'text/csv;charset=utf-8' }));
+          const link = document.createElement('a');
+          link.href = url;
+          link.download = 'autocorrelation_theoretical.csv';
+          link.click();
+          setTimeout(() => URL.revokeObjectURL(url), 1000);
+          status('Autocorrelation CSV exported.');
+        } catch (error) { status(error.message); }
+      };
+
+
+
 
 
 
@@ -439,35 +827,46 @@
 
 
 
-      // Other plot types are placeholders for future work.
-
+      const phaseHiddenControls = [
+        'plotTitle', 'plotXLabel', 'plotYLabel'
+      ].map(id => $(id)?.closest('label')).filter(Boolean);
+      const savedControlDisplays = new Map(phaseHiddenControls.map(node => [node, node.style.display]));
+      const plotTitles = { autocorrelation: 'Autocorrelation function', 'autocorrelation-phase': 'Relative Phase Alignment of Cationic States' };
+      const plotSettingStates = new Map();
+      const plotSettingInputs = () => Array.from($('analysisSettingsPanel').querySelectorAll('input[id^="plot"], select[id^="plot"]'));
+      let activePlotType = 'autocorrelation';
       $('analysisPlotType').onchange = () => {
-
-        if ($('analysisPlotType').value !== 'autocorrelation') {
-
-          const message =
-
-            'This plot type is not implemented yet. ' +
-
-            'Only Autocorrelation is currently available.';
-
-
-
-          // Keep existing autocorrelation data and settings.
-
-          $('analysisPlotType').value = 'autocorrelation';
-
-
-
-          status(message);
-
-          window.alert(message);
-
+        if (!['autocorrelation', 'autocorrelation-phase'].includes($('analysisPlotType').value)) {
+          $('analysisPlotType').value = activePlotType;
+          status('This plot type is not implemented yet. Choose Autocorrelation or Autocorrelation phase analysis.');
+          return;
         }
-
+        plotSettingStates.set(activePlotType, plotSettingInputs().map(input => [input.id, input.value, input.checked]));
+        phase.stopAnimation();
+        plotTitles[activePlotType] = $('plotTitle').value;
+        activePlotType = $('analysisPlotType').value;
+        const incomingSettings = plotSettingStates.get(activePlotType);
+        if (incomingSettings) incomingSettings.forEach(([id, value, checked]) => {
+          $(id).value = value;
+          $(id).checked = checked;
+        });
+        $('plotTitle').value = plotTitles[activePlotType];
+        const isPhase = phaseMode();
+        $('analysisWorkspace').classList.toggle('phase-analysis-active', isPhase);
+        if (!isPhase) $('analysisWorkspace').classList.remove('analysis-movie-compare');
+        theoretical.hidden = !isPhase;
+        analyticalPreview.hidden = !isPhase || !analyticalPreview.hasChildNodes();
+        $('analysisPhaseControls').hidden = !isPhase;
+        $('phaseAnnotationSettings').hidden = !isPhase;
+        $('analysisMovieTab').hidden = !isPhase;
+        $('analysisPhaseTab').hidden = !isPhase;
+        $('analysisEnergyTab').hidden = !isPhase;
+        if (!isPhase) $('analysisSettingsTab').click();
+        savedControlDisplays.forEach((display, node) => { node.style.display = isPhase ? 'none' : display; });
+        $('plotLegendLineWidth').closest('label').firstChild.textContent = isPhase ? 'Resultant arrow thickness ' : 'Legend line thickness ';
+        document.querySelector('#analysisWorkspace > section .card-header h2').textContent = isPhase ? 'Autocorrelation phase analysis' : 'Autocorrelation';
+        draw();
       };
-
-
 
       $('plotTitle').value = 'Autocorrelation function';
 

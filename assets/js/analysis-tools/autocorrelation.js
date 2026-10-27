@@ -6,7 +6,7 @@
   'use strict';
   const $ = id => document.getElementById(id);
   window.BeeMolAutocorrelation = {
-    create({ series, AU_TO_FS, esc, status }) {
+    create({ series, AU_TO_FS, esc, status, exportName = () => 'autocorrelation', redrawPhase }) {
   // ------------------------------------------------------------
 
   // Create and arrange controls
@@ -52,6 +52,7 @@
         <select id="analysisPlotType">
 
           <option value="autocorrelation">Autocorrelation</option>
+          <option value="autocorrelation-phase">Autocorrelation phase analysis</option>
 
           <option value="population">Population vs time</option>
 
@@ -197,7 +198,9 @@
       `;
       widthLabel.after(panel);
       panel.querySelectorAll('input, select').forEach(control => {
-        control.addEventListener('input', draw);
+        // draw accepts render options; an InputEvent's target is the control,
+        // not the plot container.
+        control.addEventListener('input', () => draw());
       });
     }
 
@@ -434,7 +437,9 @@
 
 
 
-  function draw() {
+  function draw(options = {}) {
+    const $ = id => options.settings?.[id] || document.getElementById(id);
+    if (!options.datasets && $('analysisPlotType')?.value === 'autocorrelation-phase' && redrawPhase) { redrawPhase(); return; }
 
     try {
 
@@ -442,7 +447,7 @@
 
 
 
-      const shown = series
+      const shown = (options.datasets || series)
 
         .filter(dataset => dataset.visible)
 
@@ -472,7 +477,7 @@
 
       if (!shown.length) {
 
-        $('analysisPlot').innerHTML = `
+        (options.target || $('analysisPlot')).innerHTML = `
 
           <p style="color:#333;padding:30px">
 
@@ -615,7 +620,7 @@
 
 
 
-      const L = 100;
+      const L = options.target ? 160 : 100;
 
       const W = L + PW + 50;
 
@@ -766,7 +771,7 @@
 
              role="img"
 
-             aria-label="${esc($('plotTitle').value)}">
+             aria-label="${esc(options.title ?? $('plotTitle').value)}">
 
 
 
@@ -799,7 +804,7 @@
                   text-anchor="middle" font-size="${titleFontSize}"
                    font-weight="${fontWeight('plotTitleFontBold')}">
 
-              ${esc($('plotTitle').value)}
+              ${esc(options.title ?? $('plotTitle').value)}
 
             </text>
 
@@ -883,7 +888,7 @@
 
               stroke="#222"
 
-              stroke-width="${border}"/>
+              stroke-width="${border}" ${options.target ? 'vector-effect="non-scaling-stroke"' : ''}/>
 
 
 
@@ -892,24 +897,24 @@
               text-anchor="middle" font-size="${xLabelFontSize}"
                font-weight="${fontWeight('plotXLabelFontBold')}">
 
-          ${esc($('plotXLabel').value)}
+          ${esc(options.xLabel ?? $('plotXLabel').value)}
 
         </text>
 
 
 
-        <text transform="translate(25 ${T + PH / 2}) rotate(-90)"
+        <text transform="translate(${options.target ? L - 90 : 25} ${T + PH / 2}) rotate(-90)"
 
               text-anchor="middle" font-size="${yLabelFontSize}"
                font-weight="${fontWeight('plotYLabelFontBold')}">
 
-          ${esc($('plotYLabel').value)}
+          ${esc(options.yLabel ?? $('plotYLabel').value)}
 
         </text>
 
 
 
-        <g clip-path="url(#plotClip)">
+        <g clip-path="url(#plotClip)" stroke-linecap="${options.samplesOnly ? 'round' : 'butt'}">
 
       `;
 
@@ -921,7 +926,9 @@
 
           .map(([x, y], index) =>
 
-            `${index ? 'L' : 'M'}${X(x).toFixed(3)} ${Y(y).toFixed(3)}`
+            (dataset.samplesOnly ?? options.samplesOnly)
+              ? `M${X(x).toFixed(3)} ${Y(y).toFixed(3)}h0`
+              : `${index ? 'L' : 'M'}${X(x).toFixed(3)} ${Y(y).toFixed(3)}`
 
           )
 
@@ -942,6 +949,7 @@
                   stroke-opacity="0.25"
 
                   stroke-width="${line * 2.5}"
+                  ${options.target ? 'vector-effect="non-scaling-stroke"' : ''}
 
                   stroke-dasharray="${dataset.dash}"
 
@@ -964,6 +972,7 @@
                 stroke="${dataset.color}"
 
                 stroke-width="${line}"
+                ${options.target ? 'vector-effect="non-scaling-stroke"' : ''}
 
                 stroke-dasharray="${dataset.dash}"
 
@@ -1057,7 +1066,13 @@
 
 
 
-      $('analysisPlot').innerHTML = svg;
+      (options.target || $('analysisPlot')).innerHTML = svg;
+      if (options.target) {
+        const figure = options.target.querySelector('svg');
+        figure.dataset.axesLeft = L;
+        figure.dataset.axesWidth = PW;
+      }
+      if (options.onCoordinates) options.onCoordinates({ X, Y, xmin, xmax, ymin, ymax });
 
 
 
@@ -1075,7 +1090,7 @@
 
       status(error.message);
 
-      $('analysisPlot').replaceChildren();
+      (options.target || $('analysisPlot')).replaceChildren();
 
     }
 
@@ -1105,7 +1120,25 @@
 
 
 
-    return new XMLSerializer().serializeToString(svg);
+    const copy = svg.cloneNode(true);
+    if ($('analysisPlotType')?.value === 'autocorrelation-phase') {
+      // Export the full figure independently of the comparison layout and zoom.
+      const viewBox = svg.dataset.fullViewBox || svg.getAttribute('viewBox');
+      const [, , width, height] = viewBox.split(/\s+/).map(Number);
+      copy.setAttribute('viewBox', viewBox);
+      copy.setAttribute('width', width);
+      copy.setAttribute('height', height);
+      copy.removeAttribute('style');
+      copy.querySelectorAll('[data-figure-zoom]').forEach(group => group.removeAttribute('transform'));
+      // Fixed screen strokes must scale with the high-resolution export.
+      copy.querySelectorAll('[vector-effect]').forEach(element => {
+        element.removeAttribute('vector-effect');
+      });
+      copy.querySelectorAll('text[data-original-font-size]').forEach(text => {
+        text.setAttribute('font-size', text.dataset.originalFontSize);
+      });
+    }
+    return new XMLSerializer().serializeToString(copy);
 
   }
 
@@ -1151,7 +1184,7 @@
 
         }),
 
-        'autocorrelation.svg'
+        `${exportName()}.svg`
 
       );
 
@@ -1187,7 +1220,8 @@
 
 
 
-      const exportScale = 6;
+      const exportScale = $('analysisPlotType')?.value === 'autocorrelation-phase'
+        ? Number($('phaseExportScale')?.value || 6) : 6;
 
 
 
@@ -1307,7 +1341,7 @@
 
               blob,
 
-              'autocorrelation_high_resolution.png'
+              `${exportName()}_high_resolution.png`
 
             );
 
