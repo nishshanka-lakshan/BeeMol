@@ -26,7 +26,10 @@ function init(){
 
  renderer.domElement.style.width='100%'; renderer.domElement.style.height='100%'; renderer.domElement.style.display='block';
 
+ // Preserve overlays created while the Three.js module was loading.
+ const overlay = document.getElementById('orbitalSliceInset');
  holder.replaceChildren(renderer.domElement);
+ if (overlay) holder.append(overlay);
 
  scene=new THREE.Scene();
 
@@ -91,33 +94,47 @@ function clear(){if(!group)return;for(const child of [...group.children]){group.
 const nums=s=>s.trim().split(/\s+/).map(x=>Number(x.replace(/[dD]/g,'E')));
 
 function parseCube(text){
-
- let ls=text.split(/\r?\n/);if(ls.length<7)throw Error('Invalid CUBE file');
-
- let hdr=nums(ls[2]),count=Math.abs(Math.trunc(hdr[0])),origin=hdr.slice(1,4);if(!count||!origin.every(Number.isFinite))throw Error('Invalid CUBE header');
-
+ // Read only the header line by line; do not split large scalar grids into
+ // millions of temporary strings and boxed numbers.
+ let cursor=0;
+ function line(){if(cursor>=text.length)throw Error('Incomplete CUBE header');const end=text.indexOf('\n',cursor);const row=text.slice(cursor,end<0?text.length:end);cursor=end<0?text.length:end+1;return row;}
+ line();line();
+ const hdr=nums(line()),count=Math.abs(hdr[0]);let origin=hdr.slice(1,4);
+ if(!Number.isSafeInteger(count)||count<1||origin.length!==3||!origin.every(Number.isFinite))throw Error('Invalid CUBE header');
  const dims=[],axes=[];let angGrid=false;
-
- for(let i=0;i<3;i++){let row=nums(ls[3+i]);dims.push(Math.abs(Math.trunc(row[0])));axes.push(row.slice(1,4));if(row[0]<0)angGrid=true;}
-
- if(dims.some(x=>x<2||x>512))throw Error('CUBE dimensions invalid');
-
- let factor=angGrid?1:ANG;origin=origin.map(v=>v*factor);const scaledAxes=axes.map(a=>a.map(v=>v*factor));
-
- const atoms=[];
-
- for(let i=0;i<count;i++){const a=nums(ls[6+i]);atoms.push({z:Math.round(a[0]),pos:a.slice(2,5).map(v=>v*factor)});}
-
- let offset=6+count; if(hdr[0]<0){const orb=nums(ls[offset]||'');offset++;let consumed=orb.length-1;while(consumed<orb[0] && offset<ls.length){consumed+=nums(ls[offset]).length;offset++;}}
-
- const data=ls.slice(offset).join(' ').trim().split(/\s+/).map(x=>Number(x.replace(/[dD]/g,'E')));
-
+ for(let i=0;i<3;i++){const row=nums(line());dims.push(Math.abs(row[0]));axes.push(row.slice(1,4));if(row[0]<0)angGrid=true;}
+ if(dims.some(x=>!Number.isSafeInteger(x)||x<2)||axes.some(a=>a.length!==3||!a.every(Number.isFinite)))throw Error('CUBE dimensions invalid');
  const n=dims.reduce((a,b)=>a*b,1);
+ if(!Number.isSafeInteger(n)||n>64000000)throw Error('CUBE grid exceeds the supported total of 64 million points. Export a coarser grid.');
+ const factor=angGrid?1:ANG;origin=origin.map(v=>v*factor);
+ const atoms=[];
+ for(let i=0;i<count;i++){const a=nums(line());if(a.length<5||!a.every(Number.isFinite))throw Error('Invalid CUBE atom row');atoms.push({z:Math.round(a[0]),pos:a.slice(2,5).map(v=>v*factor)});}
+ if(hdr[0]<0){const orbitals=nums(line());if(orbitals[0]!==1)throw Error('Multi-orbital CUBE files are not supported. Export one orbital per file.');if(orbitals.length<2)line();}
+ if(hdr.length>4 && hdr[4]!==1)throw Error('Multi-value CUBE files are not supported. Export one field per file.');
+ const data=new Float32Array(n),tokens=/\S+/g;tokens.lastIndex=cursor;
+ for(let i=0;i<n;i++){
+  const token=tokens.exec(text);if(!token)throw Error(`CUBE has ${i} values but requires ${n}`);
+  const value=Number(token[0].replace(/[dD]/g,'E'));
+  if(!Number.isFinite(value)||!Number.isFinite(Math.fround(value)))throw Error(`Invalid CUBE scalar at point ${i+1}`);
+  data[i]=value;
+ }
+ return {dims,origin,axes:axes.map(a=>a.map(v=>v*factor)),atoms,data};
+}
 
- if(data.length<n)throw Error(`CUBE has ${data.length} values but requires ${n}`);
-
- return {dims,origin,axes:scaledAxes,atoms,data:new Float32Array(data.slice(0,n))};
-
+async function parseCubeAsync(text){
+ if(typeof Worker==='undefined')return parseCube(text);
+ const source=`const ANG=${ANG};const nums=${nums.toString()};${parseCube.toString()}
+ self.onmessage=event=>{try{const grid=parseCube(event.data);self.postMessage({grid},[grid.data.buffer]);}catch(error){self.postMessage({error:error.message});}};`;
+ const url=URL.createObjectURL(new Blob([source],{type:'text/javascript'}));
+ let worker;
+ try{
+  worker=new Worker(url);
+  return await new Promise((resolve,reject)=>{
+   worker.onmessage=event=>event.data.error?reject(Error(event.data.error)):resolve(event.data.grid);
+   worker.onerror=()=>reject(Error('CUBE parsing worker failed.'));
+   worker.postMessage(text);
+  });
+ }finally{worker?.terminate();URL.revokeObjectURL(url);}
 }
 
 function p3(grid,x,y,z){let a=grid.axes,o=grid.origin;return [o[0]+x*a[0][0]+y*a[1][0]+z*a[2][0],o[1]+x*a[0][1]+y*a[1][1]+z*a[2][1],o[2]+x*a[0][2]+y*a[1][2]+z*a[2][2]]}
@@ -164,17 +181,36 @@ function sampleGrid(g,x,y,z){
 
 }
 
-function mesh(g,level,offset){
+// Exact block bounds: skip cells only when no corner can cross the level.
+async function surfaceBlocks(g){
+ if(g.blockIndex)return g.blockIndex;
+ if(g.blockPromise)return g.blockPromise;
+ g.blockPromise=(async()=>{
+  const [nx,ny,nz]=g.dims,size=8,blocks=[];
+  for(let x=0;x<nx-1;x+=size){
+   await new Promise(resolve=>setTimeout(resolve,0));
+   for(let y=0;y<ny-1;y+=size)for(let z=0;z<nz-1;z+=size){
+    const endX=Math.min(nx-1,x+size),endY=Math.min(ny-1,y+size),endZ=Math.min(nz-1,z+size);
+    let low=Infinity,high=-Infinity;
+    for(let i=x;i<=endX;i++)for(let j=y;j<=endY;j++)for(let k=z;k<=endZ;k++){
+     const value=g.data[(i*ny+j)*nz+k];low=Math.min(low,value);high=Math.max(high,value);
+    }
+    blocks.push(x,y,z,endX,endY,endZ,low,high);
+   }
+  }
+  g.blockIndex=new Float64Array(blocks);return g.blockIndex;
+ })();
+ return g.blockPromise;
+}
+
+async function mesh(g,level,offset,isCurrent=()=>true){
 
  const [nx,ny,nz]=g.dims;
 
  const verts=[], normals=[],maxValues=6000000;
 
- let lo=Infinity,hi=-Infinity;
-
- for(const value of g.data){if(value<lo)lo=value;if(value>hi)hi=value;}
-
- if(level<=lo||level>=hi)return null;
+ const blocks=await surfaceBlocks(g);
+ if(!isCurrent())return null;
 
  const matrix=new THREE.Matrix3().set(
 
@@ -254,7 +290,10 @@ function mesh(g,level,offset){
 
  }
 
- for(let x=0;x<nx-1;x++)for(let y=0;y<ny-1;y++)for(let z=0;z<nz-1;z++){
+ for(let block=0;block<blocks.length;block+=8){
+  if(block%1024===0){await new Promise(resolve=>setTimeout(resolve,0));if(!isCurrent())return null;}
+  if(level<=blocks[block+6]||level>=blocks[block+7])continue;
+  for(let x=blocks[block];x<blocks[block+3];x++)for(let y=blocks[block+1];y<blocks[block+4];y++)for(let z=blocks[block+2];z<blocks[block+5];z++){
 
   let low=Infinity,high=-Infinity;
 
@@ -304,6 +343,8 @@ function mesh(g,level,offset){
 
  }
 
+ }
+
  if(!verts.length)return null;
 
  const geometry=new THREE.BufferGeometry();
@@ -318,6 +359,52 @@ function mesh(g,level,offset){
 
 }
 
+// Surface extraction runs in a worker; retain its grid across isovalue changes.
+let surfaceWorker=null, workerGrid=null, surfaceJob=0, showVersion=0;
+const surfacePending=new Map();
+function getSurfaceWorker(){
+ if(surfaceWorker)return surfaceWorker;
+ const source=`import * as THREE from 'https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js';
+ const CORNERS=${JSON.stringify(CORNERS)},TETS=${JSON.stringify(TETS)};
+ ${p3.toString()}
+${idx.toString()}
+${sampleGrid.toString()}
+${surfaceBlocks.toString()}
+${mesh.toString()}
+ let grid,latestVersion=0;
+ self.onmessage=async event=>{const {id,level,offset,version}=event.data;if(event.data.grid){grid=event.data.grid;return;}
+ latestVersion=Math.max(latestVersion,version);
+ try{const geometry=await mesh(grid,level,offset,()=>version===latestVersion);if(!geometry){self.postMessage({id,empty:true});return;}
+ const positions=geometry.attributes.position.array,normals=geometry.attributes.normal.array;
+ self.postMessage({id,positions,normals},[positions.buffer,normals.buffer]);geometry.dispose();
+ }catch(error){self.postMessage({id,error:error.message});}};`;
+ const url=URL.createObjectURL(new Blob([source],{type:'text/javascript'}));
+ try{surfaceWorker=new Worker(url,{type:'module'});}finally{URL.revokeObjectURL(url);}
+ surfaceWorker.onmessage=event=>{const pending=surfacePending.get(event.data.id);if(!pending)return;surfacePending.delete(event.data.id);event.data.error?pending.reject(Error(event.data.error)):pending.resolve(event.data);};
+ surfaceWorker.onerror=()=>{for(const p of surfacePending.values())p.reject(Error('Surface worker unavailable'));surfacePending.clear();surfaceWorker?.terminate();surfaceWorker=null;workerGrid=null;};
+ return surfaceWorker;
+}
+const surfaceCache=new WeakMap();
+async function surfaceGeometry(g,level,center,version){
+ let cache=surfaceCache.get(g);if(!cache){cache=new Map();surfaceCache.set(g,cache);}
+ const key=String(level);
+ if(cache.has(key))return cache.get(key)?.clone()||null;
+ if(typeof Worker==='undefined')return mesh(g,level,center,()=>version===showVersion);
+ let result;
+ try{
+  const worker=getSurfaceWorker();
+  if(workerGrid!==g){worker.postMessage({grid:{dims:g.dims,origin:g.origin,axes:g.axes,atoms:g.atoms,data:g.data}});workerGrid=g;}
+  const id=++surfaceJob;
+  result=await new Promise((resolve,reject)=>{surfacePending.set(id,{resolve,reject});worker.postMessage({id,level,offset:center,version});});
+ }catch(error){return mesh(g,level,center,()=>version===showVersion);}
+ if(version!==showVersion)return null;
+ if(result.empty){cache.set(key,null);return null;}
+ const geometry=new THREE.BufferGeometry();geometry.setAttribute('position',new THREE.BufferAttribute(result.positions,3));geometry.setAttribute('normal',new THREE.BufferAttribute(result.normals,3));geometry.computeBoundingSphere();
+ cache.set(key,geometry.clone());
+ while(cache.size>4){const oldest=cache.keys().next().value;cache.get(oldest)?.dispose();cache.delete(oldest);}
+ return geometry;
+}
+
 const elementColors={1:'#ffffff',6:'#909090',7:'#3050f8',8:'#ff0d0d',9:'#90e050',15:'#ff8000',16:'#ffff30',17:'#1ff01f',29:'#c88033',35:'#a62929',47:'#c0c0c0',53:'#940094',79:'#ffd123'};
 
 function drawAtoms(g,center){const show=document.getElementById('showOrbitalAtoms')?.checked!==false;if(!show)return;const sphere=new THREE.SphereGeometry(1,18,14);const positions=[];
@@ -330,7 +417,7 @@ function drawAtoms(g,center){const show=document.getElementById('showOrbitalAtom
 
 }
 
-async function show(text,options={}){if(!THREE){if(!await promise)throw Error('Cannot load Three.js. Check network connection.');}const g=parseCube(text);currentGrid=g;lastCube={text,options};// Center on the molecular geometry, not the sometimes asymmetric CUBE bounding box.
+async function show(text,options={}){if(!THREE){if(!await promise)throw Error('Cannot load Three.js. Check network connection.');}const version=++showVersion;const reuse=lastCube?.text===text&&currentGrid;const g=reuse||await parseCubeAsync(text);if(version!==showVersion)return;currentGrid=g;lastCube={text,options};if(!reuse)document.dispatchEvent(new Event('orbitalgridchange'));// Center on the molecular geometry, not the sometimes asymmetric CUBE bounding box.
 
 let center;
 
@@ -344,9 +431,12 @@ if(g.atoms.length){
 
 }else center=p3(g,(g.dims[0]-1)/2,(g.dims[1]-1)/2,(g.dims[2]-1)/2);
 
-clear();let level=options.auto?autoIso(g):Math.abs(options.iso||.02);if(document.getElementById('orbitalCutoff')&&options.auto)document.getElementById('orbitalCutoff').value=level.toFixed(5);
+let level=options.auto?autoIso(g):Math.abs(options.iso||.02);if(document.getElementById('orbitalCutoff')&&options.auto)document.getElementById('orbitalCutoff').value=level.toFixed(5);
 
-for(const [sign,color] of [[1,options.positive||'#ffbf00'],[-1,options.negative||'#1555ed']]){const geometry=mesh(g,sign*level,center);if(!geometry)continue;const mat=new THREE.MeshPhongMaterial({color,side:THREE.DoubleSide,transparent:(options.opacity??1)<1,opacity:options.opacity??1,shininess:Math.round((options.gloss??15)*1.2),specular:0x999999,emissive:color,emissiveIntensity:0.25*(1-Math.max(0,Math.min(100,options.depth||0))/100)});const object=new THREE.Mesh(geometry,mat);group.add(object)}if(options.showAtoms!==false)drawAtoms(g,center);
+const surfaces=await Promise.all([surfaceGeometry(g,level,center,version),surfaceGeometry(g,-level,center,version)]);
+if(version!==showVersion){surfaces.forEach(geometry=>geometry?.dispose());return level;}
+clear();
+for(const [index,[sign,color]] of [[1,options.positive||'#ffbf00'],[-1,options.negative||'#1555ed']].entries()){const geometry=surfaces[index];if(!geometry)continue;const mat=new THREE.MeshPhongMaterial({color,side:THREE.DoubleSide,transparent:(options.opacity??1)<1,opacity:options.opacity??1,shininess:Math.round((options.gloss??15)*1.2),specular:0x999999,emissive:color,emissiveIntensity:0.25*(1-Math.max(0,Math.min(100,options.depth||0))/100)});const object=new THREE.Mesh(geometry,mat);group.add(object)}if(options.showAtoms!==false)drawAtoms(g,center);
 
 // Fit only visible orbitals and atoms, not the full padded CUBE grid.
 
@@ -448,6 +538,6 @@ function alignLongAxis(axis){
 
 }
 
-window.BeeMolThree={show,exportFigure,ready:promise,background(c){bg=c;if(renderer){renderer.setClearColor(c);draw()}},resize,fit(){zoom=1;fitCamera()},axisView:setAxisView,align:alignLongAxis,rotateView:turnAroundViewAxis,zoom(pct){zoom=Math.max(.1,pct/100);fitCamera()},rotate(axis,deg){if(axis==='x')rotation.x+=deg*Math.PI/180;else rotation.y+=deg*Math.PI/180;if(group){group.rotation.set(rotation.x,rotation.y,0);draw()}},redraw:draw, getCanvas(){return renderer?.domElement},get isReady(){return!!renderer}};
+window.BeeMolThree={show,exportFigure,getGrid(){return currentGrid},ready:promise,background(c){bg=c;if(renderer){renderer.setClearColor(c);draw()}},resize,fit(){zoom=1;fitCamera()},axisView:setAxisView,align:alignLongAxis,rotateView:turnAroundViewAxis,zoom(pct){zoom=Math.max(.1,pct/100);fitCamera()},rotate(axis,deg){if(axis==='x')rotation.x+=deg*Math.PI/180;else rotation.y+=deg*Math.PI/180;if(group){group.rotation.set(rotation.x,rotation.y,0);draw()}},redraw:draw, getCanvas(){return renderer?.domElement},get isReady(){return!!renderer}};
 
 })();

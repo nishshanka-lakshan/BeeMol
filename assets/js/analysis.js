@@ -458,12 +458,20 @@
           <label>End time (fs)<input id="analyticalEnd" type="number" min="0" value="25" step="0.1"></label>
           <label>Time step (a.u.)<input id="analyticalStep" type="number" min="0" value="0.002" step="0.001"></label>
         </div>
-        <button id="analyticalFindExtrema" type="button">Find maxima</button>
-        <pre id="analyticalExtremaReport" hidden style="white-space:pre-wrap" aria-live="polite"></pre>
+        <label>Minimum prominence<input id="analyticalProminence" type="number" min="0" step="0.01" value="0"></label>
+        <p class="mini-note">Prominence 0 includes small local maxima and minima. Increase it to filter weaker extrema.</p>
+        <label>Minimum extremum spacing (fs)<input id="analyticalPeakSpacing" type="number" min="0" step="0.05" value="0.35"></label>
+        <button id="analyticalFindExtrema" type="button" hidden>Analyze</button>
+        <section id="analyticalExtremaReport" class="extrema-report" hidden aria-label="Autocorrelation extrema analysis" aria-live="polite"></section>
         <div class="analytical-actions">
           <button id="analyticalCSV" type="button">Download CSV</button>
         </div>`;
       $('analysisEnergyPanel').append(theoretical);
+      const datasetActions = document.createElement('div');
+      datasetActions.className = 'analysis-dataset-actions';
+      $('analysisClear').before(datasetActions);
+      datasetActions.append($('analyticalFindExtrema'), $('analysisClear'));
+
       const analyticalStyle = {};
       const analyticalOptions = document.createElement('fieldset');
       analyticalOptions.className = 'analysis-individual-style';
@@ -630,6 +638,7 @@
       new ResizeObserver(alignMovieAxes).observe(figureArea);
       window.addEventListener('resize', alignMovieAxes);
       document.addEventListener('analysisfigureview', event => {
+        $('analyticalExtremaReport').hidden = event.detail !== 'analysisEnergyTab' || !$('analyticalExtremaReport').hasChildNodes();
         const views = { analysisPhaseTab: 'phase', analysisEnergyTab: 'analytical', analysisMovieTab: 'movie' };
         const next = views[event.detail];
         if (!next) return;
@@ -652,10 +661,6 @@
       $('analysisMovieTab').addEventListener('click', () => {
         if ($('phaseMovieShowAnalytical').checked && !analyticalPreview.querySelector('svg')) generateAnalytical();
         alignMovieAxes();
-      });
-      // Both analytical views use the same energy list.
-      $('phaseEnergies').addEventListener('input', () => {
-        analyticalPreview.hidden = true;
       });
 
       function analyticalSettings() {
@@ -762,7 +767,7 @@
         }
       };
       let analyticalSamplingFrame = 0;
-      for (const id of ['analyticalEnd', 'analyticalStep']) {
+      for (const id of ['analyticalEnd', 'analyticalStep', 'phaseEnergies']) {
         $(id).addEventListener('input', () => {
           cancelAnimationFrame(analyticalSamplingFrame);
           analyticalSamplingFrame = requestAnimationFrame(() => generateAnalytical());
@@ -773,7 +778,7 @@
         $('analyticalExtremaReport').textContent = '';
         $('analyticalExtremaReport').hidden = true;
       };
-      for (const id of ['analyticalEnd', 'analyticalStep', 'phaseEnergies']) {
+      for (const id of ['analyticalEnd', 'analyticalStep', 'phaseEnergies', 'analyticalProminence', 'analyticalPeakSpacing']) {
         $(id).addEventListener('input', clearAnalyticalExtrema);
       }
       $('analyticalFindExtrema').onclick = () => {
@@ -791,17 +796,56 @@
             }
             return candidates;
           };
-          const report = (title, name, indices) => [
-            `===== AUTOCORRELATION ${title} =====`,
-            ...(indices.length ? indices.map((idx, n) => `${name} ${n + 1}: Time = ${samples[idx][1].toFixed(6)} fs | |A(t)| = ${samples[idx][4].toFixed(6)}`) : ['None found.'])
-          ].join('\n');
-          $('analyticalExtremaReport').textContent = report('MAXIMA', 'Peak', findPeaks(1)) + '\n\n' + report('MINIMA', 'Minimum', findPeaks(-1)) + `\n\nRange: 0–${Number($('analyticalEnd').value)} fs. All sampled local extrema; endpoints excluded.`;
+          const prominence = Number($('analyticalProminence').value);
+          const spacing = Number($('analyticalPeakSpacing').value);
+          if (![prominence, spacing].every(value => Number.isFinite(value) && value >= 0)) throw Error('Peak prominence and spacing must be nonnegative finite numbers.');
+          // Match scipy: prioritize taller peaks for distance suppression, then test prominence.
+          const filteredExtrema = sign => {
+            const candidates = findPeaks(sign).sort((a, b) => sign * (samples[b][4] - samples[a][4]));
+            const separated = [];
+            for (const idx of candidates) {
+              if (separated.every(other => Math.abs(samples[idx][1] - samples[other][1]) >= spacing)) separated.push(idx);
+            }
+            return separated.filter(idx => {
+              const height = sign * samples[idx][4];
+              let left = height, right = height;
+              for (let k = idx - 1; k >= 0 && sign * samples[k][4] <= height; k--) left = Math.min(left, sign * samples[k][4]);
+              for (let k = idx + 1; k < samples.length && sign * samples[k][4] <= height; k++) right = Math.min(right, sign * samples[k][4]);
+              return height - Math.max(left, right) >= prominence;
+            }).sort((a, b) => a - b);
+          };
+          const peaks = filteredExtrema(1), minima = filteredExtrema(-1);
+          const extrema = [...peaks.map((idx, n) => ({ idx, n, type: 'Maximum' })), ...minima.map((idx, n) => ({ idx, n, type: 'Minimum' }))];
+          const energies = analyticalSettings().energies;
+          const format = (value, digits = 6) => value === null ? 'undefined' : value.toFixed(digits);
+          const details = extrema.map(({ idx, n, type }) => {
+            const result = window.BeeMolAutocorrelationPhase.complexAnalysis(energies, samples[idx][1]);
+            const lines = result.rows.map(row => '<tr>' + [row.energy.toFixed(8), format(row.phase, 3), format(row.real), format(row.imaginary), format(row.abs), format(row.signedPercent, 2), format(row.magnitudeContribution)].map(value => `<td>${esc(value)}</td>`).join('') + '</tr>');
+            return `<article class="extrema-reference-result">
+              <h3>AUTOCORRELATION ${type === 'Maximum' ? 'MAXIMA' : 'MINIMA'}</h3>
+              <p>${type === 'Maximum' ? 'Peak' : 'Minimum'} ${n + 1} | Time = ${result.time.toFixed(6)} fs</p>
+              <table class="extrema-reference-table" aria-label="${type} ${n + 1} complex contributions">
+                <thead><tr>${['Energy (eV)', 'Phase (deg)', 'Real', 'Imag', 'Abs', 'Signed (%)', 'Mag. contrib.'].map(label => `<th scope="col">${label}</th>`).join('')}</tr></thead>
+                <tbody>${lines.join('')}</tbody>
+                <tfoot><tr><th scope="row">TOTAL</th><td></td><td>${format(result.real)}</td><td>${format(result.imaginary)}</td><td>${format(result.magnitude)}</td><td></td><td></td></tr></tfoot>
+              </table>
+            </article>`;
+          });
+          $('phaseMaxima').innerHTML = extrema.length ? '<option value="">Select a maximum or minimum</option>' + extrema.map(({ idx, n, type }) => `<option value="${samples[idx][1]}">${type} ${n + 1}: ${samples[idx][1].toFixed(6)} fs · magnitude ${samples[idx][4].toFixed(6)}</option>`).join('') : '<option value="">No interior extrema found</option>';
+          $('analyticalExtremaReport').innerHTML = details.length ? details.join('') : '<p>No maxima or minima meet the current criteria.</p>';
+          $('analysisEnergyTab').click();
           $('analyticalExtremaReport').hidden = false;
         } catch (error) {
           clearAnalyticalExtrema();
           status(error.message);
         }
       };
+
+      $('phaseMaxima').addEventListener('change', () => {
+        if (!$('phaseMaxima').value) return;
+        $('phaseTimes').value = $('phaseMaxima').value;
+        phase.draw();
+      });
 
       $('analyticalCSV').onclick = () => {
         try {
@@ -855,6 +899,8 @@
         $('analysisWorkspace').classList.toggle('phase-analysis-active', isPhase);
         if (!isPhase) $('analysisWorkspace').classList.remove('analysis-movie-compare');
         theoretical.hidden = !isPhase;
+        $('analyticalExtremaReport').hidden = !isPhase || $('analysisEnergyTab').getAttribute('aria-selected') !== 'true' || !$('analyticalExtremaReport').hasChildNodes();
+        $('analyticalFindExtrema').hidden = !isPhase;
         analyticalPreview.hidden = !isPhase || !analyticalPreview.hasChildNodes();
         $('analysisPhaseControls').hidden = !isPhase;
         $('phaseAnnotationSettings').hidden = !isPhase;

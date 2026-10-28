@@ -246,7 +246,8 @@ async function moldenOrbitalCube(model,n,detail,onProgress,isCurrent=()=>true){
 
   if(!cache){cache=new Map();orbitalCubeCache.set(model,cache)}
 
-  const key=`${n}:${detail}`;
+  const useGPU=typeof document!=="undefined" && document.getElementById("orbitalUseGPU")?.checked;
+  const key=`${n}:${detail}:${useGPU?"auto":"cpu"}`;
 
   if(cache.has(key)){
 
@@ -283,6 +284,24 @@ async function moldenOrbitalCube(model,n,detail,onProgress,isCurrent=()=>true){
   for(const a of model.atoms)rows.push(`${a.number} 0 ${fmt(a.x)} ${fmt(a.y)} ${fmt(a.z)}`);
 
   const mo=model.orbitals[n-1];
+  let gpuValues=null;
+  const backend=typeof document!=="undefined" ? document.getElementById("orbitalComputeBackend") : null;
+  if(useGPU && globalThis.BeeMolOrbitalGPU){
+    if(backend)backend.textContent='Initializing GPU…';
+    try{
+      gpuValues=await BeeMolOrbitalGPU.evaluate(model,mo,detail,min,steps,ANGULAR_CONSTANTS);
+      if(gpuValues){
+        for(let sample=0;sample<33;sample++){
+          const index=Math.floor(sample*(gpuValues.length-1)/32);
+          const iz=index%nz,iy=Math.floor(index/nz)%ny,ix=Math.floor(index/(ny*nz));
+          const expected=moldenOrbitalAt(model,mo,min[0]+ix*steps[0],min[1]+iy*steps[1],min[2]+iz*steps[2]);
+          if(!Number.isFinite(gpuValues[index]) || Math.abs(gpuValues[index]-expected)>2e-5+2e-4*Math.abs(expected))throw Error('GPU accuracy check failed');
+        }
+      }
+      if(backend)backend.textContent=gpuValues?'WebGPU · float32':'CPU · GPU unavailable';
+    }catch(error){gpuValues=null;if(backend)backend.textContent='CPU fallback · '+error.message;}
+  }else if(backend)backend.textContent='CPU · float64';
+  if(!isCurrent())return null;
 
   for(let ix=0;ix<nx;ix++){
 
@@ -296,7 +315,7 @@ async function moldenOrbitalCube(model,n,detail,onProgress,isCurrent=()=>true){
 
       for(let iz=0;iz<nz;iz++){
 
-        line.push(fmt(moldenOrbitalAt(model,mo,x,y,min[2]+iz*steps[2])));
+        line.push(fmt(gpuValues ? gpuValues[(ix*ny+iy)*nz+iz] : moldenOrbitalAt(model,mo,x,y,min[2]+iz*steps[2])));
 
         if(line.length===6){rows.push(line.join(" "));line=[]}
 
@@ -385,6 +404,7 @@ async function handleMoldenFile(file){
   try{
 
     const model=parseMoldenForGrid(await file.text());
+    restoreMoldenGridControls();
 
     const xyzRows=model.atoms.map(a=>`${a.symbol} ${(a.x*BOHR_TO_ANGSTROM).toFixed(9)} ${(a.y*BOHR_TO_ANGSTROM).toFixed(9)} ${(a.z*BOHR_TO_ANGSTROM).toFixed(9)}`);
 

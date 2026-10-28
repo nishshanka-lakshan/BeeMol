@@ -64,7 +64,7 @@
           <label>Search start (fs)<input id="phaseSearchStart" type="number" value="0" step="0.1"></label>
           <label>Search end (fs)<input id="phaseSearchEnd" type="number" value="1000" step="0.1"></label>
           <label>Minimum prominence<input id="phaseProminence" type="number" min="0" step="0.01" value="0.04"></label>
-          <label>Detected maxima<select id="phaseMaxima"><option value="">Find maxima first</option></select></label>
+          <label>Detected maxima / minima<select id="phaseMaxima"><option value="">Find maxima first</option></select></label>
           <p class="mini-note">Analytical phase analysis from energies. Maxima use the equal-population model |A(t)|; repeated energies represent degeneracy.</p>
           <label>Selected times (fs)<input id="phaseTimes" value="4.036, 6.753"></label>
           <label>Figure layout<select id="phaseLayout"><option value="1">Single figure (one time)</option><option value="2" selected>2 panels (1 × 2)</option><option value="4">4 panels (2 × 2)</option><option value="6">6 panels (2 × 3)</option><option value="9">9 panels (3 × 3)</option><option value="16">16 panels (4 × 4)</option></select></label>
@@ -109,8 +109,8 @@
               <button id="phaseMovieRestart" type="button">↺ Restart</button>
               <button id="phaseMovieStop" type="button">Restore figure</button>
             </div>
-            <button id="phaseMovieDownload" class="phase-player-download" type="button">↓ Download movie</button>
-            <p class="mini-note">Drag to explore. Pause and step to inspect. At 1×, the selected range plays over two minutes. Slower speeds also apply to the downloaded movie.</p>
+            <button id="phaseMovieDownload" class="phase-player-download" type="button">↓ Download high-quality MP4</button>
+            <p class="mini-note">MP4 export tries a 3840 px long edge first, then reduces resolution, bitrate, or frame rate if the browser encoder requires it. Drag to explore. Pause and step to inspect. At 1×, the selected range plays over two minutes. Slower speeds also apply to the downloaded movie.</p>
           </section>
           `;
         const sidebar = document.querySelector('#analysisWorkspace > aside:last-child');
@@ -423,55 +423,155 @@
       async function downloadMovie() {
         if (recording) return;
         stopAnimation();
+        $('analysisMovieTab').click();
         let stream, recorder, disabled = [], failure;
         try {
-          const { start, end, duration, fps } = movieSettings();
+          const { start, end, duration, fps: requestedFPS } = movieSettings();
+          let fps = requestedFPS;
           if (typeof MediaRecorder === 'undefined' || !HTMLCanvasElement.prototype.captureStream) throw Error('Movie recording is unavailable in this browser. Try Chrome.');
-          const mime = ['video/webm;codecs=vp9', 'video/webm;codecs=vp8', 'video/webm', 'video/mp4'].find(type => MediaRecorder.isTypeSupported(type));
-          if (!mime) throw Error('This browser has no supported movie recording format.');
+          const mime = ['video/mp4;codecs=avc1', 'video/mp4'].find(type => MediaRecorder.isTypeSupported(type));
+          if (!mime) throw Error('This browser does not support MP4 recording. Open BeeMol in a browser with MP4 MediaRecorder support and try again.');
           recording = true; cancelMovie = false;
           disabled = Array.from(document.querySelectorAll('#analysisWorkspace input, #analysisWorkspace select, #analysisWorkspace textarea, #analysisWorkspace button')).map(node => [node, node.disabled]);
           disabled.forEach(([node]) => { node.disabled = node.id !== 'phaseMovieStop'; });
           savedMoviePage = $('phaseFigurePage').value;
           movieTime = start; draw();
-          const svg = $('analysisPlot').querySelector('svg');
-          if (!svg) throw Error('Display a valid phase plot before recording.');
+          // Capture both enabled panels using their displayed positions and sizes.
+          const panelIds = [
+            ...($('phaseMovieShowAnalytical').checked ? ['analyticalPreview'] : []),
+            ...($('phaseMovieShowPhase').checked ? ['analysisPlot'] : [])
+          ];
+          if (!panelIds.length) throw Error('Enable at least one movie plot before recording.');
+          function panels() {
+            return panelIds.map(id => {
+              const element = $(id)?.querySelector('svg');
+              if (!element) throw Error('Could not render the selected movie plots.');
+              const bounds = element.getBoundingClientRect();
+              if (!bounds.width || !bounds.height) throw Error('The selected movie plots must be visible before recording.');
+              return { element, bounds };
+            });
+          }
+          const initial = panels();
+          const left = Math.min(...initial.map(panel => panel.bounds.left));
+          const top = Math.min(...initial.map(panel => panel.bounds.top));
+          const width = Math.max(...initial.map(panel => panel.bounds.right)) - left;
+          const height = Math.max(...initial.map(panel => panel.bounds.bottom)) - top;
           const canvas = document.createElement('canvas');
-          canvas.width = Number(svg.getAttribute('width')) * 2;
-          canvas.height = Number(svg.getAttribute('height')) * 2;
+          // Render the vector plots at a fixed 4K long edge, independent of
+          // viewport size. Even dimensions are required by common MP4 encoders.
+          const exportScale = 3840 / Math.max(width, height);
+          canvas.width = Math.max(2, Math.round(width * exportScale / 2) * 2);
+          canvas.height = Math.max(2, Math.round(height * exportScale / 2) * 2);
+          const scaleX = canvas.width / width, scaleY = canvas.height / height;
           const context = canvas.getContext('2d');
           if (!context) throw Error('Could not create movie canvas.');
+          let layout = initial.map(panel => ({
+            x: (panel.bounds.left - left) * scaleX, y: (panel.bounds.top - top) * scaleY,
+            width: panel.bounds.width * scaleX, height: panel.bounds.height * scaleY
+          }));
+          // Assemble the complete frame offscreen. The recorder must never see
+          // the white clear or a frame with only one of the plots painted.
+          const frameCanvas = document.createElement('canvas');
+          frameCanvas.width = canvas.width;
+          frameCanvas.height = canvas.height;
+          const frameContext = frameCanvas.getContext('2d');
+          if (!frameContext) throw Error('Could not create movie frame buffer.');
           async function paint() {
-            const element = $('analysisPlot').querySelector('svg');
-            if (!element) throw Error('Could not render movie frame.');
-            const url = URL.createObjectURL(new Blob([new XMLSerializer().serializeToString(element)], {type:'image/svg+xml;charset=utf-8'}));
-            try {
-              const image = new Image();
-              await new Promise((resolve, reject) => { image.onload = resolve; image.onerror = () => reject(Error('Could not load movie frame.')); image.src = url; });
-              context.fillStyle = 'white'; context.fillRect(0, 0, canvas.width, canvas.height);
-              context.drawImage(image, 0, 0, canvas.width, canvas.height);
-            } finally { URL.revokeObjectURL(url); }
+            // Allow the shared movie layout and font sizing to settle first.
+            await new Promise(resolve => requestAnimationFrame(resolve));
+            frameContext.fillStyle = 'white';
+            frameContext.fillRect(0, 0, frameCanvas.width, frameCanvas.height);
+            const current = panels();
+            for (let i = 0; i < current.length; i++) {
+              const element = current[i].element.cloneNode(true);
+              const box = layout[i];
+              element.removeAttribute('style');
+              element.setAttribute('width', box.width);
+              element.setAttribute('height', box.height);
+              // Fixed-pixel strokes must grow with the exported frame as well.
+              const strokeScale = box.width / current[i].bounds.width;
+              const originalStrokes = current[i].element.querySelectorAll('[vector-effect="non-scaling-stroke"]');
+              element.querySelectorAll('[vector-effect="non-scaling-stroke"]').forEach((stroke, index) => {
+                const renderedWidth = parseFloat(getComputedStyle(originalStrokes[index]).strokeWidth);
+                if (Number.isFinite(renderedWidth)) {
+                  stroke.style.strokeWidth = `${renderedWidth * strokeScale}px`;
+                  stroke.setAttribute('stroke-width', renderedWidth * strokeScale);
+                }
+              });
+              const url = URL.createObjectURL(new Blob([new XMLSerializer().serializeToString(element)], {type:'image/svg+xml;charset=utf-8'}));
+              try {
+                const image = new Image();
+                await new Promise((resolve, reject) => { image.onload = resolve; image.onerror = () => reject(Error('Could not load movie frame.')); image.src = url; });
+                frameContext.drawImage(image, box.x, box.y, box.width, box.height);
+              } finally { URL.revokeObjectURL(url); }
+            }
+            context.drawImage(frameCanvas, 0, 0);
           }
-          await paint();
-          stream = canvas.captureStream(fps);
           const chunks = [];
-          recorder = new MediaRecorder(stream, {mimeType:mime, videoBitsPerSecond:16000000});
-          const done = new Promise((resolve, reject) => {
-            recorder.ondataavailable = event => { if (event.data.size) chunks.push(event.data); };
-            recorder.onstop = resolve;
-            recorder.onerror = event => reject(event.error || Error('Movie recording failed.'));
-          });
-          // Handle recorder failure immediately while frames are being produced.
+          let done;
+          let started = false;
+          const profiles = [
+            [3840, requestedFPS, requestedFPS === 60 ? 60000000 : 40000000],
+            [2560, requestedFPS, 20000000],
+            [1920, Math.min(requestedFPS, 30), 12000000],
+            [1280, Math.min(requestedFPS, 30), 6000000],
+            [1280, 24, null]
+          ];
+          for (const [longEdge, frameRate, bitrate] of profiles) {
+            fps = frameRate;
+            const scale = longEdge / Math.max(width, height);
+            canvas.width = Math.max(2, Math.round(width * scale / 2) * 2);
+            canvas.height = Math.max(2, Math.round(height * scale / 2) * 2);
+            frameCanvas.width = canvas.width;
+            frameCanvas.height = canvas.height;
+            layout = initial.map(panel => ({
+              x: (panel.bounds.left - left) * canvas.width / width,
+              y: (panel.bounds.top - top) * canvas.height / height,
+              width: panel.bounds.width * canvas.width / width,
+              height: panel.bounds.height * canvas.height / height
+            }));
+            await paint();
+            status(`Preparing MP4 ${canvas.width} × ${canvas.height} · ${fps} fps…`);
+            try {
+              stream = canvas.captureStream(fps);
+              const options = { mimeType: mime };
+              if (bitrate) options.videoBitsPerSecond = bitrate;
+              recorder = new MediaRecorder(stream, options);
+              chunks.length = 0;
+              done = new Promise((resolve, reject) => {
+                recorder.ondataavailable = event => { if (event.data.size) chunks.push(event.data); };
+                recorder.onstop = resolve;
+                recorder.onerror = event => reject(event.error || Error('Movie recording failed.'));
+              });
+              // Some encoders reject asynchronously after start(). Give them time
+              // to initialize before accepting a profile or trying a smaller one.
+              done.catch(() => {});
+              recorder.start();
+              await Promise.race([
+                new Promise(resolve => setTimeout(resolve, 300)),
+                done.then(() => { throw Error('MP4 encoder stopped during initialization.'); })
+              ]);
+              if (recorder.state !== 'recording') throw Error('MP4 encoder could not start.');
+              started = true;
+              break;
+            } catch (error) {
+              if (recorder && recorder.state !== 'inactive') recorder.stop();
+              if (stream) stream.getTracks().forEach(track => track.stop());
+              recorder = null;
+              stream = null;
+            }
+          }
+          if (!started) throw Error('This browser could not initialize an MP4 encoder, even at reduced quality. Try another browser with MP4 recording support.');
           done.catch(error => { failure = error; cancelMovie = true; });
-          recorder.start();
           const began = performance.now();
           while (!cancelMovie) {
             if ($('analysisPlotType').value !== 'autocorrelation-phase' || $('analysisWorkspace').classList.contains('hidden')) { cancelMovie = true; break; }
             const fraction = Math.min(1, (performance.now() - began) / (duration * 1000));
             movieTime = start + (end - start) * fraction;
+            const frameBegan = performance.now();
             draw(); await paint();
-            status(`Recording phase movie… ${Math.round(fraction * 100)}%`);
-            await new Promise(resolve => setTimeout(resolve, 1000 / fps));
+            status(`Recording MP4 ${canvas.width} × ${canvas.height} · ${fps} fps… ${Math.round(fraction * 100)}%`);
+            await new Promise(resolve => setTimeout(resolve, Math.max(0, 1000 / fps - (performance.now() - frameBegan))));
             if (fraction === 1) break;
           }
           if (recorder.state !== 'inactive') recorder.stop();
@@ -481,7 +581,7 @@
             const blob = new Blob(chunks, {type:mime});
             if (!blob.size) throw Error('Movie recording produced no video.');
             const url = URL.createObjectURL(blob), link = document.createElement('a');
-            link.href = url; link.download = `phase_evolution.${mime.startsWith('video/mp4') ? 'mp4' : 'webm'}`;
+            link.href = url; link.download = 'autocorrelation_phase_evolution.mp4';
             document.body.append(link); link.click(); link.remove();
             setTimeout(() => URL.revokeObjectURL(url), 1000);
           }
@@ -493,7 +593,7 @@
           recording = false; movieTime = null;
           if (savedMoviePage !== null) { $('phaseFigurePage').value = savedMoviePage; savedMoviePage = null; }
           draw();
-          status(failure ? failure.message : cancelMovie ? 'Movie recording cancelled.' : 'Phase movie downloaded.');
+          status(failure ? failure.message : cancelMovie ? 'Movie recording cancelled.' : 'MP4 movie downloaded.');
         }
       }
 

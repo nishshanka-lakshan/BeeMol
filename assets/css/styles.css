@@ -755,3 +755,78 @@
 .phase-export-actions > button { width:100%; min-width:0; min-height:44px; white-space:normal; }
 #analysisWorkspace:not(.phase-analysis-active) .analysis-sidebar-tabs { display:none; }
 #analysisWorkspace.phase-analysis-active .ordinary-analysis-settings-heading { display:none; }
+
+.analysis-dataset-actions { display: flex; gap: 8px; margin-top: 12px; }
+.analysis-dataset-actions > button { flex: 1; margin: 0; min-width: 0; }
+.analysis-dataset-actions > button[hidden] { display: none; }
+
+/* Compact scientific output matching the supplied reference. */
+.extrema-report {
+  box-sizing: border-box;
+  min-width: 0;
+  max-width: 100%;
+  margin-top: 16px;
+  padding: 8px;
+  border: 1px solid #111;
+  border-radius: 0;
+  background: #fff;
+  color: #111;
+  font-family: "Courier New", Courier, monospace;
+  font-size: clamp(9px, 1vw, 14px);
+  line-height: 1.25;
+}
+.extrema-reference-result { margin: 0 0 24px; min-width: 0; }
+.extrema-reference-result:last-child { margin-bottom: 0; }
+.extrema-reference-result h3, .extrema-reference-result p {
+  margin: 0;
+  padding: 0;
+  color: #111;
+  font: inherit;
+  letter-spacing: 0;
+}
+.extrema-reference-table {
+  width: 100%;
+  min-width: 0;
+  table-layout: fixed;
+  border-collapse: collapse;
+  background: #fff;
+  color: #111;
+  font: inherit;
+  font-variant-numeric: tabular-nums;
+  margin-top: 8px;
+}
+.extrema-report .extrema-reference-table th,
+.extrema-report .extrema-reference-table td {
+  background: #fff;
+  color: #111;
+  border: 0;
+  padding: 0 4px;
+  text-align: right;
+  font: inherit;
+  overflow-wrap: anywhere;
+}
+.extrema-report .extrema-reference-table th:first-child,
+.extrema-report .extrema-reference-table td:first-child { text-align: left; padding-left: 0; }
+.extrema-report .extrema-reference-table th:last-child,
+.extrema-report .extrema-reference-table td:last-child { padding-right: 0; }
+.extrema-reference-table thead { border-top: 2px dashed #333; }
+.extrema-report .extrema-reference-table thead th { padding-top: 8px; padding-bottom: 2px; }
+.extrema-reference-table tfoot { border-top: 2px dashed #333; }
+.extrema-report .extrema-reference-table tfoot th,
+.extrema-report .extrema-reference-table tfoot td { padding-top: 8px; }
+.extrema-report .extrema-reference-table tbody tr:last-child td { padding-bottom: 8px; }
+@media (max-width: 600px) {
+  .extrema-report { font-size: 9px; padding: 5px; }
+  .extrema-report .extrema-reference-table th,
+  .extrema-report .extrema-reference-table td { padding-left: 2px; padding-right: 2px; }
+}
+
+.orbital-slice-controls { margin-top: 18px; border: 1px solid var(--border); border-radius: 8px; padding: 12px; }
+.orbital-slice-controls legend { font-weight: 600; }
+#orbitalViewer { position: relative; }
+#orbitalSliceInset { position: absolute; right: 12px; bottom: 12px; width: min(300px, 65%); max-height: 90%; overflow: auto; background: white; color: #253443; border: 1px solid #cbd5e1; border-radius: 8px; box-shadow: 0 4px 20px #0002; z-index: 2; }
+#orbitalSliceInset[hidden] { display: none; }
+#orbitalSliceInset header { display: flex; justify-content: space-between; align-items: center; padding: 8px 10px; font-size: 12px; }
+#orbitalSliceInset header button { padding: 4px 8px; margin: 0; }
+#orbitalSliceInset canvas { width: 100%; height: auto; display: block; }
+#orbitalSliceInset p { font-size: 10px; padding: 0 10px 8px; margin: 0; }
