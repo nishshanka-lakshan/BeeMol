@@ -256,12 +256,7 @@
 
         <div id="orbitalControlsWrap" class="hidden">
           <div><label><input id="orbitalUseGPU" type="checkbox" checked> GPU orbital calculation</label><p id="orbitalComputeBackend" class="mini-note" role="status">Automatic WebGPU with CPU fallback · applies to Molden orbitals</p></div>
-          <fieldset id="orbitalSliceControls" class="orbital-slice-controls"><legend>MO cross-section</legend>
-      <label><input id="orbitalSliceEnabled" type="checkbox"> Show cross-section</label>
-      <label>Plane<select id="orbitalSlicePlane"><option>XY</option><option>XZ</option><option>YZ</option></select></label>
-      <label>Position <output id="orbitalSlicePosition">50%</output><input id="orbitalSliceOffset" type="range" min="0" max="100" step="0.1" value="50"></label>
-      <label><input id="orbitalSliceContours" type="checkbox" checked> Contour lines</label>
-      <p class="mini-note">Signed orbital amplitude in molecular coordinates; colors follow the orbital phase colors. Slice position spans the grid.</p><p id="orbitalSliceStatus" class="mini-note" role="status">Load an MO, then enable Show cross-section.</p></fieldset>
+
 
 
           <div class="orbital-controls-wrap">
@@ -422,6 +417,13 @@
               Open a Molden file. The available orbital numbers will be shown here.
 
             </div>
+
+          <fieldset id="orbitalSliceControls" class="orbital-slice-controls"><legend>MO cross-section</legend>
+      <label><input id="orbitalSliceEnabled" type="checkbox"> Show cross-section</label>
+      <label>Plane<select id="orbitalSlicePlane"><option>XY</option><option>XZ</option><option>YZ</option></select></label>
+      <label>Position <output id="orbitalSlicePosition">50%</output><input id="orbitalSliceOffset" type="range" min="0" max="100" step="0.1" value="50"></label>
+      <label><input id="orbitalSliceContours" type="checkbox" checked> Contour lines</label>
+      <p class="mini-note">Signed orbital amplitude in molecular coordinates; colors follow the orbital phase colors. Slice position spans the grid.</p><p id="orbitalSliceStatus" class="mini-note" role="status">Load an MO, then enable Show cross-section.</p></fieldset>
 
           </div>
 
