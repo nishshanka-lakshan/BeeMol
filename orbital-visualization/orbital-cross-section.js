@@ -5,15 +5,7 @@
   let frame = 0;
   function schedule() { cancelAnimationFrame(frame); frame = requestAnimationFrame(draw); }
   document.addEventListener('DOMContentLoaded', () => {
-    const controls = document.createElement('fieldset');
-    controls.className = 'orbital-slice-controls';
-    controls.innerHTML = `<legend>MO cross-section</legend>
-      <label><input id="orbitalSliceEnabled" type="checkbox"> Show cross-section</label>
-      <label>Plane<select id="orbitalSlicePlane"><option>XY</option><option>XZ</option><option>YZ</option></select></label>
-      <label>Position <output id="orbitalSlicePosition">50%</output><input id="orbitalSliceOffset" type="range" min="0" max="100" step="0.1" value="50"></label>
-      <label><input id="orbitalSliceContours" type="checkbox" checked> Contour lines</label>
-      <p class="mini-note">Signed orbital amplitude in molecular coordinates; colors follow the orbital phase colors. Slice position spans the grid.</p><p id="orbitalSliceStatus" class="mini-note" role="status">Load an MO, then enable Show cross-section.</p>`;
-    $('orbitalControlsWrap').append(controls);
+    const controls = $('orbitalSliceControls');
     const inset = document.createElement('section');
     inset.id = 'orbitalSliceInset'; inset.hidden = true;
     inset.innerHTML = '<header><strong id="orbitalSliceTitle">MO cross-section</strong><button id="orbitalSliceDownload" type="button">PNG</button></header><canvas id="orbitalSliceCanvas" width="600" height="600" role="img" aria-label="Molecular orbital cross-section"></canvas><p id="orbitalSliceLegend"></p>';
