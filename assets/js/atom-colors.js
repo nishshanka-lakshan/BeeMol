@@ -13,6 +13,8 @@
  }catch(error){/* Colors still work when storage is unavailable or invalid. */}
  function save(){try{localStorage.setItem(storageKey,JSON.stringify(Object.fromEntries(custom)))}catch(error){}}
  window.BeeMolAtomColors={
+  export(){return Object.fromEntries(custom)},
+  import(colors){custom.clear();for(const [element,color] of Object.entries(colors))if(symbols.includes(element)&&validColor(color))custom.set(element,color);save();document.dispatchEvent(new Event('atomcolorschange'))},
   symbol(number){return symbols[number-1]||String(number)},
   get(element){return custom.get(element)||defaults[element]||'#ff69b4'},
   set(element,color){if(!symbols.includes(element)||!validColor(color))return;custom.set(element,color);save();document.dispatchEvent(new Event('atomcolorschange'))},
