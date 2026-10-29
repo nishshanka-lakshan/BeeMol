@@ -8,6 +8,7 @@ let THREE, scene, camera, renderer, group, holder, running=false, bg=document.do
 
 let drag=null, rotation={x:0,y:0}, zoom=1, baseExtent=8, lastCube=null, currentGrid=null;
 
+let sliceViewRotation='';
 let slicePlaneSpec=null,slicePlaneMesh=null,slicePlaneOutline=null,moleculeCenter=[0,0,0];
 function updateSlicePlane(spec){
  slicePlaneSpec=spec;
@@ -19,7 +20,9 @@ function updateSlicePlane(spec){
  const {u,v,normal,position,min,max}=spec;
  const points=[[min[u],min[v]],[max[u],min[v]],[max[u],max[v]],[min[u],max[v]]].map(([a,b])=>{
   const p=[0,0,0];p[u]=a;p[v]=b;p[normal]=position;
-  return new THREE.Vector3(...p.map((value,k)=>value-moleculeCenter[k]));
+  return spec.viewSpace
+   ? new THREE.Vector3(...p).applyQuaternion(group.quaternion.clone().invert())
+   : new THREE.Vector3(...p.map((value,k)=>value-moleculeCenter[k]));
  });
  const geometry=new THREE.BufferGeometry().setFromPoints(points);
  geometry.setIndex([0,1,2,0,2,3]);geometry.computeVertexNormals();
@@ -83,7 +86,18 @@ function init(){
 
 function resize(){if(!renderer||!holder)return;let w=Math.max(1,holder.clientWidth||600),h=Math.max(1,holder.clientHeight||500);renderer.setSize(w,h,false);renderer.domElement.style.width='100%';renderer.domElement.style.height='100%';camera.aspect=w/h;camera.updateProjectionMatrix();fitCamera()}
 
-function draw(){if(renderer&&scene&&camera)renderer.render(scene,camera)}
+function draw(){
+ if(renderer&&scene&&camera)renderer.render(scene,camera);
+ if(group){
+  const orientation=group.quaternion.toArray().join(',');
+  if(orientation!==sliceViewRotation){sliceViewRotation=orientation;document.dispatchEvent(new Event('orbitalviewchange'));}
+ }
+}
+function getSliceTransform(){
+ if(!THREE||!group)return null;
+ const matrix=new THREE.Matrix4().makeRotationFromQuaternion(group.quaternion).elements;
+ return {rotation:[0,1,2].map(i=>[matrix[i],matrix[i+4],matrix[i+8]]),center:[...moleculeCenter]};
+}
 
 async function exportFigure(){
  if(!renderer||!lastCube)throw Error('Load an orbital before downloading a figure.');
@@ -597,6 +611,6 @@ function alignLongAxis(axis){
 
 }
 
-window.BeeMolThree={show,exportFigure,createMovieOutput,updateSlicePlane,getGrid(){return currentGrid},ready:promise,background(c){bg=c;if(renderer){renderer.setClearColor(c);draw()}},resize,fit(){zoom=1;fitCamera()},axisView:setAxisView,align:alignLongAxis,rotateView:turnAroundViewAxis,zoom(pct){zoom=Math.max(.1,pct/100);fitCamera()},rotate(axis,deg){if(axis==='x')rotation.x+=deg*Math.PI/180;else rotation.y+=deg*Math.PI/180;if(group){group.rotation.set(rotation.x,rotation.y,0);draw()}},redraw:draw, getCanvas(){return renderer?.domElement},get isReady(){return!!renderer}};
+window.BeeMolThree={show,exportFigure,createMovieOutput,updateSlicePlane,getSliceTransform,getGrid(){return currentGrid},ready:promise,background(c){bg=c;if(renderer){renderer.setClearColor(c);draw()}},resize,fit(){zoom=1;fitCamera()},axisView:setAxisView,align:alignLongAxis,rotateView:turnAroundViewAxis,zoom(pct){zoom=Math.max(.1,pct/100);fitCamera()},rotate(axis,deg){if(axis==='x')rotation.x+=deg*Math.PI/180;else rotation.y+=deg*Math.PI/180;if(group){group.rotation.set(rotation.x,rotation.y,0);draw()}},redraw:draw, getCanvas(){return renderer?.domElement},get isReady(){return!!renderer}};
 
 })();

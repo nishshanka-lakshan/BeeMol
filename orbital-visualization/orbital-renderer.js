@@ -56,15 +56,16 @@ async function initOrbitalIfNeeded(){return orbitalViewerReady||await initOrbita
 function frameRange(){const count=importedMolden?.orbitals.length||cubeFiles.size||1;const first=Math.max(1,Math.min(count,Number(document.getElementById('animationStart').value)||1)),last=Math.max(first,Math.min(count,Number(document.getElementById('animationEnd').value)||count)),step=Math.max(1,Number(document.getElementById('animationStep').value)||1);return {first,last,step,fps:Math.max(1,Math.min(12,Number(document.getElementById('animationFps').value)||6))}}
 async function displayFrame(n){document.getElementById('orbitalNumber').value=n;if(importedMolden)await loadCalculatedOrbital(n);else if(cubeFiles.has(n))await handleCubeFile(cubeFiles.get(n),true,true);document.getElementById('animationFrame').value=n}
 async function playAnimation(){if(recording)return;if(animationRunning){stopOrbitalAnimation();return}if(!importedMolden&&!cubeFiles.size){setOrbitalStatus('Open a Molden file first.',true);return}animationRunning=true;const token=++animationToken;updateAnimationButton(true);const r=frameRange();try{while(animationRunning&&token===animationToken){for(let n=r.first;n<=r.last&&animationRunning&&token===animationToken;n+=r.step){const start=performance.now();await displayFrame(n);await new Promise(resolve=>setTimeout(resolve,Math.max(0,1000/r.fps-(performance.now()-start))))}}}catch(e){setOrbitalStatus(e.message,true);stopOrbitalAnimation()}}
-async function recordMovie(){
+async function recordMovie(movieOptions={}){
  if(recording){stopMovieRecording?.();return;}
  if(!importedMolden&&!cubeFiles.size){setOrbitalStatus('Open a Molden file first.',true);return}
  if(!window.MediaRecorder){setOrbitalStatus('MP4 recording is unavailable in this browser.',true);return}
  const mime=['video/mp4;codecs=avc1.640033','video/mp4;codecs=avc1.64002A','video/mp4'].find(type=>MediaRecorder.isTypeSupported(type));
  if(!mime){setOrbitalStatus('This browser cannot record MP4. Open BeeMol in a browser with MP4 recording support.',true);return}
  stopOrbitalAnimation();recording=true;
- const button=document.getElementById('animationRecord'),r=frameRange();
- const controls=[...document.querySelectorAll('#orbitalWorkspace input, #orbitalWorkspace select, #orbitalWorkspace button:not([role="tab"]), #orbitalWorkspace summary, #orbitalListBody tr, .top-actions input, .top-actions button, .top-actions label')];
+ const button=document.getElementById(movieOptions.buttonId||'animationRecord'),r=frameRange();
+ const originalButton={html:button.innerHTML,title:button.title,label:button.getAttribute('aria-label')};
+ const controls=[...document.querySelectorAll('#orbitalSliceControls input, #orbitalSliceControls select, #orbitalSliceInset button, #orbitalWorkspace input, #orbitalWorkspace select, #orbitalWorkspace button:not([role="tab"]), #orbitalWorkspace summary, #orbitalListBody tr, .top-actions input, .top-actions button, .top-actions label')];
  const disabled=controls.filter(el=>el!==button).map(el=>[el,el.disabled,el.style.pointerEvents]);
  for(const [el] of disabled){el.disabled=true;el.style.pointerEvents='none'}
  button.disabled=false;
@@ -79,11 +80,11 @@ async function recordMovie(){
  try{
   await displayFrame(r.first);
   if(stopRequested){setOrbitalStatus('Recording stopped.');return}
-  const height=Number(document.getElementById('animationQuality').value)||1080;
-  output=window.BeeMolThree.createMovieOutput(height);output.render();
+  const height=movieOptions.height||Number(document.getElementById('animationQuality').value)||1080;
+  output=movieOptions.createOutput?movieOptions.createOutput(height):window.BeeMolThree.createMovieOutput(height);output.render();
   if(!output.canvas.captureStream)throw Error('Canvas movie recording is unavailable in this browser.');
   stream=output.canvas.captureStream(r.fps);
-  recorder=new MediaRecorder(stream,{mimeType:mime,videoBitsPerSecond:height===2160?40000000:16000000});
+  recorder=new MediaRecorder(stream,{mimeType:mime,videoBitsPerSecond:movieOptions.videoBitsPerSecond||(height===2160?40000000:16000000)});
   const chunks=[];
   recorder.ondataavailable=e=>{if(e.data.size)chunks.push(e.data)};
   const done=new Promise(resolve=>{recorder.onstop=resolve;recorder.onerror=e=>{recordingError=e.error||Error('MP4 encoding failed.');resolve()}});
@@ -107,7 +108,8 @@ async function recordMovie(){
    }
    if(stopRequested)break;
    if(recordingError)throw recordingError;
-   output.render();stream.getVideoTracks()[0]?.requestFrame?.();
+   if(!movieOptions.createOutput)output.render();
+   stream.getVideoTracks()[0]?.requestFrame?.();
    setOrbitalStatus(`Recording MP4 ${output.width} × ${output.height}: frame ${n} of ${r.last}`);
    await new Promise(resolve=>setTimeout(resolve,1000/r.fps));
    if(recordingError)throw recordingError;
@@ -116,13 +118,14 @@ async function recordMovie(){
   if(recordingError)throw recordingError;
   if(!chunks.length&&stopRequested){setOrbitalStatus('Recording stopped.');return}
   if(!chunks.length)throw Error('The browser produced an empty movie. Try 1080p.');
-  downloadBlob(new Blob(chunks,{type:recorder.mimeType||mime}),`orbital_animation_${height}p.mp4`);
+  downloadBlob(new Blob(chunks,{type:recorder.mimeType||mime}),movieOptions.filename?movieOptions.filename(height):`orbital_animation_${height}p.mp4`);
   setOrbitalStatus(`${stopRequested?'Recording stopped. ':''}MP4 downloaded (${output.width} × ${output.height}).`);
  }catch(e){if(recorder&&recorder.state!=='inactive')recorder.stop();setOrbitalStatus(e.message,true)}
  finally{
   stream?.getTracks().forEach(track=>track.stop());output?.dispose();recording=false;stopMovieRecording=null;
   for(const [el,wasDisabled,pointerEvents] of disabled){el.disabled=wasDisabled;el.style.pointerEvents=pointerEvents}
   button.disabled=false;button.innerHTML=orbitalActionIcon('movie');button.title='Download high-quality MP4 movie';button.setAttribute('aria-label',button.title);button.setAttribute('aria-pressed','false');
+  if(movieOptions.buttonId){button.innerHTML=originalButton.html;button.title=originalButton.title;if(originalButton.label===null)button.removeAttribute('aria-label');else button.setAttribute('aria-label',originalButton.label);}
  }
 }
 let viewerFilesLoading=false;
