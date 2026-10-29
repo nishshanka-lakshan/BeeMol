@@ -1,0 +1,18 @@
+const {infer,lanes}=require('../assets/js/bonding.js');
+const assert=require('node:assert/strict');
+const atom=(elem,x,y=0,z=0)=>({elem,x,y,z});
+assert.deepEqual(infer([atom('O',0),atom('H',.96)]).map(b=>b.order),[1]);
+assert.equal(infer([atom('C',0),atom('C',3)]).length,0);
+assert.equal(infer([atom('C',0),atom('C',.2)]).length,0);
+assert.deepEqual(infer([atom('O',-1.16),atom('C',0),atom('O',1.16)]).map(b=>b.order),[2,2]);
+assert.equal(infer([atom('N',0),atom('N',1.10)])[0].order,3);
+assert.equal(infer([atom('Ag',0),atom('Br',2.4)])[0].order,1);
+const methane=[atom('C',0),atom('H',.63,.63,.63),atom('H',-.63,-.63,.63),atom('H',-.63,.63,-.63),atom('H',.63,-.63,-.63)];
+assert.deepEqual(infer(methane).map(b=>b.order),[1,1,1,1]);
+const ring=Array.from({length:6},(_,i)=>atom('C',1.396*Math.cos(i*Math.PI/3),1.396*Math.sin(i*Math.PI/3)));
+const aromatic=infer(ring);assert.equal(aromatic.length,6);assert.equal(aromatic.filter(e=>e.order===2).length,3);assert.ok(aromatic.every(e=>e.aromatic));
+for(let i=0;i<6;i++)assert.equal(aromatic.filter(e=>e.i===i||e.j===i).reduce((s,e)=>s+e.order,0),3);
+const pair=[atom('N',0),atom('N',1.1)],edges=infer(pair),parallel=lanes(pair,edges[0],edges,.2);
+assert.equal(parallel.length,3);assert.ok(parallel.every(l=>Object.values(l.start).every(Number.isFinite)));
+assert.equal(infer([{...atom('C',0),model:0},{...atom('C',1.3),model:1}]).length,0);
+console.log('Bond-order inference checks passed');

@@ -1,0 +1,8 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1800" height="520" viewBox="0 0 1800 520" role="img" aria-labelledby="title desc">
+<title id="title">BeeMol</title><desc id="desc">The BeeMol header bee emoji on a golden tile beside the BeeMol wordmark and Quantum Chemistry Visualization tagline.</desc>
+<defs><linearGradient id="gold" x2="1" y2="1"><stop stop-color="#ffd84d"/><stop offset="1" stop-color="#f5a623"/></linearGradient><clipPath id="body"><ellipse cx="244" cy="270" rx="107" ry="72"/></clipPath></defs>
+<rect x="40" y="40" width="440" height="440" rx="100" fill="url(#gold)"/>
+<text x="260" y="260" text-anchor="middle" dominant-baseline="central" font-family="Apple Color Emoji, Segoe UI Emoji, Noto Color Emoji, sans-serif" font-size="242">🐝</text>
+<text x="555" y="295" font-family="Arial, Helvetica, sans-serif" font-size="220" font-weight="700" letter-spacing="-8"><tspan fill="#ffd84d">Bee</tspan><tspan fill="#1c2d43">Mol</tspan></text>
+<text x="568" y="376" font-family="Arial, Helvetica, sans-serif" font-size="43" fill="#52657d" letter-spacing="2">Quantum Chemistry Visualization</text>
+</svg>

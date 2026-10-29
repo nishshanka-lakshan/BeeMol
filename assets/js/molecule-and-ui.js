@@ -120,7 +120,7 @@ function updateBondSelectionStatus(){
 
   if(selectedBondAtoms.length === 0){
 
-    status.textContent = "Bond edit: click two atoms in the 3D viewer";
+    status.textContent = "Click 2 atoms for distance, 3 for angle, or 4 for dihedral.";
 
     return;
 
@@ -136,6 +136,13 @@ function updateBondSelectionStatus(){
 
     return;
 
+  }
+
+  if(selectedBondAtoms.length>=3){
+    const result=BeeMolMeasurements.calculate(selectedBondAtoms.map(i=>[atoms[i].x,atoms[i].y,atoms[i].z]));
+    const kind=selectedBondAtoms.length===3?'Angle':'Dihedral';
+    status.textContent=`${selectedBondAtoms.map(i=>atomLabel(atoms[i],i)).join(' → ')}: ${kind} ${result?result.value.toFixed(2)+'°':'undefined (coincident or collinear atoms)'}. ${selectedBondAtoms.length===3?'Click a fourth atom for dihedral.':'Click a new atom to start again.'}`;
+    return;
   }
 
   const i = selectedBondAtoms[0];
@@ -156,7 +163,7 @@ function updateBondSelectionStatus(){
 
   status.textContent =
 
-    `${atomLabel(a, i)} ↔ ${atomLabel(b, j)} selected. Current distance: ${distance.toFixed(4)} Å`;
+    `${atomLabel(a, i)} ↔ ${atomLabel(b, j)} selected. Current distance: ${distance.toFixed(4)} Å. Click a third atom for angle.`;
 
   document.getElementById("bondLengthInput").value =
 
@@ -182,7 +189,7 @@ function applySelectionStyle(){
 
     colorMoleculeAtoms();
 
-selectedBondAtoms.forEach((atomIndex, selectionNumber)=>{
+selectedBondAtoms.forEach((atomIndex)=>{
 
     viewer.setStyle(
 
@@ -196,7 +203,7 @@ selectedBondAtoms.forEach((atomIndex, selectionNumber)=>{
 
           scale:0.42,
 
-          color: selectionNumber === 0 ? "yellow" : "cyan"
+          color: "yellow"
 
         }
 
@@ -206,14 +213,33 @@ selectedBondAtoms.forEach((atomIndex, selectionNumber)=>{
 
   });
 
+  showSelectedMeasurement();
   viewer.render();
 
+}
+
+// Atom count determines distance, angle, or signed dihedral.
+function showSelectedMeasurement(){
+  const atoms=viewer.selectedAtoms({});
+  const indices=selectedBondAtoms.filter(i=>atoms[i]);
+  const readout=document.getElementById("moleculeMeasurement");
+  readout.hidden=indices.length<2;
+  readout.textContent="";
+  if(indices.length<2){
+    viewer.setMeasurements(indices.length?[{indices}]:[]);
+    return;
+  }
+  const result=BeeMolMeasurements.calculate(indices.map(i=>[atoms[i].x,atoms[i].y,atoms[i].z]));
+  const kind=indices.length===2?'Distance':indices.length===3?'Angle':'Dihedral';
+  readout.textContent=`${kind}: ${result?result.value.toFixed(indices.length===2?4:2)+' '+result.unit:'Undefined'}`;
+  viewer.setMeasurements([{indices}]);
 }
 
 function enableBondAtomSelection(){
 
   if(!viewer || typeof viewer.setClickable !== "function") return;
 
+  viewer.onGeometryClear=()=>{selectedBondAtoms=[];updateBondSelectionStatus();showSelectedMeasurement();};
   viewer.setClickable({}, true, function(atom){
 
     let index;
@@ -232,7 +258,7 @@ function enableBondAtomSelection(){
 
     }
 
-    if(selectedBondAtoms.length >= 2){
+    if(selectedBondAtoms.length >= 4 && !selectedBondAtoms.includes(index)){
 
       selectedBondAtoms = [];
 
@@ -350,17 +376,67 @@ function applySelectedBondLength(){
 
 }
 
+function syncAtomColorControls(){
+ const select=document.getElementById('atomColorElement'),picker=document.getElementById('atomColorPicker'),hex=document.getElementById('atomColorHex');
+ const waterActive=!document.getElementById('wbViewer').classList.contains('hidden');
+ const atoms=waterActive?(waterBoxViewer?.selectedAtoms()||[]).map(atom=>atom.elem):viewerMode==='orbitals'?(window.BeeMolThree?.getGrid()?.atoms||[]).map(atom=>window.BeeMolAtomColors.symbol(atom.z)):(viewer?.selectedAtoms()||[]).map(atom=>atom.elem);
+ const previous=select.value,elements=[...new Set(atoms)].sort();
+ select.replaceChildren(...elements.map(element=>{const option=document.createElement('option');option.value=element;option.textContent=element;return option}));
+ if(elements.includes(previous))select.value=previous;
+ select.disabled=picker.disabled=hex.disabled=document.getElementById('resetAtomColors').disabled=!elements.length;
+ if(elements.length)picker.value=hex.value=window.BeeMolAtomColors.get(select.value);
+ hex.setCustomValidity('');
+}
+document.getElementById('atomColorElement').addEventListener('change',()=>{
+ const color=window.BeeMolAtomColors.get(document.getElementById('atomColorElement').value);
+ document.getElementById('atomColorPicker').value=color;
+ document.getElementById('atomColorHex').value=color;
+ document.getElementById('atomColorHex').setCustomValidity('');
+});
+document.getElementById('atomColorPicker').addEventListener('input',event=>{
+ window.BeeMolAtomColors.set(document.getElementById('atomColorElement').value,event.target.value);
+});
+document.getElementById('atomColorHex').addEventListener('input',event=>{
+ const color=event.target.value.trim();
+ const valid=/^#[a-f\d]{6}$/i.test(color);
+ event.target.setCustomValidity(valid?'':'Enter a hex color such as #333333.');
+ if(valid)window.BeeMolAtomColors.set(document.getElementById('atomColorElement').value,color.toLowerCase());
+});
+document.getElementById('atomColorHex').addEventListener('change',event=>event.target.reportValidity());
+document.getElementById('resetAtomColors').addEventListener('click',()=>{window.BeeMolAtomColors.reset();syncAtomColorControls()});
+
+document.addEventListener('orbitalgridchange',()=>requestAnimationFrame(syncAtomColorControls));
+document.addEventListener('atomcolorschange',syncAtomColorControls);
+
 function loadMolecule(){
 
   try{
 
     const raw = document.getElementById("xyzInput").value;
 
+    if(!raw.trim()){
+      viewer?.clear();
+      syncAtomColorControls();
+      selectedBondAtoms=[];
+      spinning=false;
+      document.getElementById("spinBtn").textContent="Spin";
+      document.getElementById("viewerStack").removeAttribute("data-molecule-loaded");
+      document.getElementById("atomCount").textContent="0 atoms";
+      document.getElementById("bondSelectionStatus").textContent="Click 2 atoms for distance, 3 for angle, or 4 for dihedral.";
+      const status=document.getElementById("geomStatus");
+      status.textContent="Waiting for coordinates";status.className="status";
+      document.getElementById("codeOutput").textContent="# Open an XYZ or Molden file to generate input.";
+      const codeStatus=document.getElementById("codeStatus");
+      codeStatus.textContent="Waiting for coordinates";codeStatus.className="status";
+      return;
+    }
+
     const xyz = normalizeXYZ(raw);
 
     viewer.clear();
 
     viewer.addModel(xyz, "xyz");
+    syncAtomColorControls();
 
     viewer.setStyle(
 
@@ -382,11 +458,15 @@ enableBondAtomSelection();
 
     viewer.ready.then(() => {
 
+      if(!document.getElementById("xyzInput").value.trim())return;
+
       viewer.zoomTo();
 
       viewer.resize();
 
       viewer.render();
+
+      document.getElementById("viewerStack").dataset.moleculeLoaded = "true";
 
     }).catch(error => {
 
@@ -457,19 +537,12 @@ function commonMolCode(){
   const jobName = document.getElementById("jobName").value.trim() || "pyscf_job";
 
   return `mol = gto.M(
-
     atom='''\n${atomBlock()}\n    ''',
-
     basis='${basis}',
-
     charge=${charge},
-
     spin=${spin},
-
     max_memory=${memory},
-
     verbose=${verbose},
-
 )${chk ? `\n\nchkfile = '${jobName}.chk'` : ""}`;
 
 }
@@ -568,15 +641,15 @@ if(method2==="MP2"){
 
   if(method2==="CASSCF"){
 
-    post = `\n\nmc = mcscf.CASSCF(mf, ${ncas}, ${nelecas})\nmc.verbose = mol.verbose\nmc.kernel()`;
+    post = `\n\nmc = mcscf.CASSCF(mf, ${ncas}, ${nelecas})\nmc.verbose = 4\n#cas_list = []\n#mo = pyscf.mcscf.sort_mo(mc, init_mo, cas_list)\nemc = mc.mc1step()[0]\nmc.analyze()`;
 
   } else if(method2==="CASCI"){
 
-    post = `\n\nmc = mcscf.CASCI(mf, ${ncas}, ${nelecas})\nmc.verbose = mol.verbose\nmc.kernel()`;
+    post = `\n\nmc = mcscf.CASCI(mf, ${ncas}, ${nelecas})\nmc.verbose = 4\n#cas_list = []\n#mo = pyscf.mcscf.sort_mo(mc, init_mo, cas_list)\nemc = mc.kernel()[0]\nmc.analyze()`;
 
   } else {
 
-    post = `\n\nmc = mcscf.CASSCF(mf, ${ncas}, ${nelecas})\nmc.verbose = mol.verbose\nmc.kernel()\n\nnev = mrpt.NEVPT(mc)\nnev.kernel()`;
+    post = `\n\nmc = mcscf.CASSCF(mf, ${ncas}, ${nelecas})\nmc.verbose = 4\n#cas_list = []\n#mo = pyscf.mcscf.sort_mo(mc, init_mo, cas_list)\nemc = mc.mc1step()[0]\nmc.analyze()\n\nnev = mrpt.NEVPT(mc)\nnev.kernel()`;
 
   }
 
@@ -598,13 +671,11 @@ if(method2==="MP2"){
 
   imports.push("from pyscf.tools import molden");
 
-  const jobName = document.getElementById("jobName").value.trim() || "pyscf_job";
-
-  moldenExport = `\n\n# Open this file in BeeMol's Orbitals tab\nmolden.from_scf(mf, '${jobName}_scf.molden')`;
+  body += `\nmf.analyze()\n\n\n# Open this file in BeeMol's Orbitals tab\nmolden.from_mo(mf.mol, 'scf.molden', mf.mo_coeff)`;
 
   if(["CASSCF", "CASCI", "NEVPT2"].includes(method2)){
 
-    moldenExport += `\n# CASSCF/CASCI optimized orbitals; no SCF energy assigned to them\nmolden.from_mo(mol, '${jobName}_cas.molden', mc.mo_coeff)`;
+    moldenExport += `\n\n\n# CASSCF/CASCI optimized orbitals; no SCF energy assigned to them\nmolden.from_mo(mf.mol, 'casscf.molden', mc.mo_coeff)`;
 
   }
 
@@ -622,7 +693,7 @@ if(method2==="MP2"){
 
     document.getElementById("codeOutput").textContent =
 
-      code.replace(/\n[ \t]*\n(?:[ \t]*\n)+/g, "\n\n").trim() + "\n";
+      code.trim() + "\n";
 
     const s = document.getElementById("codeStatus");
 
@@ -683,6 +754,8 @@ document.querySelectorAll("input,select,textarea").forEach(el=>{
     if(el.id === "xyzInput"){
 
       clearTimeout(coordinateUpdateTimer);
+
+      if(!el.value.trim()){loadMolecule();return;}
 
       coordinateUpdateTimer = setTimeout(()=>{
 
@@ -766,6 +839,44 @@ const orbitalAnimationPanel=document.getElementById("orbitalAnimation");
 
 document.getElementById("orbitalPropertiesHost").append(orbitalAnimationPanel);
 
+// Compact controls reuse the original inputs and handlers.
+function orbitalActionIcon(name){
+ const paths={previous:'m15 6-6 6 6 6',next:'m9 6 6 6-6 6',play:'m8 5 11 7-11 7Z',stop:'M6 6h12v12H6Z',image:'M4 4h16v16H4Z M4 16l5-5 4 4 3-3 4 4 M15 8h.01',cube:'m12 3 9 5v9l-9 5-9-5V8Z M3 8l9 5 9-5 M12 13v9',movie:'M3 5h13v14H3Z m13 5 5-3v10l-5-3',fit:'M9 3H3v6 M15 3h6v6 M3 15v6h6 M21 15v6h-6',horizontal:'M3 12h18 M7 8l-4 4 4 4 M17 8l4 4-4 4',vertical:'M12 3v18 M8 7l4-4 4 4 M8 17l4 4 4-4',view:'M2 12s4-7 10-7 10 7 10 7-4 7-10 7S2 12 2 12Z M12 9a3 3 0 1 0 0 6 3 3 0 0 0 0-6',zoom:'M10 4a6 6 0 1 0 0 12 6 6 0 0 0 0-12 M15 15l6 6 M7 10h6 M10 7v6'};
+ return `<svg viewBox="0 0 24 24" width="19" height="19" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="${paths[name]}"/></svg>`;
+}
+function setupCompactOrbitalControls(){
+ const host=document.getElementById('orbitalPropertiesHost');
+ const slice=document.getElementById('orbitalSliceControls');host.append(slice);
+ for(const [id,tab] of [['orbitalControlsWrap','showOrbitalAppearance'],['orbitalSliceControls','showOrbitalSlice'],['orbitalAnimation','toggleOrbitalAnimation']]){
+  const panel=document.getElementById(id);panel.setAttribute('role','tabpanel');panel.setAttribute('aria-labelledby',tab);
+ }
+ const advanced=document.createElement('details');advanced.className='orbital-advanced';
+ advanced.innerHTML='<summary>Advanced</summary>';
+ advanced.append(document.getElementById('orbitalUseGPU').closest('div'),document.getElementById('gridX').closest('.grid-dimensions').parentElement);
+ document.querySelector('#orbitalControlsWrap .orbital-controls-wrap').append(advanced);
+ const depth=document.getElementById('orbitalDepth').parentElement;depth.classList.add('orbital-material');
+ for(const id of ['orbitalDepth','orbitalGloss']){
+  const input=document.getElementById(id),label=document.querySelector(`label[for="${id}"]`),group=document.createElement('div');group.append(label,input);depth.append(group);
+ }
+ const status=document.getElementById('orbitalStatus');status.setAttribute('role','status');status.setAttribute('aria-live','polite');host.append(status);
+ for(const [id,icon,label] of [['orbitalPrev','previous','Previous orbital'],['orbitalNext','next','Next orbital'],['downloadOrbitalFigure','image','Download high-resolution PNG'],['downloadOrbitalCube','cube','Download orbital CUBE'],['animationPlay','play','Play animation'],['animationRecord','movie','Download high-quality MP4 movie'],['fitOrbitalBtn','fit','Fit molecule to view'],['alignHorizontal','horizontal','Align horizontally'],['alignVertical','vertical','Align vertically'],['applyAxisView','view','Apply viewing axis'],['applyOrbitalZoom','zoom','Apply zoom']]){
+  const button=document.getElementById(id);button.innerHTML=orbitalActionIcon(icon);button.title=label;button.setAttribute('aria-label',label);button.classList.add('orbital-icon-button');
+ }
+ // Keep scientific explanations available without occupying the panel.
+ for(const panel of [document.getElementById('orbitalAnimation'),slice]){
+  const notes=[...panel.querySelectorAll('.mini-note:not([id])')];
+  if(notes.length){const help=document.createElement('details');help.className='orbital-help';help.innerHTML='<summary>Help</summary>';help.append(...notes);panel.append(help)}
+ }
+ const toolbar=document.getElementById('orientationControls');
+ const hint=toolbar.querySelector('span.mini-note');if(hint){toolbar.querySelectorAll('[data-rotate-axis]').forEach(button=>button.title='Rotate '+button.dataset.rotateAxis.slice(1).toUpperCase()+': click forward, Shift-click reverse');hint.remove()}
+ const tabs=[...host.querySelectorAll('[role="tab"]')];
+ tabs.forEach((button,index)=>button.addEventListener('keydown',event=>{
+  const next=event.key==='ArrowRight'?(index+1)%tabs.length:event.key==='ArrowLeft'?(index+tabs.length-1)%tabs.length:event.key==='Home'?0:event.key==='End'?tabs.length-1:null;
+  if(next!==null){event.preventDefault();tabs[next].click();tabs[next].focus()}
+ }));
+ showOrbitalPropertiesTab('appearance');
+}
+
 function arrangeOrbitalWorkspace(isMolecule){
 
   document.getElementById("orbitalWorkspace").classList.toggle("hidden",isMolecule);
@@ -824,6 +935,9 @@ function switchViewerMode(mode) {
   // Update the selected mode
 
   viewerMode = mode;
+  requestAnimationFrame(syncAtomColorControls);
+
+  document.getElementById("orbitalBgColorPicker").value = isMolecule ? viewerBgColor : orbitalBackground;
 
   arrangeOrbitalWorkspace(isMolecule);
 
@@ -852,6 +966,8 @@ function switchViewerMode(mode) {
   document.getElementById("orbitalControlsWrap")
 
     .classList.toggle("hidden", isMolecule);
+
+  if (!isMolecule) showOrbitalPropertiesTab(orbitalPropertiesTab);
 
   document.getElementById("tabsCard")
 

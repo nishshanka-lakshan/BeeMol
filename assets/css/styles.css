@@ -476,7 +476,7 @@
 
     #orbitalPropertiesHost>#orbitalAnimation.hidden,#orbitalPropertiesHost>#orbitalControlsWrap.hidden{display:none}
 
-    .top-actions{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));width:min(100%,690px);margin-left: auto}
+    .top-actions{display:flex;gap:8px;width:auto;margin-left:auto}
 
     .top-actions button,.top-actions .file-label{width:100%;height:44px;display:flex;align-items:center;justify-content:center;box-sizing:border-box;white-space:nowrap}
 
@@ -830,3 +830,153 @@
 #orbitalSliceInset header button { padding: 4px 8px; margin: 0; }
 #orbitalSliceInset canvas { width: 100%; height: auto; display: block; }
 #orbitalSliceInset p { font-size: 10px; padding: 0 10px 8px; margin: 0; }
+
+/* Keep orbital tools within the viewport; long panels scroll independently. */
+#orbitalPropertiesHost > .card-header { grid-template-columns:repeat(3,minmax(0,1fr));gap:0;padding:0;flex-shrink:0;background:#0e1728;border-bottom:1px solid var(--border); }
+#orbitalPropertiesHost > .card-header button { display:flex;align-items:center;justify-content:center;text-align:center;font-family:inherit;font-size:13px;font-weight:700;height:auto;min-height:40px;padding:10px 6px;margin:0;border:0;border-right:1px solid var(--border);border-radius:0;background:transparent;color:var(--muted);box-shadow:none; }
+#orbitalPropertiesHost > .card-header button:last-child { border-right:0; }
+#orbitalPropertiesHost > .card-header button.active { color:var(--text);background:#18243b; }
+#orbitalPropertiesHost > .card-header button:hover { transform:none;color:var(--text); }
+#orbitalWorkspace .orbital-controls { grid-template-columns:repeat(2,minmax(0,1fr)); gap:10px; }
+#orbitalWorkspace .orbital-controls-wrap { padding:0; }
+#orbitalWorkspace #orbitalControlsWrap { padding:12px; }
+#orbitalWorkspace .orbital-controls label { font-size:12px; }
+#orbitalWorkspace .orbital-material { display:grid;grid-template-columns:1fr 1fr;gap:10px; }
+#orbitalWorkspace .orbital-material label { margin-top:0 !important; }
+#orbitalWorkspace .orbital-actions { display:flex;gap:8px;margin-top:12px; }
+#orbitalWorkspace .orbital-actions button { width:40px;height:36px; }
+.orbital-icon-button { display:inline-flex;align-items:center;justify-content:center;min-width:36px;min-height:36px;padding:7px; }
+.orbital-icon-button svg { flex-shrink:0;pointer-events:none; }
+.orbital-icon-button:focus-visible, #orbitalPropertiesHost [role="tab"]:focus-visible { outline:2px solid var(--accent);outline-offset:2px; }
+.orbital-advanced,.orbital-help { margin-top:12px;border-top:1px solid var(--border);padding-top:10px;font-size:12px; }
+.orbital-advanced summary,.orbital-help summary { cursor:pointer;color:var(--muted);padding:4px 0; }
+.orbital-advanced > div { margin-top:10px; }
+#orbitalPropertiesHost > #orbitalSliceControls { margin:12px;min-width:0; }
+#orbitalSliceControls > label { display:block;margin:10px 0; }
+#orbitalSliceControls select,#orbitalSliceControls input[type="range"] { width:100%; }
+#orbitalPropertiesHost > #orbitalStatus { margin:0;padding:10px 12px;border-top:1px solid var(--border);font-size:12px;flex-shrink:0;max-height:100px;overflow:auto; }
+#orbitalPropertiesHost > .hidden { display:none; }
+@media(min-width:1051px){
+ #orbitalWorkspace { height:calc(100dvh - 78px);min-height:0;grid-template-columns:minmax(200px,250px) minmax(0,1fr) minmax(290px,335px);align-items:stretch;overflow:hidden; }
+ #orbitalSceneHost,#orbitalViewHost,#orbitalPropertiesHost { min-height:0; }
+ #orbitalSceneHost > .card,#orbitalViewHost > .card { height:100%;display:flex;flex-direction:column;overflow:hidden; }
+ #orbitalWorkspace #orbitalListWrap { min-height:0;max-height:none;flex:1;overflow:auto; }
+ #orbitalWorkspace #orbitalListCard > .section { min-height:0;display:flex;flex-direction:column;flex:1;overflow:hidden; }
+ #orbitalWorkspace #viewerStack { height:auto;min-height:180px;flex:1;margin:10px 12px; }
+ #orbitalWorkspace #orientationControls { gap:5px !important;flex-shrink:0;font-size:12px; }
+ #orbitalPropertiesHost { display:flex;flex-direction:column;overflow:hidden; }
+ #orbitalPropertiesHost > [role="tabpanel"] { min-height:0;overflow:auto;flex:1; }
+ #orbitalPropertiesHost > #orbitalAnimation { margin:0;border:0; }
+ #orbitalPropertiesHost > #orbitalSliceControls { flex-basis:0; }
+}
+@media(max-width:1050px){
+ #orbitalWorkspace { min-height:0; }
+ #orbitalWorkspace #viewerStack { height:clamp(280px,50dvh,560px); }
+ #orbitalPropertiesHost > [role="tabpanel"] { max-height:60dvh;overflow:auto; }
+}
+@media(max-width:660px){
+ #orbitalWorkspace .orbital-controls { grid-template-columns:repeat(2,minmax(0,1fr)); }
+ #orbitalWorkspace #viewerStack { height:350px; }
+}
+
+/* Connected navigation tabs, matching the orbital settings tabs. */
+.mode-tabs,
+#orbitalWorkspace .mode-tabs,
+#aiModes {
+  display:flex;
+  gap:0;
+  padding:0;
+  margin:0;
+  background:#0e1728;
+  border-bottom:1px solid var(--border);
+  flex-wrap:wrap;
+}
+.mode-tabs > .mode-tab,
+.mode-tabs > button,
+#aiModes > button {
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  flex:0 0 auto;
+  min-height:40px;
+  margin:0;
+  padding:10px 13px;
+  border:0;
+  border-right:1px solid var(--border);
+  border-radius:0;
+  background:transparent;
+  color:var(--muted);
+  font-family:inherit;
+  font-size:13px;
+  font-weight:700;
+  text-align:center;
+  cursor:pointer;
+  box-shadow:none;
+}
+.mode-tabs > :last-child,
+#aiModes > button:last-child { border-right:0; }
+.mode-tabs > .active,
+#aiModes > button.active { color:var(--text);background:#18243b; }
+.mode-tabs > :hover,
+#aiModes > button:hover { transform:none;color:var(--text); }
+.mode-tabs > :focus-visible,
+#aiModes > button:focus-visible { outline:2px solid var(--accent);outline-offset:-2px; }
+
+.molecule-export-actions{display:flex;flex-wrap:wrap;gap:8px;margin-top:14px;padding-top:14px;border-top:1px solid var(--border)}
+.molecule-export-actions button{flex:1 1 auto;justify-content:center;min-height:40px}
+
+/* Shared upload surface stays above both WebGL canvases. */
+.viewer-file-drop{position:absolute;z-index:3;left:50%;top:50%;transform:translate(-50%,-50%);width:min(480px,calc(100% - 40px));text-align:center;pointer-events:none}
+#viewerFileBrowse{pointer-events:auto;display:flex;flex-direction:column;gap:12px;width:100%;min-height:180px;padding:32px 24px;border:2px dashed var(--border);border-radius:16px;background:var(--panel);color:var(--text);box-shadow:0 4px 24px #0002;white-space:normal;font-family:inherit;font-size:clamp(17px,2vw,23px);line-height:1.45;text-align:center;justify-content:center}
+#viewerFileBrowse small{font-size:15px;font-weight:400;color:var(--muted)}
+#viewerFileBrowse:hover{transform:none;border-color:var(--accent)}
+#viewerFileBrowse:focus-visible{outline:2px solid var(--accent);outline-offset:3px}
+#viewerFileStatus:not(:empty){display:block;margin-top:6px;padding:6px 10px;background:var(--panel);color:var(--text);font-size:12px;overflow-wrap:anywhere}
+#viewerStack.file-drag-active{outline:3px dashed var(--accent);outline-offset:-5px}
+#viewerStack.file-drag-active #viewerFileBrowse{border-color:var(--accent);background:var(--panel2)}
+#viewerStack:has(#wbViewer:not(.hidden)) .viewer-file-drop{display:none}
+
+/* Keep uploaded structures unobstructed, with a prompt in each empty view. */
+#viewerStack[data-molecule-loaded="true"]:has(#viewer:not(.hidden)):not(.file-drag-active) #viewerFileBrowse,
+#viewerStack[data-orbital-loaded="true"]:has(#orbitalViewer:not(.hidden)):not(.file-drag-active) #viewerFileBrowse{display:none}
+
+.viewer-atom-count{position:absolute;top:10px;right:10px;z-index:2;pointer-events:none;background:var(--panel);color:var(--muted);border:1px solid var(--border);border-radius:6px;padding:4px 8px;font-size:12px}
+
+.atom-color-controls{display:flex;align-items:center;flex-wrap:wrap;gap:8px}
+.atom-color-controls label{margin:0}
+#atomColorElement{width:70px}
+#atomColorPicker{width:38px;height:34px;padding:2px;cursor:pointer}
+
+.button-tooltip{position:fixed;z-index:10000;max-width:min(300px,calc(100vw - 16px));padding:7px 11px;border:1px solid var(--border);border-radius:7px;background:var(--text);color:var(--panel);font-family:inherit;font-size:12px;font-weight:600;line-height:1.4;box-shadow:0 3px 12px #0003;pointer-events:none;overflow-wrap:anywhere}
+.button-tooltip[hidden]{display:none}
+
+#aboutWorkspace{padding:12px;min-height:calc(100dvh - 78px)}
+#aboutWorkspace.hidden{display:none}
+.about-card{max-width:1100px;margin:0 auto}
+.about-content{padding:clamp(20px,4vw,48px)}
+.about-content h1{margin:0 0 24px;font-size:28px}
+.about-logo-preview{background:#fff;border:1px solid var(--border);border-radius:12px;padding:clamp(12px,3vw,36px)}
+.about-logo-preview img{display:block;width:100%;height:auto}
+.about-downloads{display:flex;flex-wrap:wrap;gap:10px;margin-top:20px}
+.about-downloads a{text-decoration:none;justify-content:center}
+#aboutDownloadStatus{font-size:12px;color:var(--muted)}
+#aboutDetails{margin-top:32px;padding-top:24px;border-top:1px solid var(--border)}
+#aboutDetails h2{font-size:18px}
+#aboutDetails p{color:var(--muted);line-height:1.7}
+
+/* Fixed measurement readout inside the Molecule viewport. */
+.molecule-measurement {
+  position:absolute;left:14px;bottom:14px;z-index:5;
+  max-width:calc(100% - 28px);padding:9px 13px;
+  border:1px solid var(--border);border-radius:8px;
+  background:var(--panel);color:var(--text);
+  font-size:14px;font-weight:600;line-height:1.4;
+  font-variant-numeric:tabular-nums;pointer-events:none;
+  box-shadow:0 2px 8px #0002;overflow-wrap:anywhere;
+}
+.molecule-measurement[hidden],
+#viewerStack:has(#viewer.hidden) .molecule-measurement,
+#viewerStack:has(#wbViewer:not(.hidden)) .molecule-measurement {display:none}
+
+#atomColorHex{width:100px;font-family:monospace}
+#atomColorHex:invalid{border-color:#d34b4b}

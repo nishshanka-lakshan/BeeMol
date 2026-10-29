@@ -444,6 +444,7 @@ async function generateWaterBox() {
     waterBoxViewer.resize();
 
     waterBoxViewer.render();
+    syncAtomColorControls();
 
     wb("wbDownload").disabled = false;
     wb("wbDownloadPDB").disabled = false;
@@ -487,6 +488,7 @@ wb("wbOpen").onclick = () => {
   wb("moleculeControls").classList.add("hidden");
 
   wb("orientationControls").style.display = "none";
+  requestAnimationFrame(syncAtomColorControls);
 
   wb("tabsCard").classList.add("hidden");
 

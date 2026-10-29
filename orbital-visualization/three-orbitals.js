@@ -4,9 +4,30 @@
 
 'use strict';
 
-let THREE, scene, camera, renderer, group, holder, running=false, bg='#ffffff';
+let THREE, scene, camera, renderer, group, holder, running=false, bg=document.documentElement.dataset.theme==='light'?'#ffffff':'#070d17';
 
 let drag=null, rotation={x:0,y:0}, zoom=1, baseExtent=8, lastCube=null, currentGrid=null;
+
+let slicePlaneSpec=null,slicePlaneMesh=null,slicePlaneOutline=null,moleculeCenter=[0,0,0];
+function updateSlicePlane(spec){
+ slicePlaneSpec=spec;
+ for(const object of [slicePlaneMesh,slicePlaneOutline]){
+  if(!object)continue;group?.remove(object);object.geometry.dispose();object.material.dispose();
+ }
+ slicePlaneMesh=slicePlaneOutline=null;
+ if(!spec||!THREE||!group||!currentGrid){draw();return}
+ const {u,v,normal,position,min,max}=spec;
+ const points=[[min[u],min[v]],[max[u],min[v]],[max[u],max[v]],[min[u],max[v]]].map(([a,b])=>{
+  const p=[0,0,0];p[u]=a;p[v]=b;p[normal]=position;
+  return new THREE.Vector3(...p.map((value,k)=>value-moleculeCenter[k]));
+ });
+ const geometry=new THREE.BufferGeometry().setFromPoints(points);
+ geometry.setIndex([0,1,2,0,2,3]);geometry.computeVertexNormals();
+ slicePlaneMesh=new THREE.Mesh(geometry,new THREE.MeshBasicMaterial({color:0x36a9c9,transparent:true,opacity:.18,side:THREE.DoubleSide,depthWrite:false}));
+ slicePlaneOutline=new THREE.LineLoop(new THREE.BufferGeometry().setFromPoints(points),new THREE.LineBasicMaterial({color:0x1684a6,transparent:true,opacity:.9,depthWrite:false}));
+ slicePlaneMesh.renderOrder=2;slicePlaneOutline.renderOrder=3;
+ group.add(slicePlaneMesh,slicePlaneOutline);draw();
+}
 
 const ANG=0.529177210903;
 
@@ -20,7 +41,8 @@ function init(){
 
  renderer=new THREE.WebGLRenderer({antialias:true,preserveDrawingBuffer:true,alpha:false});
 
- renderer.setPixelRatio(Math.min(devicePixelRatio||1,2)); renderer.setClearColor(bg);
+ // Supersample standard displays as well as Retina displays for crisp atom edges.
+ renderer.setPixelRatio(2); renderer.setClearColor(bg);
 
  renderer.outputColorSpace=THREE.SRGBColorSpace;
 
@@ -52,6 +74,8 @@ function init(){
  holder.addEventListener('wheel',e=>{e.preventDefault();zoom=Math.max(.15,Math.min(6,zoom*Math.exp(-e.deltaY*.001)));fitCamera();},{passive:false});
 
  window.addEventListener('resize',resize);
+ // Workspace panels can resize without a window resize; keep the drawing buffer in sync.
+ if(typeof ResizeObserver!=='undefined')new ResizeObserver(resize).observe(holder);
 
  running=true;resize();
 
@@ -85,6 +109,26 @@ async function exportFigure(){
  }finally{
   if(output){output.dispose();output.forceContextLoss()}
  }
+}
+
+// Render movies independently of the on-screen canvas size.
+function createMovieOutput(height=1080){
+ if(!renderer||!lastCube)throw Error('Load an orbital before recording a movie.');
+ let output;
+ try{
+  output=new THREE.WebGLRenderer({antialias:true,alpha:false,preserveDrawingBuffer:true});
+  output.outputColorSpace=renderer.outputColorSpace;output.setClearColor(bg);output.setPixelRatio(1);
+  const width=height===2160?3840:1920;
+  const gl=output.getContext(),viewport=gl.getParameter(gl.MAX_VIEWPORT_DIMS);
+  if(width>Math.min(gl.getParameter(gl.MAX_RENDERBUFFER_SIZE),viewport[0])||height>Math.min(gl.getParameter(gl.MAX_RENDERBUFFER_SIZE),viewport[1]))throw Error('This device cannot render that movie resolution. Choose 1080p.');
+  output.setSize(width,height,false);
+  const movieCamera=camera.clone(),originalAspect=camera.aspect;
+  movieCamera.aspect=width/height;
+  // Expand the frame when necessary so the current view is never cropped.
+  if(movieCamera.aspect<originalAspect)movieCamera.fov=2*Math.atan(Math.tan(camera.fov*Math.PI/360)*originalAspect/movieCamera.aspect)*180/Math.PI;
+  movieCamera.updateProjectionMatrix();
+  return {canvas:output.domElement,width,height,render(){output.render(scene,movieCamera)},dispose(){output.dispose();output.forceContextLoss()}};
+ }catch(error){if(output){output.dispose();output.forceContextLoss()}throw error}
 }
 
 function fitCamera(){if(!camera)return;const fov=camera.fov*Math.PI/180;const aspect=Math.max(0.1,camera.aspect||1);const distance=Math.max(2,(baseExtent/2)/Math.tan(fov/2)/Math.min(1,aspect)*1.35/zoom);camera.position.set(0,0,distance);camera.lookAt(0,0,0);camera.near=Math.max(.001,distance/10000);camera.far=Math.max(100,distance+baseExtent*20);camera.updateProjectionMatrix();draw()}
@@ -405,15 +449,27 @@ async function surfaceGeometry(g,level,center,version){
  return geometry;
 }
 
-const elementColors={1:'#ffffff',6:'#909090',7:'#3050f8',8:'#ff0d0d',9:'#90e050',15:'#ff8000',16:'#ffff30',17:'#1ff01f',29:'#c88033',35:'#a62929',47:'#c0c0c0',53:'#940094',79:'#ffd123'};
+document.addEventListener('atomcolorschange',()=>{
+ if(!group)return;
+ for(const mesh of group.children)if(mesh.userData.atomElement)mesh.material.color.set(window.BeeMolAtomColors.get(mesh.userData.atomElement));
+ draw();
+});
 
-function drawAtoms(g,center){const show=document.getElementById('showOrbitalAtoms')?.checked!==false;if(!show)return;const sphere=new THREE.SphereGeometry(1,18,14);const positions=[];
+function drawAtoms(g,center){const show=document.getElementById('showOrbitalAtoms')?.checked!==false;if(!show)return;const sphere=new THREE.SphereGeometry(1,g.atoms.length>300?24:48,g.atoms.length>300?16:32);const positions=[];
 
- for(const a of g.atoms){const r=a.z===1?.22:.34;const mat=new THREE.MeshStandardMaterial({color:elementColors[a.z]||'#9da6ac',roughness:.35,metalness:0});const m=new THREE.Mesh(sphere,mat);m.position.set(...a.pos.map((v,i)=>v-center[i]));m.scale.setScalar(r);group.add(m);positions.push(m.position)}
+ for(const a of g.atoms){const r=a.z===1?.22:.34;const mat=new THREE.MeshPhongMaterial({color:window.BeeMolAtomColors.get(window.BeeMolAtomColors.symbol(a.z)),shininess:65,specular:0x555555});const m=new THREE.Mesh(sphere,mat);m.position.set(...a.pos.map((v,i)=>v-center[i]));m.scale.setScalar(r);m.userData.atomElement=window.BeeMolAtomColors.symbol(a.z);group.add(m);positions.push(m.position)}
 
- const bondmat=new THREE.MeshStandardMaterial({color:'#adb4c1',roughness:.5});const cov={1:.31,6:.76,7:.71,8:.66,9:.57,15:1.07,16:1.05,17:1.02,29:1.32,35:1.2,53:1.39};
+ const bondmat=new THREE.MeshPhongMaterial({color:'#adb4c1',shininess:45,specular:0x444444});
 
- for(let i=0;i<positions.length;i++)for(let j=i+1;j<positions.length;j++){const a=positions[i],b=positions[j],dist=a.distanceTo(b),limit=(cov[g.atoms[i].z]||1.1)+(cov[g.atoms[j].z]||1.1)+.43;if(dist>.35&&dist<limit){let cyl=new THREE.Mesh(new THREE.CylinderGeometry(.095,.095,dist,10),bondmat);cyl.position.copy(a).add(b).multiplyScalar(.5);cyl.quaternion.setFromUnitVectors(new THREE.Vector3(0,1,0),b.clone().sub(a).normalize());group.add(cyl)}}
+ const atoms=g.atoms.map(a=>({elem:window.BeeMolAtomColors.symbol(a.z),x:a.pos[0],y:a.pos[1],z:a.pos[2]}));
+ const inferred=window.BeeMolBonding.infer(atoms);
+ for(const edge of inferred)for(const lane of window.BeeMolBonding.lanes(atoms,edge,inferred,.20)){
+  const a=new THREE.Vector3(lane.start.x-center[0],lane.start.y-center[1],lane.start.z-center[2]);
+  const b=new THREE.Vector3(lane.end.x-center[0],lane.end.y-center[1],lane.end.z-center[2]);
+  const radius=edge.order>1?.065:.095;
+  const cyl=new THREE.Mesh(new THREE.CylinderGeometry(radius,radius,a.distanceTo(b),24),bondmat);
+  cyl.position.copy(a).add(b).multiplyScalar(.5);cyl.quaternion.setFromUnitVectors(new THREE.Vector3(0,1,0),b.clone().sub(a).normalize());group.add(cyl);
+ }
 
 }
 
@@ -436,6 +492,7 @@ let level=options.auto?autoIso(g):Math.abs(options.iso||.02);if(document.getElem
 const surfaces=await Promise.all([surfaceGeometry(g,level,center,version),surfaceGeometry(g,-level,center,version)]);
 if(version!==showVersion){surfaces.forEach(geometry=>geometry?.dispose());return level;}
 clear();
+slicePlaneMesh=slicePlaneOutline=null;moleculeCenter=center;
 for(const [index,[sign,color]] of [[1,options.positive||'#ffbf00'],[-1,options.negative||'#1555ed']].entries()){const geometry=surfaces[index];if(!geometry)continue;const mat=new THREE.MeshPhongMaterial({color,side:THREE.DoubleSide,transparent:(options.opacity??1)<1,opacity:options.opacity??1,shininess:Math.round((options.gloss??15)*1.2),specular:0x999999,emissive:color,emissiveIntensity:0.25*(1-Math.max(0,Math.min(100,options.depth||0))/100)});const object=new THREE.Mesh(geometry,mat);group.add(object)}if(options.showAtoms!==false)drawAtoms(g,center);
 
 // Fit only visible orbitals and atoms, not the full padded CUBE grid.
@@ -461,7 +518,9 @@ if (!options.preserveView) {
     zoom = 1;
 }
 
+updateSlicePlane(slicePlaneSpec);
 resize();
+document.getElementById("viewerStack").dataset.orbitalLoaded="true";
 return level}
 
 // Orient the active Three.js orbital scene without using the 3Dmol.js camera.
@@ -538,6 +597,6 @@ function alignLongAxis(axis){
 
 }
 
-window.BeeMolThree={show,exportFigure,getGrid(){return currentGrid},ready:promise,background(c){bg=c;if(renderer){renderer.setClearColor(c);draw()}},resize,fit(){zoom=1;fitCamera()},axisView:setAxisView,align:alignLongAxis,rotateView:turnAroundViewAxis,zoom(pct){zoom=Math.max(.1,pct/100);fitCamera()},rotate(axis,deg){if(axis==='x')rotation.x+=deg*Math.PI/180;else rotation.y+=deg*Math.PI/180;if(group){group.rotation.set(rotation.x,rotation.y,0);draw()}},redraw:draw, getCanvas(){return renderer?.domElement},get isReady(){return!!renderer}};
+window.BeeMolThree={show,exportFigure,createMovieOutput,updateSlicePlane,getGrid(){return currentGrid},ready:promise,background(c){bg=c;if(renderer){renderer.setClearColor(c);draw()}},resize,fit(){zoom=1;fitCamera()},axisView:setAxisView,align:alignLongAxis,rotateView:turnAroundViewAxis,zoom(pct){zoom=Math.max(.1,pct/100);fitCamera()},rotate(axis,deg){if(axis==='x')rotation.x+=deg*Math.PI/180;else rotation.y+=deg*Math.PI/180;if(group){group.rotation.set(rotation.x,rotation.y,0);draw()}},redraw:draw, getCanvas(){return renderer?.domElement},get isReady(){return!!renderer}};
 
 })();

@@ -8,7 +8,7 @@ let ballStick = true;
 
 let coordinateUpdateTimer = null;
 
-let viewerBgColor = "#070d17";
+let viewerBgColor = document.documentElement.dataset.theme === "light" ? "#ffffff" : "#070d17";
 
 let orbitalViewerReady = false;
 
@@ -73,6 +73,8 @@ H -1.2400 -2.1480  0.0000
 H  1.2400 -2.1480  0.0000`;
 
 function initViewer(){
+
+  document.getElementById("orbitalBgColorPicker").value = viewerBgColor;
 
   viewer = BeeMolMoleculeThree.createViewer("viewer", {
 
@@ -356,11 +358,9 @@ function renderOrbitalList(orbitals){
 
   const body = document.getElementById("orbitalListBody");
 
-  const note = document.getElementById("orbitalListNote");
-
   const countLabel = document.getElementById("orbitalListCount");
 
-  if(!body || !note || !countLabel) return;
+  if(!body || !countLabel) return;
 
   body.innerHTML = "";
 
@@ -368,19 +368,11 @@ function renderOrbitalList(orbitals){
 
     countLabel.textContent = "0 orbitals";
 
-    note.textContent = "No [MO] energy data found in that file.";
-
-    note.style.display = "block";
-
     return;
 
   }
 
   countLabel.textContent = `${orbitals.length} orbitals`;
-
-  note.style.display = "block";
-
-  note.textContent = "Ene= values come from this Molden file. They are orbital energies or placeholders, not the total SCF/CASSCF energy. Orbital shape comes from the coefficients below each [MO] entry.";
 
   const frag = document.createDocumentFragment();
 

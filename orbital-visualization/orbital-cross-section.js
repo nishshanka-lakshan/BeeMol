@@ -24,9 +24,9 @@
   function draw() {
     if (!$('orbitalSliceEnabled')) return;
     const grid = window.BeeMolThree?.getGrid();
-    $('orbitalSliceStatus').textContent = !grid ? 'Open a Molden file and select an MO, or load a CUBE file first.' : $('orbitalSliceEnabled').checked ? 'Cross-section shown at the bottom-right of the orbital viewer. Move Position to explore the slice.' : 'Enable Show cross-section to view the loaded orbital slice.';
+    $('orbitalSliceStatus').textContent = !grid ? 'Open a Molden file and select an MO, or load a CUBE file first.' : $('orbitalSliceEnabled').checked ? 'The plane marks the slice in the 3D viewer. Move Position to explore it.' : 'Enable Show cross-section to view the loaded orbital slice.';
     $('orbitalSliceInset').hidden = !$('orbitalSliceEnabled').checked || !grid;
-    if (!grid || !$('orbitalSliceEnabled').checked) return;
+    if (!grid || !$('orbitalSliceEnabled').checked) {window.BeeMolThree?.updateSlicePlane(null);return;}
     const { dims, axes, origin, data } = grid;
     const plane = $('orbitalSlicePlane').value;
     const [u, v, normal] = plane === 'XY' ? [0, 1, 2] : plane === 'XZ' ? [0, 2, 1] : [1, 2, 0];
@@ -35,7 +35,7 @@
     const dot = (a,b) => a.reduce((sum,x,i) => sum+x*b[i],0);
     const cof = [cross(axes[1],axes[2]),cross(axes[2],axes[0]),cross(axes[0],axes[1])];
     const determinant = dot(axes[0],cof[0]);
-    if (Math.abs(determinant) < 1e-15) return;
+    if (Math.abs(determinant) < 1e-15) {window.BeeMolThree?.updateSlicePlane(null);return;}
     const min = [Infinity,Infinity,Infinity], max = [-Infinity,-Infinity,-Infinity];
     for (let corner=0;corner<8;corner++) for (let k=0;k<3;k++) {
       const p = origin[k]+axes.reduce((sum,a,i)=>sum+((corner>>i)&1)*a[k]*(dims[i]-1),0);
@@ -43,6 +43,7 @@
     }
     const fraction = Number($('orbitalSliceOffset').value)/100;
     const position = min[normal]+fraction*(max[normal]-min[normal]);
+    window.BeeMolThree?.updateSlicePlane({u,v,normal,position,min,max});
     $('orbitalSlicePosition').textContent = `${position.toFixed(3)} Å`;
     $('orbitalSliceTitle').textContent = `${plane} · ${'XYZ'[normal]} = ${position.toFixed(3)} Å`;
     const size=240, values=new Float64Array(size*size);

@@ -11,6 +11,8 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
 
   <title>BeeMol</title>
+  <script src="assets/js/tooltips.js?v=20261028-tooltips1" defer></script>
+  <script src="assets/js/theme.js?v=20261028-theme3"></script>
 
   
 
@@ -26,12 +28,15 @@
 
       rel="stylesheet">
 
-  <link rel="stylesheet" href="assets/css/styles.css?v=20261028-orbitals2">
+  <link rel="stylesheet" href="assets/css/styles.css?v=20261028-hex1">
+
+  <link rel="stylesheet" href="assets/css/theme.css?v=20261028-bee1">
 
 </head>
 
 <script src="assets/js/beemol-config.js?v=20261021-render1"></script>
 <script src="assets/js/beemol-ai.js?v=20261021-render2"></script>
+<script src="assets/js/about.js?v=20261028-about1" defer></script>
 
 <body>
 
@@ -55,9 +60,9 @@
 
   </div>
 
-    <div class="top-actions">
+    <button id="themeToggle" type="button" aria-label="Switch interface theme" title="Switch interface theme"></button>
 
-    <label class="file-label" for="orbitalFileInput"> Open </label>
+    <div class="top-actions">
 
     <input id="orbitalFileInput" type="file"
 
@@ -65,9 +70,6 @@
 
          multiple class="hidden" />
 
-      <button id="copyCode">Copy PySCF</button>
-
-      <button id="downloadPy" class="primary">Download .py</button>
 
     </div>
 
@@ -79,14 +81,20 @@
 
     <section id="orbitalViewHost"></section>
 
-    <aside id="orbitalPropertiesHost" class="card"><div class="card-header" role="tablist" aria-label="Orbital controls"><button id="showOrbitalAppearance" type="button" class="active" role="tab" aria-selected="true" aria-controls="orbitalControlsWrap" style="display:flex;align-items:center;justify-content:center;text-align:center;">Orbital appearance</button><button id="toggleOrbitalAnimation" type="button" role="tab" aria-selected="false" aria-controls="orbitalAnimation" style="display:flex;align-items:center;justify-content:center;text-align:center;">Orbital animation</button></div></aside>
+    <aside id="orbitalPropertiesHost" class="card" aria-label="Orbital settings">
+      <div class="card-header" role="tablist" aria-label="Orbital controls">
+        <button id="showOrbitalAppearance" type="button" class="active" role="tab" aria-selected="true" aria-controls="orbitalControlsWrap">Appearance</button>
+        <button id="showOrbitalSlice" type="button" role="tab" aria-selected="false" aria-controls="orbitalSliceControls" tabindex="-1">Cross-section</button>
+        <button id="toggleOrbitalAnimation" type="button" role="tab" aria-selected="false" aria-controls="orbitalAnimation" tabindex="-1">Animation</button>
+      </div>
+    </aside>
 
   </div>
 
 
   <div id="analysisWorkspace" class="hidden" aria-label="Analysis workspace">
   <aside class="card"><div class="card-header"><h2>Datasets</h2></div><div class="analysis-pad"><label>Upload CSV files<input id="analysisFiles" type="file" accept=".csv,.tsv,.txt" multiple></label><p class="mini-note">First column: time. Remaining columns: real numeric series. Include a header row. Multiple files can be overlaid.</p><div id="analysisDatasets"></div><button id="analysisClear" type="button">Clear datasets</button></div></aside>
-  <section class="card"><div class="card-header"><h2>Autocorrelation</h2></div><div class="mode-tabs"><button data-analysis-mode="molecule" type="button">Molecule</button><button data-analysis-mode="orbitals" type="button">Orbitals</button><button id="analysisWater" type="button">Water box</button><button class="active" type="button">Analysis</button></div><div id="analysisPlot"></div><p id="analysisResult" role="status" aria-live="polite" class="analysis-pad">Upload CSV files to begin.</p></section>
+  <section class="card"><div class="mode-tabs"><button data-analysis-mode="molecule" type="button">Molecule</button><button data-analysis-mode="orbitals" type="button">Orbitals</button><button id="analysisWater" type="button">Water box</button><button class="active" type="button">Analysis</button></div><div id="analysisPlot"></div><p id="analysisResult" role="status" aria-live="polite" class="analysis-pad">Upload CSV files to begin.</p></section>
   <aside class="card"><div class="card-header"><h2>Plot settings</h2></div><div class="analysis-pad">
   <label>Title<input id="plotTitle" value="Autocorrelation function"></label>
 
@@ -105,6 +113,33 @@
   <label>X minimum<input id="plotXMin" type="number" placeholder="Auto"></label><label>X maximum<input id="plotXMax" type="number" placeholder="Auto"></label><label>Y minimum<input id="plotYMin" type="number" placeholder="Auto"></label><label>Y maximum<input id="plotYMax" type="number" placeholder="Auto"></label>
   <label>Line width<input id="plotWidth" type="number" min="0.5" max="8" step="0.5" value="3"></label><label><input id="plotLegend" type="checkbox" checked> Show legend</label><div class="analysis-actions"><button id="analysisSVG" type="button">Download SVG</button><button id="analysisPNG" type="button">Download PNG</button></div></div></aside></div>
 
+  <section id="aboutWorkspace" class="hidden" aria-label="About BeeMol">
+    <div class="card about-card">
+      <nav class="mode-tabs" aria-label="Workspace navigation">
+        <button type="button" data-about-mode="molecule">Molecule</button>
+        <button type="button" data-about-mode="orbitals">Orbitals</button>
+        <button type="button" data-about-mode="water">Water box</button>
+        <button type="button" data-about-mode="analysis">Analysis</button>
+        <button type="button" data-about-mode="ai">AI</button>
+        <button type="button" class="active" aria-current="page">About</button>
+      </nav>
+      <div class="about-content">
+        <h1>About BeeMol</h1>
+        <div class="about-logo-preview"><img src="assets/images/beemol-logo.svg?v=20261028-bee2" alt="BeeMol — Quantum Chemistry Visualization" width="1800" height="520"></div>
+        <div class="about-downloads">
+          <a class="file-label" href="assets/images/beemol-logo.svg" download="BeeMol-logo.svg">Download SVG</a>
+          <button id="downloadBeeMolPNG" type="button">Download PNG · 6000 px</button>
+        </div>
+        <p id="aboutDownloadStatus" role="status" aria-live="polite"></p>
+        <section id="aboutDetails" aria-labelledby="aboutDetailsTitle">
+          <h2 id="aboutDetailsTitle">About the project</h2>
+          <!-- Add BeeMol project details here when ready. -->
+          <p>More details about BeeMol will be added here.</p>
+        </section>
+      </div>
+    </div>
+  </section>
+
   <main class="container">
 
     <aside id="moleculeSceneHost" aria-label="Molecule coordinates"></aside>
@@ -112,14 +147,6 @@
     <section class="left">
 
       <div class="card">
-
-        <div class="card-header">
-
-          <h2>3D Viewer</h2>
-
-          <span id="atomCount">0 atoms</span>
-
-        </div>
 
         <div class="mode-tabs">
 
@@ -134,9 +161,20 @@
 
         <div id="viewerStack">
 
+          <span id="atomCount" class="viewer-atom-count">0 atoms</span>
+
           <div id="viewer"></div>
+          <output id="moleculeMeasurement" class="molecule-measurement" aria-live="polite" hidden></output>
 
           <div id="orbitalViewer" class="hidden"></div>
+
+          <div id="viewerFileDrop" class="viewer-file-drop">
+            <button id="viewerFileBrowse" type="button" aria-label="Open Molden, Cube, XYZ, INP, or TXT files">
+              <span>Drag &amp; drop a Molden / Cube / XYZ file</span>
+              <small>or click to browse</small>
+            </button>
+            <span id="viewerFileStatus" role="status" aria-live="polite"></span>
+          </div>
 
           <div id="wbViewer" class="hidden"
 
@@ -190,25 +228,27 @@
 
         </div>
 
+        <div class="viewer-toolbar atom-palette-toolbar" style="margin:0 12px 12px">
+              <div class="atom-color-controls">
+                <label for="atomColorElement">Atom color</label>
+                <select id="atomColorElement" aria-label="Element to recolor" disabled></select>
+                <input id="atomColorPicker" type="color" value="#909090" aria-label="Selected element color" disabled>
+                <input id="atomColorHex" type="text" value="#909090" placeholder="#333333" pattern="#[0-9a-fA-F]{6}" maxlength="7" spellcheck="false" autocomplete="off" aria-label="Selected element hex color" title="Hex color: # followed by six hexadecimal digits, for example #333333" disabled>
+                <button id="resetAtomColors" type="button" title="Restore standard element colors" disabled>Reset colors</button>
+              </div>
+        </div>
+
         <div id="moleculeControls">
 
           <div class="viewer-toolbar">
-
-              <button id="fitBtn">Fit</button>
 
               <button id="spinBtn">Spin</button>
 
               <button id="styleBtn">Ball & Stick</button>
 
-              <label for="bgColorPicker" style="display:flex;align-items:center;gap:8px;margin-left:8px;">
 
-                  <span style="font-size:12px;color:var(--muted);">Background</span>
 
-                  <input id="bgColorPicker" type="color" value="#070d17"
 
-                   style="width:42px;height:32px;padding:0;border:none;background:none;cursor:pointer;" />
-
-              </label>
 
           </div>
 
@@ -216,7 +256,7 @@
 
             <div id="bondSelectionStatus" class="bond-status">
 
-              Bond edit: click two atoms in the 3D viewer
+              Click 2 atoms for distance, 3 for angle, or 4 for dihedral.
 
             </div>
 
@@ -281,7 +321,7 @@
 
               </div>
 
-              <div style="grid-column:1/-1"><label style="display:flex;align-items:center;gap:7px"><input type="checkbox" id="autoOrbitalIso" checked> Automatic isovalue (85% orbital weight)</label></div>
+              <div style="grid-column:1/-1"><label style="display:flex;align-items:center;gap:7px"><input type="checkbox" id="autoOrbitalIso" checked> Auto isovalue (85%)</label></div>
 
                <div class="vibe-orbital-controls" style="grid-column:1/-1;display:flex;flex-wrap:wrap;align-items:center;gap:8px">
 
@@ -388,6 +428,12 @@
 
               </div>
 
+              <label for="animationQuality" style="margin-top:12px">MP4 quality</label>
+              <select id="animationQuality" style="width:100%">
+                <option value="1080">Full HD · 1920 × 1080</option>
+                <option value="2160">4K · 3840 × 2160</option>
+              </select>
+
               <div class="row" style="margin-top:10px;flex-wrap:wrap;gap:7px">
 
                 <button type="button" id="animationPlay"
@@ -454,6 +500,11 @@
           </div>
 
           <div class="mini-note">Edit the atomic coordinates here, then click Update Molecule. This viewer uses Three.js for visualization.</div>
+
+          <div class="molecule-export-actions" aria-label="PySCF export">
+            <button id="copyCode" type="button">Copy PySCF</button>
+            <button id="downloadPy" class="primary" type="button">Download .py</button>
+          </div>
 
         </div>
 
@@ -924,19 +975,12 @@ H -0.757200  0.000000  0.586500</textarea>
 
             <table id="orbitalListTable">
 
-              <thead>
-
-                <tr><th>#</th><th>Ene= (Ha)</th><th>Occupancy</th><th>Spin</th></tr>
-
-              </thead>
-
               <tbody id="orbitalListBody"></tbody>
 
             </table>
 
           </div>
 
-          <div class="mini-note" id="orbitalListNote">The Ene= column contains values stored in the Molden file. These are orbital energies or placeholders, not total SCF or CASSCF energies.</div>
 
         </div>
 
@@ -962,21 +1006,24 @@ H -0.757200  0.000000  0.586500</textarea>
 
   </main>
 
-<script src="assets/js/three-molecule.js"></script>
+<script src="assets/js/atom-colors.js?v=20261028-colors2"></script>
+<script src="assets/js/bonding.js?v=20261028-bonds2"></script>
+<script src="assets/js/measurements.js?v=20261028-measure1"></script>
+<script src="assets/js/three-molecule.js?v=20261028-bonds2"></script>
 
-<script src="assets/js/app-core.js"></script>
+<script src="assets/js/app-core.js?v=20261028-theme2"></script>
 
 <script src="orbital-visualization/orbital-gpu.js?v=20261028-orbitals2"></script>
 <script src="orbital-visualization/orbital-grid.js?v=20261028-orbitals2"></script>
 
-<script src="assets/js/molecule-and-ui.js"></script>
+<script src="assets/js/molecule-and-ui.js?v=20261028-hex1"></script>
 
-<script src="orbital-visualization/three-orbitals.js?v=20261028-orbitals2"></script>
+<script src="orbital-visualization/three-orbitals.js?v=20261028-bonds2"></script>
 
-<script src="orbital-visualization/orbital-renderer.js?v=20261028-orbitals2"></script>
-<script src="orbital-visualization/orbital-cross-section.js?v=20261028-orbitals2"></script>
+<script src="orbital-visualization/orbital-renderer.js?v=20261028-theme3"></script>
+<script src="orbital-visualization/orbital-cross-section.js?v=20261028-plane1"></script>
 
-<script src="assets/js/waterbox.js"></script>
+<script src="assets/js/waterbox.js?v=20261028-colors2"></script>
 
 
 <!-- Individual analysis tools -->
