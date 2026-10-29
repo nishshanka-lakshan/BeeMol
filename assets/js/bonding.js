@@ -3,11 +3,23 @@
  */
 (function(root){
 'use strict';
-const radii={H:.31,B:.84,C:.76,N:.71,O:.66,F:.57,Si:1.11,P:1.07,S:1.05,Cl:1.02,Br:1.2,I:1.39,Cu:1.32,Ag:1.45,Au:1.36};
+// Covalent radii: Cordero et al., Dalton Trans. (2008), doi:10.1039/B801115J.
+// Low-spin entries are used where the reference gives spin-dependent radii.
+const radii={H:.31,He:.28,Li:1.28,Be:.96,B:.84,C:.76,N:.71,O:.66,F:.57,Ne:.58,
+ Na:1.66,Mg:1.41,Al:1.21,Si:1.11,P:1.07,S:1.05,Cl:1.02,Ar:1.06,K:2.03,Ca:1.76,
+ Sc:1.70,Ti:1.60,V:1.53,Cr:1.39,Mn:1.39,Fe:1.32,Co:1.26,Ni:1.24,Cu:1.32,Zn:1.22,
+ Ga:1.22,Ge:1.20,As:1.19,Se:1.20,Br:1.20,Kr:1.16,Rb:2.20,Sr:1.95,Y:1.90,Zr:1.75,
+ Mo:1.54,Ru:1.46,Pd:1.39,Ag:1.45,Cd:1.44,Sn:1.39,I:1.39,Pt:1.36,Au:1.36,Hg:1.32};
+function elementSymbol(value){
+ const text=String(value??'').trim();
+ if(/^[dt]$/i.test(text))return 'H';
+ return text.charAt(0).toUpperCase()+text.slice(1).toLowerCase();
+}
 const valence={H:1,B:3,C:4,N:3,O:2,F:1,Si:4,P:3,S:2,Cl:1,Br:1,I:1};
 // Conservative upper lengths for double and triple bonds, keyed alphabetically.
 const multiple={'C-C':[1.45,1.25],'C-N':[1.37,1.21],'C-O':[1.30,0],'C-S':[1.68,0],'N-N':[1.33,1.15],'N-O':[1.26,0],'O-O':[1.26,0]};
 function infer(atoms){
+ atoms=atoms.map(a=>({...a,elem:elementSymbol(a.elem)}));
  const bonds=[],used=atoms.map(()=>0),adj=atoms.map(()=>[]);
  for(let i=0;i<atoms.length;i++)for(let j=i+1;j<atoms.length;j++){
   const a=atoms[i],b=atoms[j];if(a.model!==b.model)continue;

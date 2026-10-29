@@ -16,3 +16,12 @@ const pair=[atom('N',0),atom('N',1.1)],edges=infer(pair),parallel=lanes(pair,edg
 assert.equal(parallel.length,3);assert.ok(parallel.every(l=>Object.values(l.start).every(Number.isFinite)));
 assert.equal(infer([{...atom('C',0),model:0},{...atom('C',1.3),model:1}]).length,0);
 console.log('Bond-order inference checks passed');
+
+// Previously rejected because these elements fell back to a 0.8 Å radius.
+assert.equal(infer([atom('Fe',0),atom('O',2.10)])[0].order,1);
+assert.equal(infer([atom('Zn',0),atom('N',2.10)])[0].order,1);
+assert.equal(infer([atom('Ca',0),atom('O',2.40)])[0].order,1);
+assert.equal(infer([atom('Na',0),atom('Cl',2.80)])[0].order,1);
+assert.equal(infer([atom('FE',0),atom('o',2.10)])[0].order,1);
+assert.equal(infer([atom('O',0),atom('D',.96)])[0].order,1);
+assert.equal(infer([atom('Fe',0),atom('O',4)]).length,0);
