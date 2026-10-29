@@ -1,4 +1,5 @@
 let savedMoldenGrid = null;
+let isoTimer=0,previewTimer=0;
 function restoreMoldenGridControls(){
  for(const [i,id] of ['gridX','gridY','gridZ'].entries()){
   const input=document.getElementById(id);
@@ -43,6 +44,8 @@ async function downloadOrbitalFigure(){
  stopOrbitalAnimation();
  button.disabled=true;
  try{
+  clearTimeout(isoTimer);clearTimeout(previewTimer);
+  await renderCube();
   const {blob,width,height}=await window.BeeMolThree.exportFigure();
   const name=(cubeData?.name||'orbital').replace(/\.(cube|cub)$/i,'');
   downloadBlob(blob,`${name}_figure.png`);
@@ -50,7 +53,7 @@ async function downloadOrbitalFigure(){
  }catch(e){setOrbitalStatus(e.message,true)}finally{button.disabled=false}
 }
 function orbitalOptions(){const s=getOrbitalSettings(),flip=document.getElementById('orbitalFlipPhase').checked;return{iso:s.cutoff,auto:document.getElementById('autoOrbitalIso').checked,positive:flip?s.negative:s.positive,negative:flip?s.positive:s.negative,opacity:1-s.translucency,gloss:Number(document.getElementById('orbitalGloss').value),showAtoms:document.getElementById('showOrbitalAtoms').checked,depth:Number(document.getElementById('orbitalDepth').value),preserveView:true}}
-async function renderCube(){if(!cubeData)return;await window.BeeMolThree.show(cubeData.text,orbitalOptions());window.BeeMolThree.background(orbitalBackground)}
+async function renderCube(options={}){if(!cubeData)return;await window.BeeMolThree.show(cubeData.text,{...orbitalOptions(),...options});window.BeeMolThree.background(orbitalBackground)}
 async function handleCubeFile(file,fromMolden=false,preserveView=false,preloadedText=null){if(!fromMolden){stopOrbitalAnimation();importedMolden=null;embeddedActive=false;switchViewerMode('orbitals')}if(!await initOrbitalIfNeeded())throw Error('Orbital viewer failed to start');const text=preloadedText??await file.text();await window.BeeMolThree.show(text,{...orbitalOptions(),preserveView});cubeData={text,name:file.name};window.BeeMolThree.background(orbitalBackground);if(!fromMolden)setOrbitalStatus(`${file.name} loaded`)}
 async function initOrbitalIfNeeded(){return orbitalViewerReady||await initOrbitalViewer()}
 function frameRange(){const count=importedMolden?.orbitals.length||cubeFiles.size||1;const first=Math.max(1,Math.min(count,Number(document.getElementById('animationStart').value)||1)),last=Math.max(first,Math.min(count,Number(document.getElementById('animationEnd').value)||count)),step=Math.max(1,Number(document.getElementById('animationStep').value)||1);return {first,last,step,fps:Math.max(1,Math.min(12,Number(document.getElementById('animationFps').value)||6))}}
@@ -62,7 +65,7 @@ async function recordMovie(movieOptions={}){
  if(!window.MediaRecorder){setOrbitalStatus('MP4 recording is unavailable in this browser.',true);return}
  const mime=['video/mp4;codecs=avc1.640033','video/mp4;codecs=avc1.64002A','video/mp4'].find(type=>MediaRecorder.isTypeSupported(type));
  if(!mime){setOrbitalStatus('This browser cannot record MP4. Open BeeMol in a browser with MP4 recording support.',true);return}
- stopOrbitalAnimation();recording=true;
+ stopOrbitalAnimation();clearTimeout(isoTimer);clearTimeout(previewTimer);recording=true;
  const button=document.getElementById(movieOptions.buttonId||'animationRecord'),r=frameRange();
  const originalButton={html:button.innerHTML,title:button.title,label:button.getAttribute('aria-label')};
  const controls=[...document.querySelectorAll('#orbitalSliceControls input, #orbitalSliceControls select, #orbitalSliceInset button, #orbitalWorkspace input, #orbitalWorkspace select, #orbitalWorkspace button:not([role="tab"]), #orbitalWorkspace summary, #orbitalListBody tr, .top-actions input, .top-actions button, .top-actions label')];
@@ -178,14 +181,15 @@ function bindControls(){const $=id=>document.getElementById(id),on=(id,fn)=>{if(
  on('showOrbitalAppearance',()=>showOrbitalPropertiesTab('appearance'));on('toggleOrbitalAnimation',()=>showOrbitalPropertiesTab('animation'));on('animationPlay',playAnimation);on('animationRecord',recordMovie);$('animationFrame').onchange=async()=>{stopOrbitalAnimation();await displayFrame(Number($('animationFrame').value))};
  $('orbitalNumber').onchange=showOrbitalNumber;for(const [id,delta]of [['orbitalPrev',-1],['orbitalNext',1]])on(id,()=>{const n=Math.max(1,Math.min(importedMolden?.orbitals.length||cubeFiles.size||1,Number($('orbitalNumber').value)+delta));$('orbitalNumber').value=n;showOrbitalNumber()});
  for(const id of ['autoOrbitalIso','orbitalNegativeColor','orbitalPositiveColor','orbitalFlipPhase','orbitalGloss','orbitalDepth','orbitalTranslucency','showOrbitalAtoms'])$(id).onchange=()=>{if(id==='orbitalCutoff')$('autoOrbitalIso').checked=false;renderCube().catch(e=>setOrbitalStatus(e.message,true))};for(const id of ['gridX','gridY','gridZ'])$(id).onchange=()=>{if(importedMolden)showOrbitalNumber()};
- let isoTimer=0;
  $('orbitalCutoff').addEventListener('input',()=>{
-  clearTimeout(isoTimer);
+  clearTimeout(isoTimer);clearTimeout(previewTimer);
   const value=Number($('orbitalCutoff').value);
   if(!$('orbitalCutoff').value.trim()||!Number.isFinite(value)||value<=0)return;
   $('autoOrbitalIso').checked=false;
-  isoTimer=setTimeout(()=>renderCube().catch(e=>setOrbitalStatus(e.message,true)),180);
+  previewTimer=setTimeout(()=>renderCube({preview:true}).catch(e=>setOrbitalStatus(e.message,true)),60);
+  isoTimer=setTimeout(()=>renderCube().catch(e=>setOrbitalStatus(e.message,true)),350);
  });
+ $('orbitalCutoff').addEventListener('change',()=>{clearTimeout(isoTimer);clearTimeout(previewTimer);const value=Number($('orbitalCutoff').value);if(Number.isFinite(value)&&value>0)renderCube().catch(e=>setOrbitalStatus(e.message,true));});
  on('downloadOrbitalFigure',downloadOrbitalFigure);
  on('downloadOrbitalCube',()=>{if(cubeData)downloadBlob(new Blob([cubeData.text],{type:'text/plain'}),cubeData.name||'orbital.cube')});$('orbitalBgColorPicker').oninput=e=>{if(viewerMode==='molecule'){setViewerBackground(e.target.value);return}orbitalBackground=e.target.value;window.BeeMolThree.background(orbitalBackground)};
  on('applyOrbitalZoom',()=>window.BeeMolThree.zoom(Number($('orbitalZoom').value)));on('updateMol',loadMolecule);on('fitOrbitalBtn',()=>{if(viewerMode==='molecule'){viewer.zoomTo();viewer.render()}else window.BeeMolThree.fit()});on('styleBtn',()=>{ballStick=!ballStick;loadMolecule()});on('spinBtn',()=>{spinning=!spinning;$('spinBtn').textContent=spinning?'Stop spin':'Spin';const tick=()=>{if(!spinning)return;viewer.rotate(.5,'y');requestAnimationFrame(tick)};if(spinning)tick()});

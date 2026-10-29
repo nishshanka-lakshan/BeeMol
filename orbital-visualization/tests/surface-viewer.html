@@ -1,0 +1,31 @@
+<!doctype html><meta charset="utf-8"><title>Orbital surface viewer checks</title>
+<div id="viewerStack"><div id="orbitalViewer" style="width:480px;height:360px"></div></div>
+<input id="orbitalCutoff"><p id="orbitalSurfaceBackend"></p><pre id="result">RUNNING</pre>
+<script>window.BeeMolBonding={infer:()=>[],lanes:()=>[]};</script>
+<script src="../surface-gpu.js"></script><script src="../three-orbitals.js"></script>
+<script>
+(async()=>{
+ const assert=(condition,message)=>{if(!condition)throw Error(message);};
+ assert(await BeeMolThree.ready,'Three.js must load');
+ const rows=['test','scalar plane','1 0 0 0','-65 0.1 0 0','-4 0 1 0','-4 0 0 1','1 0 0 0 0'];
+ for(let x=0;x<65;x++)for(let y=0;y<4;y++)for(let z=0;z<4;z++)rows.push(String(x/10-3.2));
+ const text=rows.join('\n'),options={iso:.25,auto:false,showAtoms:false,preserveView:true};
+ assert(Math.abs(await BeeMolThree.show(text,options)-.25)<1e-8,'Full surface must complete');
+ const grid=BeeMolThree.getGrid();
+ assert(grid.dims[0]===65,'Original grid dimensions');
+ await BeeMolThree.show(text,{...options,preview:true});
+ assert(BeeMolThree.getGrid()===grid,'Preview must preserve scientific grid');
+ await BeeMolThree.show(text,options);
+ // Simulate an unsupported GPU, exercising the retained CPU path at an uncached level.
+ BeeMolSurfaceGPU.extract=async()=>null;
+ await BeeMolThree.show(text,{...options,iso:.3});
+ assert(document.getElementById('orbitalSurfaceBackend').textContent.startsWith('CPU'),'Automatic CPU fallback');
+ const latest=await Promise.all([BeeMolThree.show(text,{...options,iso:.4}),BeeMolThree.show(text,{...options,iso:.5})]);
+ assert(latest[1]===.5,'Latest change must finish');
+ assert(BeeMolThree.getCanvas().width>0,'Canvas must render');
+ // Also exercise fallback when workers are unavailable.
+ window.Worker=undefined;
+ await BeeMolThree.show(text,{...options,iso:.6});
+ document.getElementById('result').textContent='PASS: viewer rendering, grid reuse, preview/full resolution, CPU fallback, rapid changes, no-worker fallback';
+})().catch(error=>{document.getElementById('result').textContent='FAIL: '+error.stack;});
+</script>

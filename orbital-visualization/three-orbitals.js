@@ -101,6 +101,7 @@ function getSliceTransform(){
 
 async function exportFigure(){
  if(!renderer||!lastCube)throw Error('Load an orbital before downloading a figure.');
+ if(lastCube.options.preview)await show(lastCube.text,{...lastCube.options,preview:false,preserveView:true});
  let output;
  try{
   output=new THREE.WebGLRenderer({antialias:true,alpha:false});
@@ -442,21 +443,44 @@ ${mesh.toString()}
  surfaceWorker.onerror=()=>{for(const p of surfacePending.values())p.reject(Error('Surface worker unavailable'));surfacePending.clear();surfaceWorker?.terminate();surfaceWorker=null;workerGrid=null;};
  return surfaceWorker;
 }
-const surfaceCache=new WeakMap();
+const surfaceCache=new WeakMap(),previewGrids=new WeakMap();
+function previewGrid(g){
+ if(Math.max(...g.dims)<=48)return g;
+ if(previewGrids.has(g))return previewGrids.get(g);
+ const dims=g.dims.map(d=>Math.max(2,Math.min(48,d)));
+ const steps=dims.map((d,i)=>(g.dims[i]-1)/(d-1));
+ const data=new Float32Array(dims.reduce((a,b)=>a*b,1));
+ let i=0;for(let x=0;x<dims[0];x++)for(let y=0;y<dims[1];y++)for(let z=0;z<dims[2];z++)data[i++]=sampleGrid(g,x*steps[0],y*steps[1],z*steps[2]);
+ const result={...g,dims,data,axes:g.axes.map((a,i)=>a.map(v=>v*steps[i])),blockIndex:null,blockPromise:null};
+ previewGrids.set(g,result);return result;
+}
+function surfaceBackend(name){const el=document.getElementById('orbitalSurfaceBackend');if(el)el.textContent=name;}
+
 async function surfaceGeometry(g,level,center,version){
  let cache=surfaceCache.get(g);if(!cache){cache=new Map();surfaceCache.set(g,cache);}
  const key=String(level);
  if(cache.has(key))return cache.get(key)?.clone()||null;
- if(typeof Worker==='undefined')return mesh(g,level,center,()=>version===showVersion);
  let result;
+ if(window.BeeMolSurfaceGPU){
+  const matrix=new THREE.Matrix3().set(...[0,1,2].flatMap(i=>g.axes.map(a=>a[i])));
+  if(Math.abs(matrix.determinant())<1e-14)throw Error('Invalid CUBE grid axes');
+  const e=matrix.invert().transpose().elements;
+  try{result=await window.BeeMolSurfaceGPU.extract(g,level,center,[e.slice(0,3),e.slice(3,6),e.slice(6,9)],()=>version===showVersion);}catch(error){console.warn('Using CPU surfaces.',error);}
+  if(version!==showVersion)return null;
+  if(result)surfaceBackend('WebGPU surface calculation');
+ }
+ if(!result){
+ surfaceBackend('CPU surface calculation');
+ if(typeof Worker==='undefined')return mesh(g,level,center,()=>version===showVersion);
  try{
   const worker=getSurfaceWorker();
   if(workerGrid!==g){worker.postMessage({grid:{dims:g.dims,origin:g.origin,axes:g.axes,atoms:g.atoms,data:g.data}});workerGrid=g;}
   const id=++surfaceJob;
   result=await new Promise((resolve,reject)=>{surfacePending.set(id,{resolve,reject});worker.postMessage({id,level,offset:center,version});});
  }catch(error){return mesh(g,level,center,()=>version===showVersion);}
+ }
  if(version!==showVersion)return null;
- if(result.empty){cache.set(key,null);return null;}
+ if(result.empty){cache.set(key,null);while(cache.size>4){const oldest=cache.keys().next().value;cache.get(oldest)?.dispose();cache.delete(oldest);}return null;}
  const geometry=new THREE.BufferGeometry();geometry.setAttribute('position',new THREE.BufferAttribute(result.positions,3));geometry.setAttribute('normal',new THREE.BufferAttribute(result.normals,3));geometry.computeBoundingSphere();
  cache.set(key,geometry.clone());
  while(cache.size>4){const oldest=cache.keys().next().value;cache.get(oldest)?.dispose();cache.delete(oldest);}
@@ -503,7 +527,8 @@ if(g.atoms.length){
 
 let level=options.auto?autoIso(g):Math.abs(options.iso||.02);if(document.getElementById('orbitalCutoff')&&options.auto)document.getElementById('orbitalCutoff').value=level.toFixed(5);
 
-const surfaces=await Promise.all([surfaceGeometry(g,level,center,version),surfaceGeometry(g,-level,center,version)]);
+const surfaceGrid=options.preview?previewGrid(g):g;
+const surfaces=await Promise.all([surfaceGeometry(surfaceGrid,level,center,version),surfaceGeometry(surfaceGrid,-level,center,version)]);
 if(version!==showVersion){surfaces.forEach(geometry=>geometry?.dispose());return level;}
 clear();
 slicePlaneMesh=slicePlaneOutline=null;moleculeCenter=center;

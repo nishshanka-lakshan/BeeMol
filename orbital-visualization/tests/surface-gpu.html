@@ -1,0 +1,59 @@
+<!doctype html><meta charset="utf-8"><title>GPU surface regression checks</title>
+<pre id="result">RUNNING</pre>
+<script src="../surface-gpu.js"></script>
+<script>
+(async()=>{
+ const assert=(condition,message)=>{if(!condition)throw Error(message);};
+ const dims=[4,4,4],data=new Float32Array(64);
+ for(let x=0;x<4;x++)for(let y=0;y<4;y++)for(let z=0;z<4;z++)data[(x*4+y)*4+z]=x-1.5;
+ const grid={dims,data,origin:[0,0,0],axes:[[1,0,0],[0,1,0],[0,0,1]]};
+ const columns=[[1,0,0],[0,1,0],[0,0,1]];
+ let result=await BeeMolSurfaceGPU.extract(grid,.25,[0,0,0],columns,()=>true);
+ if(!result){document.getElementById('result').textContent='UNAVAILABLE: CPU fallback required';return;}
+ function check(mesh,x,sign){
+  assert(mesh.positions.length===9*8*9,'Expected eight triangles per intersected cell');
+  for(let i=0;i<mesh.positions.length;i+=3){
+   assert(Math.abs(mesh.positions[i]-x)<1e-5,'Incorrect isosurface position');
+   assert(Math.abs(mesh.normals[i]-sign)<1e-5,'Incorrect normal direction');
+   assert(Math.abs(mesh.normals[i+1])+Math.abs(mesh.normals[i+2])<1e-5,'Incorrect normal components');
+  }
+  for(let i=0;i<mesh.positions.length;i+=9){
+   const p=mesh.positions;const by=p[i+4]-p[i+1],bz=p[i+5]-p[i+2],cy=p[i+7]-p[i+1],cz=p[i+8]-p[i+2];
+   assert((by*cz-bz*cy)*sign>0,'Incorrect triangle winding');
+  }
+ }
+ check(result,1.75,-1);
+ const [negative,empty]=await Promise.all([
+  BeeMolSurfaceGPU.extract(grid,-.25,[0,0,0],columns,()=>true),
+  BeeMolSurfaceGPU.extract(grid,4,[0,0,0],columns,()=>true)
+ ]);
+ check(negative,1.25,1);assert(empty.empty,'Expected empty surface');
+ assert(await BeeMolSurfaceGPU.extract(grid,.25,[0,0,0],columns,()=>false)===null,'Stale request must cancel');
+ const skew={...grid,origin:[2,3,4],axes:[[2,0,0],[1,1,0],[0,0,1]]};
+ const transformed=await BeeMolSurfaceGPU.extract(skew,.25,[2,3,4],[[.5,-.5,0],[0,1,0],[0,0,1]],()=>true);
+ for(let i=0;i<transformed.positions.length;i+=3){
+  assert(Math.abs(transformed.positions[i]-transformed.positions[i+1]-3.5)<1e-5,'Skew grid transform');
+  assert(Math.abs(transformed.normals[i]+Math.SQRT1_2)<1e-5&&Math.abs(transformed.normals[i+1]-Math.SQRT1_2)<1e-5,'Skew normal transform');
+ }
+ const curved={dims:[9,9,9],origin:[0,0,0],axes:grid.axes,data:new Float32Array(729)};
+ for(let x=0;x<9;x++)for(let y=0;y<9;y++)for(let z=0;z<9;z++)curved.data[(x*9+y)*9+z]=(x-4)*Math.exp(-((x-4)**2+(y-4)**2+(z-4)**2)/6);
+ function sample(p){
+  const q=p.map(x=>Math.max(0,Math.min(8,x))),a=q.map(Math.floor),f=q.map((x,i)=>x-a[i]);let total=0;
+  for(let x=0;x<2;x++)for(let y=0;y<2;y++)for(let z=0;z<2;z++)total+=curved.data[(Math.min(8,a[0]+x)*9+Math.min(8,a[1]+y))*9+Math.min(8,a[2]+z)]*(x?f[0]:1-f[0])*(y?f[1]:1-f[1])*(z?f[2]:1-f[2]);
+  return total;
+ }
+ for(const level of [.3,-.3]){
+  const surface=await BeeMolSurfaceGPU.extract(curved,level,[0,0,0],columns,()=>true);
+  assert(surface?.positions.length>0,'Curved surface must exist');
+  for(let i=0;i<surface.positions.length;i+=3){
+   const p=Array.from(surface.positions.subarray(i,i+3));
+   const gradient=[0,1,2].map(k=>{const a=[...p],b=[...p];a[k]+=.55;b[k]-=.55;return (sample(a)-sample(b))*(level>0?-1:1);});
+   const length=Math.hypot(...gradient);
+   const dot=gradient.reduce((sum,x,k)=>sum+x/length*surface.normals[i+k],0);
+   assert(dot>.99999,'Curved normals must match CPU trilinear finite differences');
+   assert(p.every(Number.isFinite),'Finite curved positions');
+  }
+ }
+ document.getElementById('result').textContent='PASS: positive/negative surfaces, positions, smooth normals, winding, empty grid, cancellation, concurrent requests, grid replacement, skew axes, curved CPU/GPU normal agreement';
+})().catch(error=>{document.getElementById('result').textContent='FAIL: '+error.stack;});
+</script>
