@@ -443,23 +443,24 @@ ${mesh.toString()}
  surfaceWorker.onerror=()=>{for(const p of surfacePending.values())p.reject(Error('Surface worker unavailable'));surfacePending.clear();surfaceWorker?.terminate();surfaceWorker=null;workerGrid=null;};
  return surfaceWorker;
 }
-const surfaceCache=new WeakMap(),previewGrids=new WeakMap();
-function previewGrid(g){
- if(Math.max(...g.dims)<=48)return g;
- if(previewGrids.has(g))return previewGrids.get(g);
- const dims=g.dims.map(d=>Math.max(2,Math.min(48,d)));
+const surfaceCache=new WeakMap(),previewGrids=new WeakMap(),surfaceDetailHints=new WeakMap();
+function previewGrid(g,limit=48){
+ if(Math.max(...g.dims)<=limit)return g;
+ let grids=previewGrids.get(g);if(!grids){grids=new Map();previewGrids.set(g,grids);}
+ if(grids.has(limit))return grids.get(limit);
+ const dims=g.dims.map(d=>Math.max(2,Math.min(limit,d)));
  const steps=dims.map((d,i)=>(g.dims[i]-1)/(d-1));
  const data=new Float32Array(dims.reduce((a,b)=>a*b,1));
  let i=0;for(let x=0;x<dims[0];x++)for(let y=0;y<dims[1];y++)for(let z=0;z<dims[2];z++)data[i++]=sampleGrid(g,x*steps[0],y*steps[1],z*steps[2]);
  const result={...g,dims,data,axes:g.axes.map((a,i)=>a.map(v=>v*steps[i])),blockIndex:null,blockPromise:null};
- previewGrids.set(g,result);return result;
+ grids.set(limit,result);while(grids.size>4)grids.delete(grids.keys().next().value);return result;
 }
 function surfaceBackend(name){const el=document.getElementById('orbitalSurfaceBackend');if(el)el.textContent=name;}
 
 async function surfaceGeometry(g,level,center,version){
  let cache=surfaceCache.get(g);if(!cache){cache=new Map();surfaceCache.set(g,cache);}
  const key=String(level);
- if(cache.has(key))return cache.get(key)?.clone()||null;
+ if(cache.has(key)){const saved=cache.get(key);if(saved?.userData.surfaceBackend)surfaceBackend(saved.userData.surfaceBackend);return saved?.clone()||null;}
  let result;
  if(window.BeeMolSurfaceGPU){
   const matrix=new THREE.Matrix3().set(...[0,1,2].flatMap(i=>g.axes.map(a=>a[i])));
@@ -477,11 +478,12 @@ async function surfaceGeometry(g,level,center,version){
   if(workerGrid!==g){worker.postMessage({grid:{dims:g.dims,origin:g.origin,axes:g.axes,atoms:g.atoms,data:g.data}});workerGrid=g;}
   const id=++surfaceJob;
   result=await new Promise((resolve,reject)=>{surfacePending.set(id,{resolve,reject});worker.postMessage({id,level,offset:center,version});});
- }catch(error){return mesh(g,level,center,()=>version===showVersion);}
+ }catch(error){if(error.message.startsWith('Surface too complex'))throw error;return mesh(g,level,center,()=>version===showVersion);}
  }
  if(version!==showVersion)return null;
  if(result.empty){cache.set(key,null);while(cache.size>4){const oldest=cache.keys().next().value;cache.get(oldest)?.dispose();cache.delete(oldest);}return null;}
  const geometry=new THREE.BufferGeometry();geometry.setAttribute('position',new THREE.BufferAttribute(result.positions,3));geometry.setAttribute('normal',new THREE.BufferAttribute(result.normals,3));geometry.computeBoundingSphere();
+ geometry.userData.surfaceBackend=document.getElementById('orbitalSurfaceBackend')?.textContent.split(' · surface detail')[0];
  cache.set(key,geometry.clone());
  while(cache.size>4){const oldest=cache.keys().next().value;cache.get(oldest)?.dispose();cache.delete(oldest);}
  return geometry;
@@ -527,8 +529,30 @@ if(g.atoms.length){
 
 let level=options.auto?autoIso(g):Math.abs(options.iso||.02);if(document.getElementById('orbitalCutoff')&&options.auto)document.getElementById('orbitalCutoff').value=level.toFixed(5);
 
-const surfaceGrid=options.preview?previewGrid(g):g;
-const surfaces=await Promise.all([surfaceGeometry(surfaceGrid,level,center,version),surfaceGeometry(surfaceGrid,-level,center,version)]);
+// Retry both phases at the same detail; retain the scientific grid and threshold.
+let hints=surfaceDetailHints.get(g);if(!hints){hints=new Map();surfaceDetailHints.set(g,hints);}
+let limit=options.preview?48:(hints.get(level)||Math.max(...g.dims));
+let surfaces,surfaceGrid;
+while(true){
+ surfaceGrid=previewGrid(g,limit);
+ const results=await Promise.allSettled([surfaceGeometry(surfaceGrid,level,center,version),surfaceGeometry(surfaceGrid,-level,center,version)]);
+ const failure=results.find(result=>result.status==='rejected');
+ if(version!==showVersion||failure){
+  results.forEach(result=>{if(result.status==='fulfilled')result.value?.dispose();});
+  if(version!==showVersion)return level;
+  const fatal=results.find(result=>result.status==='rejected'&&!result.reason.message?.startsWith('Surface too complex'));
+  if(fatal)throw fatal.reason;
+  if(limit<=12)throw failure.reason;
+  limit=Math.max(12,Math.floor(Math.min(limit,Math.max(...g.dims))*.7));
+  continue;
+ }
+ surfaces=results.map(result=>result.value);break;
+}
+if(!options.preview){hints.set(level,limit);while(hints.size>4)hints.delete(hints.keys().next().value);}
+if(surfaceGrid!==g&&!options.preview){
+ const status=document.getElementById('orbitalSurfaceBackend');
+ if(status)status.textContent=`${status.textContent.split(' · surface detail')[0]} · surface detail ${surfaceGrid.dims.join(' × ')} (reduced for complexity; isovalue unchanged)`;
+}
 if(version!==showVersion){surfaces.forEach(geometry=>geometry?.dispose());return level;}
 clear();
 slicePlaneMesh=slicePlaneOutline=null;moleculeCenter=center;

@@ -1,7 +1,19 @@
 <!doctype html><meta charset="utf-8"><title>Orbital surface viewer checks</title>
 <div id="viewerStack"><div id="orbitalViewer" style="width:480px;height:360px"></div></div>
 <input id="orbitalCutoff"><p id="orbitalSurfaceBackend"></p><pre id="result">RUNNING</pre>
-<script>window.BeeMolBonding={infer:()=>[],lanes:()=>[]};</script>
+<script>
+window.BeeMolBonding={infer:()=>[],lanes:()=>[]};
+const NativeWorker=window.Worker;
+window.Worker=class extends NativeWorker{
+ postMessage(message,...args){
+  if(message?.grid)this.gridSize=Math.max(...message.grid.dims);
+  if(window.simulateComplexSurface&&message?.id&&this.gridSize>34){
+   queueMicrotask(()=>this.onmessage?.({data:{id:message.id,error:'Surface too complex. Try a slightly larger isovalue or a smaller grid.'}}));return;
+  }
+  return super.postMessage(message,...args);
+ }
+};
+</script>
 <script src="../surface-gpu.js"></script><script src="../three-orbitals.js"></script>
 <script>
 (async()=>{
@@ -23,9 +35,18 @@
  const latest=await Promise.all([BeeMolThree.show(text,{...options,iso:.4}),BeeMolThree.show(text,{...options,iso:.5})]);
  assert(latest[1]===.5,'Latest change must finish');
  assert(BeeMolThree.getCanvas().width>0,'Canvas must render');
+ // Force a complexity failure to check recovery without constructing a huge mesh.
+ window.simulateComplexSurface=true;
+ await BeeMolThree.show(text,{...options,iso:.55});
+ assert(BeeMolThree.getGrid()===grid,'Recovery must preserve the original grid');
+ assert(document.getElementById('orbitalSurfaceBackend').textContent.includes('reduced for complexity'),'Reduced-detail notice');
+ assert(document.getElementById('orbitalSurfaceBackend').textContent.includes('isovalue unchanged'),'Threshold must remain unchanged');
+ await BeeMolThree.show(text,{...options,iso:.55});
+ assert(document.getElementById('orbitalSurfaceBackend').textContent.includes('reduced for complexity'),'Cached recovery notice');
+ window.simulateComplexSurface=false;
  // Also exercise fallback when workers are unavailable.
  window.Worker=undefined;
  await BeeMolThree.show(text,{...options,iso:.6});
- document.getElementById('result').textContent='PASS: viewer rendering, grid reuse, preview/full resolution, CPU fallback, rapid changes, no-worker fallback';
+ document.getElementById('result').textContent='PASS: viewer rendering, grid reuse, preview/full resolution, CPU fallback, rapid changes, no-worker fallback, complexity recovery, unchanged original grid and isovalue';
 })().catch(error=>{document.getElementById('result').textContent='FAIL: '+error.stack;});
 </script>
