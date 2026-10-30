@@ -6,7 +6,7 @@ function init(){
  const workspace=document.createElement('section');
  workspace.id='aiWorkspace';workspace.className='hidden';workspace.setAttribute('aria-label','BeeMol AI chat workspace');
  workspace.innerHTML=`<aside class="ai-sidebar"><h2>BeeMol AI</h2><button id="aiNew">+ New chat</button><nav id="aiChatList" aria-label="Conversations"></nav><details><summary>Connection settings</summary><label>Backend endpoint<input id="aiEndpoint" value="http://127.0.0.1:8787/api/analyze"></label></details><p>Chats remain in memory until you close or reload this page. Download a chat to keep it.</p></aside>
- <div class="ai-main"><header class="ai-header"><div><strong>BeeMol research assistant</strong><small id="aiState">Connect your model for AI explanations</small></div><nav id="aiModes"><button data-ai-mode="molecule">Molecule</button><button data-ai-mode="orbitals">Orbitals</button><button data-ai-mode="water">Water box</button><button data-ai-mode="analysis">Analysis</button><button class="active" aria-current="page">AI</button></nav></header>
+ <div class="ai-main"><header class="ai-header"><div><strong>BeeMol research assistant</strong><small id="aiState">Connect your model for AI explanations</small></div></header>
  <div id="aiMessages" role="log" aria-label="Chat messages" aria-live="polite"></div>
  <form id="aiComposer"><div class="ai-context"><label><input id="aiData" type="checkbox" checked> Visible autocorrelation datasets</label><label><input id="aiMetadata" type="checkbox"> Geometry and orbital metadata</label><span id="aiContextCount"></span></div><label class="ai-sr" for="aiQuestion">Message BeeMol AI</label><textarea id="aiQuestion" rows="3" placeholder="Ask about your molecular data or calculation results…"></textarea><div class="ai-actions"><small>Selected data is sent to the backend and its configured model. Raw plot transforms are not applied.</small><button id="aiCancel" type="button" disabled>Stop</button><button id="aiExport" type="button">Download chat</button><button id="aiSend" type="submit">Send ↑</button></div><p id="aiError" role="status"></p></form></div>`;
  document.body.append(workspace);
@@ -39,7 +39,7 @@ function init(){
  
  for(const [i,anchor]of anchors.entries()){const b=document.createElement('button');b.type='button';b.textContent='AI';b.id=i===0?'aiOpen':'aiOpen'+i;b.onclick=open;anchor.after(b);}
  if(!anchors.length){const b=document.createElement('button');b.textContent='AI';b.onclick=open;document.querySelector('.top-actions')?.append(b);}
- $('aiModes').onclick=e=>{const mode=e.target.dataset.aiMode;if(!mode)return;close();if(mode==='analysis')$('analysisOpen')?.click();else if(mode==='water')$('wbOpen')?.click();else if(typeof switchViewerMode==='function')switchViewerMode(mode);};
+
  $('aiNew').onclick=newChat;
  $('aiCancel').onclick=()=>controller?.abort();
  $('aiExport').onclick=()=>{const url=URL.createObjectURL(new Blob([JSON.stringify(current,null,2)],{type:'application/json'}));const a=document.createElement('a');a.href=url;a.download='beemol-chat.json';a.click();setTimeout(()=>URL.revokeObjectURL(url),1000);};

@@ -166,11 +166,19 @@
             else draw();
           });
         }
+        const spectrumPanel = document.createElement('section');
+        spectrumPanel.id = 'analysisSpectrumPanel';
+        spectrumPanel.className = 'analysis-pad';
+        spectrumPanel.hidden = true;
+        spectrumPanel.setAttribute('role', 'tabpanel');
+        spectrumPanel.setAttribute('aria-labelledby', 'analysisSpectrumTab');
+        sidebar.append(spectrumPanel);
         const tabs = document.createElement('div');
         tabs.className = 'analysis-sidebar-tabs';
         tabs.setAttribute('role', 'tablist');
         tabs.setAttribute('aria-label', 'Analysis controls');
         tabs.innerHTML = `<button id="analysisSettingsTab" type="button" role="tab" aria-controls="analysisSettingsPanel" aria-selected="true">Plot settings</button>
+          <button id="analysisSpectrumTab" type="button" role="tab" aria-controls="analysisSpectrumPanel" aria-selected="false" tabindex="-1" hidden>Spectrum settings</button>
           <button id="analysisPhaseTab" type="button" role="tab" aria-controls="analysisPhasePanel" aria-selected="false" tabindex="-1" hidden>Phase</button>
           <button id="analysisMovieTab" type="button" role="tab" aria-controls="analysisMoviePanel" aria-selected="false" tabindex="-1" hidden>Movie</button>
           <button id="analysisEnergyTab" type="button" role="tab" aria-controls="analysisEnergyPanel" aria-selected="false" tabindex="-1" hidden>Analytical autocorrelation</button>`;
@@ -179,7 +187,7 @@
         ordinarySettingsHeading.className = 'ordinary-analysis-settings-heading';
         ordinarySettingsHeading.textContent = 'Plot settings';
         sidebar.querySelector('.card-header').append(ordinarySettingsHeading);
-        const tabPanels = [['analysisSettingsTab', plotPanel], ['analysisPhaseTab', phasePanel], ['analysisMovieTab', moviePanel], ['analysisEnergyTab', energyPanel]];
+        const tabPanels = [['analysisSettingsTab', plotPanel], ['analysisSpectrumTab', spectrumPanel], ['analysisPhaseTab', phasePanel], ['analysisMovieTab', moviePanel], ['analysisEnergyTab', energyPanel]];
         const activateTab = activeId => {
           $('analysisWorkspace').classList.toggle('analysis-movie-compare', activeId === 'analysisMovieTab');
           phasePanel.querySelector('.analysis-view-title').after(sharedFigureControls);
@@ -598,6 +606,7 @@
       }
 
       function draw() {
+        if ($('analysisPlotType')?.value !== 'autocorrelation-phase') return;
         try {
           const inputEnergies = numbers($('phaseEnergies').value, 'Energies');
           const counts = new Map();

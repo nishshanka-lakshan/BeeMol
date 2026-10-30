@@ -952,17 +952,19 @@
 
 #aboutWorkspace{padding:12px;min-height:calc(100dvh - 78px)}
 #aboutWorkspace.hidden{display:none}
-.about-card{max-width:1100px;margin:0 auto}
-.about-content{padding:clamp(20px,4vw,48px)}
-.about-content h1{margin:0 0 24px;font-size:28px}
-.about-logo-preview{background:#fff;border:1px solid var(--border);border-radius:12px;padding:clamp(12px,3vw,36px)}
-.about-logo-preview img{display:block;width:100%;height:auto}
-.about-downloads{display:flex;flex-wrap:wrap;gap:10px;margin-top:20px}
-.about-downloads a{text-decoration:none;justify-content:center}
+.about-page{max-width:1040px;margin:0 auto}
+.about-content{padding:clamp(32px,7vw,88px) clamp(16px,4vw,48px)}
+.about-eyebrow{margin:0 0 24px;color:var(--accent);font-size:11px;font-weight:700;letter-spacing:.18em}
+.about-content h1{margin:0 0 24px;font-size:clamp(32px,5vw,56px);line-height:1.12;letter-spacing:-.035em;font-weight:700}
+.about-intro{max-width:660px;font-size:clamp(17px,2vw,21px);line-height:1.65;color:var(--muted)}
+#aboutDetails{max-width:680px;margin-top:56px}
+.about-content h2{margin:0 0 16px;font-size:21px;letter-spacing:-.02em}
+#aboutDetails p,.about-brand-assets p{color:var(--muted);line-height:1.8;font-size:15px}
+.about-brand-assets{margin-top:48px;max-width:680px}
+.about-downloads{display:flex;flex-wrap:wrap;gap:12px 24px;margin-top:18px}
+#aboutWorkspace .about-downloads a,#aboutWorkspace .about-downloads button{background:transparent;border:0;border-radius:0;box-shadow:none;padding:4px 0;color:var(--accent);font:inherit;font-size:14px;text-decoration:underline;text-underline-offset:5px;cursor:pointer;min-height:0}
 #aboutDownloadStatus{font-size:12px;color:var(--muted)}
-#aboutDetails{margin-top:32px;padding-top:24px;border-top:1px solid var(--border)}
-#aboutDetails h2{font-size:18px}
-#aboutDetails p{color:var(--muted);line-height:1.7}
+#aboutDownloadStatus:empty{display:none}
 
 /* Fixed measurement readout inside the Molecule viewport. */
 .molecule-measurement {
@@ -980,3 +982,119 @@
 
 #atomColorHex{width:100px;font-family:monospace}
 #atomColorHex:invalid{border-color:#d34b4b}
+
+/* Workspace navigation beside the theme control. */
+.topbar{gap:16px;flex-wrap:wrap}
+.header-navigation{display:flex;align-items:center;justify-content:flex-end;gap:12px;margin-left:auto;min-width:0}
+.header-navigation .mode-tabs{border:1px solid var(--border);border-radius:8px;overflow:hidden}
+@media(max-width:660px){
+ .header-navigation{flex-basis:100%;margin-left:0;justify-content:flex-start}
+ .header-navigation .mode-tabs{flex:1;min-width:0}
+}
+
+/* Unframed About logo. */
+.about-logo{display:block;width:min(100%,440px);height:auto;margin:0 0 40px}
+
+/* Spectrum has its own energy inputs; shared figure styling remains available. */
+#analysisWorkspace.spectrum-active > aside:first-child .analysis-pad > :not(#spectrumControls):not(label:has(#analysisPlotType)){display:none}
+#spectrumControls label{display:block;margin:12px 0}
+#spectrumControls textarea{width:100%;box-sizing:border-box;min-height:100px}
+#spectrumControls button{margin:6px 6px 0 0}
+#analysisWorkspace.spectrum-active #analysisSettingsPanel label:has(#plotTitle),
+#analysisWorkspace.spectrum-active #analysisSettingsPanel label:has(#plotXLabel),
+#analysisWorkspace.spectrum-active #analysisSettingsPanel label:has(#plotYLabel),
+#analysisWorkspace.spectrum-active #analysisSettingsPanel label:has(#plotTransform),
+#analysisWorkspace.spectrum-active #analysisSettingsPanel label:has(#plotXMin),
+#analysisWorkspace.spectrum-active #analysisSettingsPanel label:has(#plotXMax),
+#analysisWorkspace.spectrum-active #analysisSettingsPanel label:has(#plotYMin),
+#analysisWorkspace.spectrum-active #analysisSettingsPanel label:has(#plotYMax){display:none}
+
+#analysisWorkspace.spectrum-active .analysis-sidebar-tabs{display:flex}
+#analysisWorkspace.spectrum-active .ordinary-analysis-settings-heading{display:none}
+#analysisSpectrumPanel label{display:block;margin:12px 0}
+#analysisSpectrumPanel button{margin:6px 6px 0 0}
+
+/* Group spectrum parameters in a consistent two-column form. */
+#analysisSpectrumPanel .spectrum-settings-group{min-width:0;margin:0 0 22px;padding:16px 0 0;border:0;border-top:1px solid var(--border)}
+#analysisSpectrumPanel .spectrum-settings-group legend{padding:0 10px 0 0;font-size:13px;font-weight:700;color:var(--text)}
+.spectrum-settings-fields{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:16px 12px}
+#analysisSpectrumPanel .spectrum-settings-fields label{display:flex;flex-direction:column;gap:7px;margin:0;font-size:12px;color:var(--muted);min-width:0}
+#analysisSpectrumPanel .spectrum-settings-fields input:not([type="checkbox"]){width:100%;min-width:0;box-sizing:border-box;margin:0;min-height:38px}
+#analysisSpectrumPanel label:has(#spectrumPlot){grid-column:1/-1;flex-direction:row;align-items:center;color:var(--text)}
+#analysisSpectrumPanel label:has(#spectrumTitle),#analysisSpectrumPanel label:has(#spectrumFilename){grid-column:1/-1}
+#analysisSpectrumPanel #spectrumPlot{margin:0;width:16px;height:16px}
+.spectrum-settings-actions{display:flex;flex-direction:column;gap:10px}
+#analysisSpectrumPanel .spectrum-settings-actions button{width:100%;margin:0;min-height:40px;justify-content:center}
+@media(max-width:380px){.spectrum-settings-fields{grid-template-columns:1fr}}
+
+#analysisWorkspace.spectrum-active #analyticalPreview,#analysisWorkspace.spectrum-active #analyticalExtremaReport{display:none}
+
+/* Compact plot controls; explicit selectors override the legacy injected layout. */
+#analysisWorkspace #analysisSettingsPanel>.compact-plot-group{grid-column:1/-1;min-width:0;width:100%;box-sizing:border-box;margin:12px 0 0;padding:12px 0 0;border:0;border-top:1px solid var(--border)}
+.compact-plot-group legend{padding:0 8px 0 0;font-size:12px;font-weight:700;color:var(--text)}
+.compact-plot-fields,.compact-legend-options{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px 12px;align-items:end}
+#analysisWorkspace #analysisSettingsPanel .compact-plot-group label{display:flex;flex-direction:column;gap:6px;margin:0;min-width:0;font-size:12px;line-height:1.4;color:var(--muted)}
+#analysisWorkspace #analysisSettingsPanel .compact-plot-group input:not([type="checkbox"]):not([type="hidden"]),
+#analysisWorkspace #analysisSettingsPanel .compact-plot-group select{box-sizing:border-box;width:100%;min-width:0;height:36px;margin:0;padding:6px 8px;font-size:12px}
+#analysisWorkspace #analysisSettingsPanel .compact-plot-group label:has(input[type="checkbox"]){grid-column:1/-1;flex-direction:row;align-items:center;min-height:26px;gap:8px;color:var(--text)}
+#analysisWorkspace #analysisSettingsPanel .compact-plot-group input[type="checkbox"]{width:15px;height:15px;margin:0;flex:none}
+.compact-legend-options{grid-column:1/-1}
+.compact-legend-options[hidden]{display:none}
+.compact-legend-options label:has(#plotLegendPosition){grid-column:1/-1}
+#analysisWorkspace #analysisSettingsPanel #plotFontPanel{grid-column:1/-1;display:grid;grid-template-columns:minmax(0,1fr);gap:10px}
+#analysisWorkspace #analysisSettingsPanel #plotFontPanel>div>label{margin-bottom:6px}
+#analysisWorkspace #analysisSettingsPanel .plot-font-size-row{display:grid;grid-template-columns:36px minmax(0,1fr) 36px;gap:8px}
+#analysisWorkspace #analysisSettingsPanel .plot-font-size-row button{width:36px;height:36px;padding:0;margin:0;display:flex;align-items:center;justify-content:center}
+#analysisWorkspace #analysisSettingsPanel #plotFontSizeValue{width:100%;min-width:0;text-align:center}
+#analysisWorkspace #analysisSettingsPanel .compact-plot-group .analysis-actions{grid-column:1/-1;display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px;margin:0}
+#analysisWorkspace #analysisSettingsPanel .compact-plot-group .analysis-actions button{min-width:0;width:100%;min-height:36px;margin:0;padding:6px;font-size:12px;justify-content:center}
+
+/* Spectrum groups occupy full rows in the shared sidebar grid. */
+#analysisWorkspace #analysisSpectrumPanel>.spectrum-settings-group{grid-column:1/-1;box-sizing:border-box;width:100%;min-width:0;margin:12px 0 0;padding-top:12px}
+#analysisWorkspace #analysisSpectrumPanel .spectrum-settings-fields{gap:10px 12px;align-items:end}
+#analysisWorkspace #analysisSpectrumPanel .spectrum-settings-fields label{gap:6px;font-size:12px;line-height:1.4}
+#analysisWorkspace #analysisSpectrumPanel .spectrum-settings-fields input:not([type="checkbox"]){height:36px;min-height:36px;padding:6px 8px;font-size:12px}
+#analysisWorkspace #analysisSpectrumPanel .spectrum-settings-fields button{grid-column:1/-1;width:100%;min-height:36px;margin:0;justify-content:center;font-size:12px}
+#analysisWorkspace #analysisSpectrumPanel[hidden],#analysisWorkspace #analysisSettingsPanel[hidden]{display:none}
+
+#analysisWorkspace #analysisSettingsPanel .plot-font-bold-label[hidden]{display:none}
+#analysisWorkspace #analysisSettingsPanel>.spectrum-plot-settings{display:none;grid-column:1/-1;min-width:0;margin:12px 0 0;padding:12px 0 0;border:0;border-top:1px solid var(--border)}
+#analysisWorkspace.spectrum-active #analysisSettingsPanel>.spectrum-plot-settings{display:block}
+#analysisSettingsPanel .spectrum-plot-settings legend{font-size:12px;font-weight:700;color:var(--text);padding-right:8px}
+#analysisSettingsPanel .spectrum-plot-settings label{display:flex;flex-direction:column;gap:6px;margin:0;font-size:12px;min-width:0}
+#analysisSettingsPanel .spectrum-plot-settings label:has(#spectrumPlot){grid-column:1/-1;flex-direction:row;align-items:center}
+#analysisSettingsPanel .spectrum-plot-settings label:has(#spectrumTitle){grid-column:1/-1}
+#analysisSettingsPanel .spectrum-plot-settings input:not([type="checkbox"]){box-sizing:border-box;width:100%;height:36px}
+#analysisSettingsPanel .spectrum-plot-settings #spectrumPlot{width:15px;height:15px;margin:0}
+
+
+#analysisWorkspace #analysisSettingsPanel>.plot-disclosure{grid-column:1/-1;min-width:0;width:100%;box-sizing:border-box;margin:12px 0 0;padding:10px 0;border:0;border-top:1px solid var(--border)}
+#analysisSettingsPanel .plot-disclosure>summary{cursor:pointer;font-size:12px;font-weight:700;color:var(--text);padding:4px 0}
+#analysisSettingsPanel .plot-disclosure[open]>summary{margin-bottom:12px}
+
+/* Tighter spacing between plot-setting disclosures and their controls. */
+#analysisWorkspace #analysisSettingsPanel{row-gap:6px}
+#analysisWorkspace #analysisSettingsPanel>.plot-disclosure{margin-top:3px;padding:5px 0}
+#analysisSettingsPanel .plot-disclosure>summary{padding:3px 0}
+#analysisSettingsPanel .plot-disclosure[open]>summary{margin-bottom:7px}
+#analysisWorkspace #analysisSettingsPanel .compact-plot-fields,
+#analysisWorkspace #analysisSettingsPanel .compact-legend-options{gap:7px 10px}
+#analysisWorkspace #analysisSettingsPanel #plotFontPanel{gap:7px}
+#analysisWorkspace #analysisSettingsPanel>fieldset.compact-plot-group{margin-top:5px;padding-top:8px}
+
+#analysisWorkspace #analysisSettingsPanel .spectrum-legend-name{display:none}
+#analysisWorkspace.spectrum-active #analysisSettingsPanel .spectrum-legend-name{display:flex}
+
+#spectrumOverlayList{grid-column:1/-1;min-width:0}
+.spectrum-overlay-row{display:flex;align-items:center;gap:8px;margin:6px 0;font-size:12px}
+.spectrum-overlay-row span{flex:1;overflow-wrap:anywhere;min-width:0}
+#analysisSettingsPanel .spectrum-overlay-row input[type="color"]{width:38px;height:30px;flex:none;padding:2px}
+#analysisSettingsPanel .spectrum-overlay-row button{width:auto;min-height:30px;padding:4px 8px;font-size:11px}
+
+#analysisSettingsPanel #spectrumOverlayList{display:flex;flex-wrap:wrap;align-items:center;gap:8px}
+#analysisSettingsPanel .spectrum-overlay-row{display:flex;flex:0 1 auto;align-items:center;gap:6px;margin:0;padding:6px 8px;border:1px solid var(--border);border-radius:6px;min-width:0;max-width:100%;box-sizing:border-box}
+#analysisSettingsPanel .spectrum-overlay-row span{flex:0 1 auto}
+#analysisSettingsPanel .spectrum-overlay-row button{flex:none;width:auto;margin:0}
+
+#analysisSettingsPanel .spectrum-overlay-row{flex-wrap:nowrap}
+#analysisSettingsPanel .spectrum-overlay-row span{white-space:nowrap;overflow-wrap:normal;word-break:normal;writing-mode:horizontal-tb;overflow:hidden;text-overflow:ellipsis}

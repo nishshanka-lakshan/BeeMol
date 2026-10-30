@@ -66,12 +66,16 @@
   const phaseMode = () => $('analysisPlotType')?.value === 'autocorrelation-phase';
   const autocorrelation = window.BeeMolAutocorrelation.create({
     series, AU_TO_FS, esc, status,
-    exportName: () => phaseMode() ? 'phase_alignment' : 'autocorrelation',
+    exportName: () => spectrumMode() ? spectrum.filename() : phaseMode() ? 'phase_alignment' : 'autocorrelation',
     redrawPhase: () => { phase.draw(); renderAnalytical(); }
   });
   if (!window.BeeMolAutocorrelationPhase) throw Error('Missing autocorrelation-phase.js.');
   const phase = window.BeeMolAutocorrelationPhase.create({ esc, status });
+  const spectrumMode = () => $('analysisPlotType')?.value === 'spectrum';
+  const spectrumRenderer = window.BeeMolAutocorrelation.create({ series: [], AU_TO_FS: 1, esc, status });
+  const spectrum = window.BeeMolSpectrum.create({ renderer: spectrumRenderer, status });
   const draw = () => {
+    if (spectrumMode()) { spectrum.draw(); return; }
     (phaseMode() ? phase : autocorrelation).draw();
     if (phaseMode()) renderAnalytical();
   };
@@ -445,6 +449,69 @@
 
       autocorrelation.addControls();
       phase.addControls();
+      spectrum.addControls();
+      const plotSettings = $('analysisSettingsPanel');
+      const controlLabel = id => $(id).closest('label');
+      function plotGroup(title, nodes) {
+        const group = document.createElement('fieldset'); group.className = 'compact-plot-group';
+        const legend = document.createElement('legend'); legend.textContent = title;
+
+        const body = document.createElement('div'); body.className = 'compact-plot-fields';
+        body.append(...nodes); group.append(legend, body); plotSettings.append(group);
+        return body;
+      }
+      plotGroup('Size', ['plotBoxWidth', 'plotBoxHeight'].map(controlLabel));
+      plotGroup('Appearance', ['plotTwoTone', 'plotWidth', 'plotBorderWidth'].map(controlLabel));
+      const axisFields = [];
+      for (const [id, text, value, min, max] of [
+        ['plotXTickCount', 'X-axis label count', 6, 2, 30],
+        ['plotYTickCount', 'Y-axis label count', 3, 2, 30],
+        ['plotXDecimals', 'X-axis decimal places', 2, 0, 10],
+        ['plotYDecimals', 'Y-axis decimal places', 2, 0, 10]
+      ]) {
+        const label = document.createElement('label'); label.textContent = text;
+        const input = document.createElement('input'); input.id = id; input.type = 'number';
+        input.min = min; input.max = max; input.step = 1; input.value = value;
+        input.addEventListener('input', draw); label.append(input); axisFields.push(label);
+      }
+      plotGroup('Axis numbers', axisFields);
+
+      const legendOptions = document.createElement('div'); legendOptions.className = 'compact-legend-options';
+      legendOptions.append(...['plotLegendPosition', 'plotLegendX', 'plotLegendY', 'plotLegendLineWidth'].map(controlLabel));
+      const spectrumLegendLabel = controlLabel('spectrumLegend');
+      spectrumLegendLabel.classList.add('spectrum-legend-name');
+      legendOptions.append(spectrumLegendLabel);
+      plotGroup('Legend', [controlLabel('plotLegend'), legendOptions]);
+      $('spectrumLegend').addEventListener('input', () => { if (spectrumMode()) spectrum.draw(); });
+      const syncLegendControls = () => { legendOptions.hidden = !$('plotLegend').checked; };
+      $('plotLegend').addEventListener('change', syncLegendControls);
+      $('analysisPlotType').addEventListener('change', syncLegendControls);
+      syncLegendControls();
+      $('plotFontTarget').closest('label').firstChild.textContent = 'Text element';
+      plotGroup('Text', [$('plotFontPanel')]);
+      plotSettings.append(plotSettings.querySelector('.spectrum-plot-settings'));
+      // Native disclosure controls preserve all existing input nodes and values.
+      for (const group of [...plotSettings.children]) {
+        if (group.tagName !== 'FIELDSET') continue;
+        const legend = group.querySelector(':scope > legend');
+        if (!legend || !['Size', 'Appearance', 'Axis numbers', 'Legend', 'Text', 'Plot'].includes(legend.textContent)) continue;
+        const disclosure = document.createElement('details');
+        disclosure.className = group.className + ' plot-disclosure';
+        const summary = document.createElement('summary'); summary.textContent = legend.textContent;
+        disclosure.append(summary);
+        for (const child of [...group.childNodes]) if (child !== legend) disclosure.append(child);
+        group.replaceWith(disclosure);
+      }
+
+      plotGroup('Export', [plotSettings.querySelector('.analysis-actions')]);
+      for (const [id, text] of Object.entries({
+        plotBoxWidth: 'Width', plotBoxHeight: 'Height', plotLegendPosition: 'Position',
+        plotLegendX: 'Horizontal offset (px)', plotLegendY: 'Vertical offset (px)'
+      })) controlLabel(id).firstChild.textContent = text;
+      // Keep the existing checkbox node and its listener while shortening its label.
+      const boldLabel = controlLabel('plotFontBold');
+      boldLabel.hidden = true;
+      for (const node of boldLabel.childNodes) if (node.nodeType === Node.TEXT_NODE) node.textContent = ' Bold';
 
       const theoretical = document.createElement('section');
       theoretical.id = 'analysisTheoreticalControls';
@@ -525,7 +592,7 @@
       figureArea.setAttribute('aria-label', 'Combined figure. Pinch on the touchpad to zoom.');
       let figureZoom = 1;
       figureArea.addEventListener('wheel', event => {
-        if (!phaseMode() || !event.ctrlKey) return;
+        if (!event.ctrlKey || !figureArea.querySelector('svg')) return;
         event.preventDefault();
         figureZoom = Math.max(0.5, Math.min(4, figureZoom * Math.exp(-event.deltaY * 0.01)));
         alignMovieAxes();
@@ -586,7 +653,7 @@
             }
             svg.append(content);
           }
-          const zoom = phaseMode() && !movie ? figureZoom : 1;
+          const zoom = !movie ? figureZoom : 1;
           const { x, y } = svg.viewBox.baseVal;
           content.setAttribute('transform', `translate(${x} ${y}) scale(${zoom}) translate(${-x} ${-y})`);
         }
@@ -875,18 +942,36 @@
         'plotTitle', 'plotXLabel', 'plotYLabel'
       ].map(id => $(id)?.closest('label')).filter(Boolean);
       const savedControlDisplays = new Map(phaseHiddenControls.map(node => [node, node.style.display]));
-      const plotTitles = { autocorrelation: 'Autocorrelation function', 'autocorrelation-phase': 'Relative Phase Alignment of Cationic States' };
+      const plotTitles = { autocorrelation: 'Autocorrelation function', 'autocorrelation-phase': 'Relative Phase Alignment of Cationic States', spectrum: 'Spectrum' };
       const plotSettingStates = new Map();
       const plotSettingInputs = () => Array.from($('analysisSettingsPanel').querySelectorAll('input[id^="plot"], select[id^="plot"]'));
+      const spectrumAppearanceKey = 'beemol.spectrum.appearance.v1';
+      try {
+        const savedAppearance = JSON.parse(localStorage.getItem(spectrumAppearanceKey));
+        if (Array.isArray(savedAppearance)) plotSettingStates.set('spectrum', savedAppearance.filter(row =>
+          Array.isArray(row) && row.length === 3 && typeof row[0] === 'string' &&
+          typeof row[1] === 'string' && typeof row[2] === 'boolean' &&
+          plotSettingInputs().some(input => input.id === row[0])));
+      } catch (_) { /* Use defaults when storage is unavailable. */ }
+      const rememberSpectrumAppearance = () => {
+        if (!spectrumMode()) return;
+        const values = plotSettingInputs().map(input => [input.id, input.value, input.checked]);
+        plotSettingStates.set('spectrum', values);
+        try { localStorage.setItem(spectrumAppearanceKey, JSON.stringify(values)); } catch (_) {}
+      };
+      for (const name of ['input', 'change', 'click']) {
+        $('analysisSettingsPanel').addEventListener(name, rememberSpectrumAppearance);
+      }
       let activePlotType = 'autocorrelation';
       $('analysisPlotType').onchange = () => {
-        if (!['autocorrelation', 'autocorrelation-phase'].includes($('analysisPlotType').value)) {
+        if (!['autocorrelation', 'autocorrelation-phase', 'spectrum'].includes($('analysisPlotType').value)) {
           $('analysisPlotType').value = activePlotType;
           status('This plot type is not implemented yet. Choose Autocorrelation or Autocorrelation phase analysis.');
           return;
         }
         plotSettingStates.set(activePlotType, plotSettingInputs().map(input => [input.id, input.value, input.checked]));
         phase.stopAnimation();
+        $('analysisPlot').replaceChildren();
         plotTitles[activePlotType] = $('plotTitle').value;
         activePlotType = $('analysisPlotType').value;
         const incomingSettings = plotSettingStates.get(activePlotType);
@@ -895,6 +980,7 @@
           $(id).checked = checked;
         });
         $('plotTitle').value = plotTitles[activePlotType];
+        spectrum.setVisible(spectrumMode());
         const isPhase = phaseMode();
         $('analysisWorkspace').classList.toggle('phase-analysis-active', isPhase);
         if (!isPhase) $('analysisWorkspace').classList.remove('analysis-movie-compare');
@@ -910,7 +996,8 @@
         if (!isPhase) $('analysisSettingsTab').click();
         savedControlDisplays.forEach((display, node) => { node.style.display = isPhase ? 'none' : display; });
         $('plotLegendLineWidth').closest('label').firstChild.textContent = isPhase ? 'Resultant arrow thickness ' : 'Legend line thickness ';
-        document.querySelector('#analysisWorkspace > section .card-header h2').textContent = isPhase ? 'Autocorrelation phase analysis' : 'Autocorrelation';
+        const heading = document.querySelector('#analysisWorkspace > section .card-header h2');
+        if (heading) heading.textContent = isPhase ? 'Autocorrelation phase analysis' : spectrumMode() ? 'Spectrum' : 'Autocorrelation';
         draw();
       };
 

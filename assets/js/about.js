@@ -12,13 +12,22 @@
    if(anchor.closest('#aboutWorkspace')||anchor.textContent.trim()!=='AI')continue;
    const button=document.createElement('button');button.type='button';button.textContent='About';button.dataset.openAbout='true';button.onclick=open;anchor.after(button);
   }
-  workspace.querySelector('nav').addEventListener('click',event=>{
-   const mode=event.target.closest('[data-about-mode]')?.dataset.aboutMode;if(!mode)return;
+  // The shared header remains available in every workspace.
+  const navigation=document.querySelector('.header-navigation .mode-tabs');
+  navigation.addEventListener('click',event=>{
+   const button=event.target.closest('.mode-tab, button');
+   if(!button)return;
    workspace.classList.add('hidden');
-   if(mode==='ai'){window.BeeMolAI?.open();return}
-   if(mode==='analysis'){document.getElementById('analysisOpen').click();return}
-   if(mode==='water'){document.getElementById('wbOpen').click();return}
-   window.BeeMolAI?.close();switchViewerMode(mode);
+   window.BeeMolAI?.close();
+  },true);
+  navigation.addEventListener('click',event=>{
+   const button=event.target.closest('.mode-tab, button');
+   if(!button)return;
+   for(const item of navigation.children){
+    item.classList.toggle('active',item===button);
+    if(item===button)item.setAttribute('aria-current','page');
+    else item.removeAttribute('aria-current');
+   }
   });
   document.getElementById('downloadBeeMolPNG').onclick=async event=>{
    const button=event.currentTarget,status=document.getElementById('aboutDownloadStatus');button.disabled=true;

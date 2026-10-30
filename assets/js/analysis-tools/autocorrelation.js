@@ -54,13 +54,9 @@
           <option value="autocorrelation">Autocorrelation</option>
           <option value="autocorrelation-phase">Autocorrelation phase analysis</option>
 
-          <option value="population">Population vs time</option>
 
-          <option value="charge">Atomic charge vs time</option>
 
-          <option value="dipole">Dipole moment vs time</option>
 
-          <option value="custom">Custom XY plot</option>
 
         </select>
 
@@ -439,6 +435,7 @@
 
   function draw(options = {}) {
     const $ = id => options.settings?.[id] || document.getElementById(id);
+    if (!options.datasets && $('analysisPlotType')?.value === 'spectrum') { window.BeeMolSpectrumRedraw?.(); return; }
     if (!options.datasets && $('analysisPlotType')?.value === 'autocorrelation-phase' && redrawPhase) { redrawPhase(); return; }
 
     try {
@@ -751,15 +748,19 @@
 
 
 
-      const tick = value => {
-
-        const text = value.toFixed(2);
-
-        return text === '-0.00' ? '0.00' : text;
-
+      const integerSetting = (id, fallback, min, max) => {
+        const raw = $(id)?.value;
+        const number = raw === '' || raw == null ? fallback : Number(raw);
+        return Number.isFinite(number) ? Math.max(min, Math.min(max, Math.round(number))) : fallback;
       };
-
-
+      const xTickCount = integerSetting('plotXTickCount', 6, 2, 30);
+      const yTickCount = integerSetting('plotYTickCount', 3, 2, 30);
+      const xDecimals = integerSetting('plotXDecimals', 2, 0, 10);
+      const yDecimals = integerSetting('plotYDecimals', 2, 0, 10);
+      const tick = (value, decimals) => {
+        const text = value.toFixed(decimals);
+        return Number(text) === 0 ? (0).toFixed(decimals) : text;
+      };
 
       let svg = `
 
@@ -814,9 +815,9 @@
 
       // Six X-axis ticks.
 
-      for (let i = 0; i <= 5; i++) {
+      for (let i = 0; i < xTickCount; i++) {
 
-        const value = xmin + i * (xmax - xmin) / 5;
+        const value = xmin + i * (xmax - xmin) / (xTickCount - 1);
 
         const x = X(value);
 
@@ -837,7 +838,7 @@
           <text x="${x}" y="${T + PH + 28}"
 
                 text-anchor="middle" font-size="${xTickFontSize}"
-                 font-weight="${fontWeight('plotXTickFontBold')}">${tick(value)}</text>
+                 font-weight="${fontWeight('plotXTickFontBold')}">${tick(value, xDecimals)}</text>
 
         `;
 
@@ -847,9 +848,9 @@
 
       // Three Y-axis ticks.
 
-      for (let i = 0; i <= 2; i++) {
+      for (let i = 0; i < yTickCount; i++) {
 
-        const value = ymin + i * (ymax - ymin) / 2;
+        const value = ymin + i * (ymax - ymin) / (yTickCount - 1);
 
         const y = Y(value);
 
@@ -870,7 +871,7 @@
           <text x="${L - 14}" y="${y + 6}"
 
                 text-anchor="end" font-size="${yTickFontSize}"
-                 font-weight="${fontWeight('plotYTickFontBold')}">${tick(value)}</text>
+                 font-weight="${fontWeight('plotYTickFontBold')}">${tick(value, yDecimals)}</text>
 
         `;
 
