@@ -437,8 +437,9 @@
           const { start, end, duration, fps: requestedFPS } = movieSettings();
           let fps = requestedFPS;
           if (typeof MediaRecorder === 'undefined' || !HTMLCanvasElement.prototype.captureStream) throw Error('Movie recording is unavailable in this browser. Try Chrome.');
-          const mime = ['video/mp4;codecs=avc1', 'video/mp4'].find(type => MediaRecorder.isTypeSupported(type));
-          if (!mime) throw Error('This browser does not support MP4 recording. Open BeeMol in a browser with MP4 MediaRecorder support and try again.');
+          // Require H.264 explicitly; generic MP4 may select a codec QuickTime cannot play.
+          const mime = ['video/mp4;codecs=avc1'].find(type => MediaRecorder.isTypeSupported(type));
+          if (!mime) throw Error('This browser cannot record H.264 MP4 for QuickTime. Try Safari or another browser with H.264 recording support.');
           recording = true; cancelMovie = false;
           disabled = Array.from(document.querySelectorAll('#analysisWorkspace input, #analysisWorkspace select, #analysisWorkspace textarea, #analysisWorkspace button')).map(node => [node, node.disabled]);
           disabled.forEach(([node]) => { node.disabled = node.id !== 'phaseMovieStop'; });
@@ -586,7 +587,7 @@
           await done;
           if (failure) throw failure;
           if (!cancelMovie) {
-            const blob = new Blob(chunks, {type:mime});
+            const blob = new Blob(chunks, {type:recorder.mimeType || mime});
             if (!blob.size) throw Error('Movie recording produced no video.');
             const url = URL.createObjectURL(blob), link = document.createElement('a');
             link.href = url; link.download = 'autocorrelation_phase_evolution.mp4';

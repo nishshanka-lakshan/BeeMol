@@ -133,7 +133,7 @@ function createMovieOutput(height=1080){
  try{
   output=new THREE.WebGLRenderer({antialias:true,alpha:false,preserveDrawingBuffer:true});
   output.outputColorSpace=renderer.outputColorSpace;output.setClearColor(bg);output.setPixelRatio(1);
-  const width=height===2160?3840:1920;
+  const width=Math.round(height*16/9/2)*2;
   const gl=output.getContext(),viewport=gl.getParameter(gl.MAX_VIEWPORT_DIMS);
   if(width>Math.min(gl.getParameter(gl.MAX_RENDERBUFFER_SIZE),viewport[0])||height>Math.min(gl.getParameter(gl.MAX_RENDERBUFFER_SIZE),viewport[1]))throw Error('This device cannot render that movie resolution. Choose 1080p.');
   output.setSize(width,height,false);

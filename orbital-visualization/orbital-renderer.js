@@ -63,8 +63,9 @@ async function recordMovie(movieOptions={}){
  if(recording){stopMovieRecording?.();return;}
  if(!importedMolden&&!cubeFiles.size){setOrbitalStatus('Open a Molden file first.',true);return}
  if(!window.MediaRecorder){setOrbitalStatus('MP4 recording is unavailable in this browser.',true);return}
- const mime=['video/mp4;codecs=avc1.640033','video/mp4;codecs=avc1.64002A','video/mp4'].find(type=>MediaRecorder.isTypeSupported(type));
- if(!mime){setOrbitalStatus('This browser cannot record MP4. Open BeeMol in a browser with MP4 recording support.',true);return}
+ // Require H.264 explicitly: an MP4 container alone can contain a codec QuickTime cannot play.
+ const mime=['video/mp4;codecs=avc1'].find(type=>MediaRecorder.isTypeSupported(type));
+ if(!mime){setOrbitalStatus('This browser cannot record H.264 MP4 for QuickTime. Try Safari or another browser with H.264 recording support.',true);return}
  stopOrbitalAnimation();clearTimeout(isoTimer);clearTimeout(previewTimer);recording=true;
  const button=document.getElementById(movieOptions.buttonId||'animationRecord'),r=frameRange();
  const originalButton={html:button.innerHTML,title:button.title,label:button.getAttribute('aria-label')};
@@ -83,14 +84,47 @@ async function recordMovie(movieOptions={}){
  try{
   await displayFrame(r.first);
   if(stopRequested){setOrbitalStatus('Recording stopped.');return}
-  const height=movieOptions.height||Number(document.getElementById('animationQuality').value)||1080;
-  output=movieOptions.createOutput?movieOptions.createOutput(height):window.BeeMolThree.createMovieOutput(height);output.render();
-  if(!output.canvas.captureStream)throw Error('Canvas movie recording is unavailable in this browser.');
-  stream=output.canvas.captureStream(r.fps);
-  recorder=new MediaRecorder(stream,{mimeType:mime,videoBitsPerSecond:movieOptions.videoBitsPerSecond||(height===2160?40000000:16000000)});
-  const chunks=[];
-  recorder.ondataavailable=e=>{if(e.data.size)chunks.push(e.data)};
-  const done=new Promise(resolve=>{recorder.onstop=resolve;recorder.onerror=e=>{recordingError=e.error||Error('MP4 encoding failed.');resolve()}});
+  const requestedHeight=movieOptions.height||Number(document.getElementById('animationQuality').value)||1080;
+  let height=requestedHeight,done,chunks=[];
+  const heights=[...new Set([requestedHeight,1080,720].filter(value=>value<=requestedHeight))];
+  let started=false;
+  for(const candidateHeight of heights){
+   height=candidateHeight;
+   for(const bitrate of [movieOptions.videoBitsPerSecond||(height===2160?40000000:16000000),null]){
+    if(stopRequested)break;
+    try{
+     output=movieOptions.createOutput?movieOptions.createOutput(height):window.BeeMolThree.createMovieOutput(height);output.render();
+     if(!output.canvas.captureStream)throw Error('Canvas movie recording is unavailable in this browser.');
+     stream=output.canvas.captureStream(r.fps);
+     const options={mimeType:mime};if(bitrate)options.videoBitsPerSecond=bitrate;
+     recorder=new MediaRecorder(stream,options);
+     // Keep callbacks local to each attempt so a failed encoder cannot affect a retry.
+     const attempt=recorder,attemptChunks=[];
+     let attemptError=null;
+     done=new Promise(resolve=>{
+      attempt.ondataavailable=e=>{if(e.data.size)attemptChunks.push(e.data)};
+      attempt.onstop=resolve;
+      attempt.onerror=e=>{attemptError=e.error||Error('MP4 encoding failed.');resolve()};
+     });
+     recorder.start();
+     await Promise.race([new Promise(resolve=>setTimeout(resolve,300)),done]);
+     if(attemptError)throw attemptError;
+     if(stopRequested)break;
+     if(recorder.state!=='recording')throw Error('MP4 encoder stopped during initialization.');
+     chunks=attemptChunks;
+     // Retain asynchronous failures after initialization as well.
+     recorder.addEventListener('error',e=>{recordingError=e.error||Error('MP4 encoding failed.')});
+     started=true;break;
+    }catch(error){
+     if(recorder&&recorder.state!=='inactive')recorder.stop();
+     stream?.getTracks().forEach(track=>track.stop());output?.dispose();
+     recorder=null;stream=null;output=null;
+    }
+   }
+   if(started||stopRequested)break;
+  }
+  if(stopRequested){setOrbitalStatus('Recording stopped.');return}
+  if(!started)throw Error('This browser could not initialize an MP4 encoder, even at reduced quality. Try another browser with MP4 recording support.');
   const transition=(event,action)=>new Promise((resolve,reject)=>{
    if(recordingError){reject(recordingError);return}
    const cleanup=()=>{recorder.removeEventListener(event,success);recorder.removeEventListener('error',failure);recorder.removeEventListener('stop',success)};
@@ -98,7 +132,6 @@ async function recordMovie(movieOptions={}){
    recorder.addEventListener(event,success,{once:true});recorder.addEventListener('error',failure,{once:true});recorder.addEventListener('stop',success,{once:true});
    try{action()}catch(error){cleanup();reject(error)}
   });
-  recorder.start();
   for(let n=r.first;n<=r.last&&!stopRequested;n+=r.step){
    if(n!==r.first){
     // Exclude orbital calculation time from the recorded animation.
