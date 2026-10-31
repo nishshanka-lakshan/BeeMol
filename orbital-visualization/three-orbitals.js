@@ -527,10 +527,18 @@ function updateAtomLabels(){
  draw();
 }
 document.addEventListener('change',event=>{if(event.target.id==='orbitalAtomLabels')updateAtomLabels()});
+document.addEventListener('change',event=>{
+ if(event.target.id!=='orbitalAtomShine'||!group)return;
+ for(const mesh of group.children)if(mesh.userData.atomElement){
+  mesh.material.shininess=event.target.checked?65:0;
+  mesh.material.specular.setHex(event.target.checked?0x555555:0x000000);
+ }
+ draw();
+});
 
 function drawAtoms(g,center){const show=document.getElementById('showOrbitalAtoms')?.checked!==false;if(!show)return;const sphere=new THREE.SphereGeometry(1,g.atoms.length>300?24:48,g.atoms.length>300?16:32);const positions=[];
 
- for(const a of g.atoms){const r=a.z===1?.22:.34;const mat=new THREE.MeshPhongMaterial({color:window.BeeMolAtomColors.get(window.BeeMolAtomColors.symbol(a.z)),shininess:65,specular:0x555555});const m=new THREE.Mesh(sphere,mat);m.position.set(...a.pos.map((v,i)=>v-center[i]));m.scale.setScalar(r);m.userData.atomElement=window.BeeMolAtomColors.symbol(a.z);group.add(m);positions.push(m.position)}
+ for(const a of g.atoms){const r=window.BeeMolBonding.displayRadius(window.BeeMolAtomColors.symbol(a.z));const mat=new THREE.MeshPhongMaterial({color:window.BeeMolAtomColors.get(window.BeeMolAtomColors.symbol(a.z)),shininess:document.getElementById('orbitalAtomShine')?.checked?65:0,specular:document.getElementById('orbitalAtomShine')?.checked?0x555555:0x000000});const m=new THREE.Mesh(sphere,mat);m.position.set(...a.pos.map((v,i)=>v-center[i]));m.scale.setScalar(r);m.userData.atomElement=window.BeeMolAtomColors.symbol(a.z);group.add(m);positions.push(m.position)}
 
  const bondmat=new THREE.MeshPhongMaterial({color:'#adb4c1',shininess:45,specular:0x444444});
 

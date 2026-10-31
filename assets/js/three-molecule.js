@@ -3,12 +3,11 @@
 'use strict';
 const moduleReady=import('https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js');
 const colors={H:0xffffff,C:0x909090,N:0x3050f8,O:0xff0d0d,F:0x90e050,Cl:0x1ff01f,Br:0xa62929,I:0x940094,S:0xffff30,P:0xff8000,Cu:0xc88033,Ag:0xc0c0c0,Au:0xffd123};
-// Display radii keep hydrogen spheres larger than their bond cylinders.
-const displayRadii={H:1.20,C:1.70,N:1.55,O:1.52,F:1.47,Cl:1.75,Br:1.85,I:1.98,S:1.80,P:1.80,Cu:1.40,Ag:1.72,Au:1.66};
+// Shared element-dependent ball-and-stick sizes.
 function atomDisplayRadius(atom,style){
  const scale=style.sphere?.scale??.28;
  const bondRadius=style.stick?.radius??0;
- return Math.max((displayRadii[atom.elem]||1.70)*scale,bondRadius*1.45);
+ return Math.max(window.BeeMolBonding.displayRadius(atom.elem)*scale/.28,bondRadius*1.45);
 }
 function createViewer(id,options={}){
  const host=document.getElementById(id);let T,renderer,scene,camera,group,drag,clickable,atoms=[],lines=[],style={stick:{radius:.18},sphere:{scale:.28}},zoom=1,center=[0,0,0],extent=8,bg=options.backgroundColor||'#ffffff';
@@ -36,7 +35,7 @@ function createViewer(id,options={}){
    if(measurement.text){const mid=points.reduce((sum,p)=>sum.add(p),new T.Vector3()).multiplyScalar(1/points.length);mid.y+=.65;label(measurement.text,mid)}
   }
  }
- function rebuild(){if(!T)return;dispose();for(const a of atoms){const st=selectionStyles.get(a.index)||a.style||style;const sphere=st.sphere;if(sphere){const mesh=new T.Mesh(new T.SphereGeometry(atomDisplayRadius(a,st),atoms.length>300?24:48,atoms.length>300?16:32),new T.MeshPhongMaterial({color:sphere.color??atomColor(a.elem),shininess:65,specular:0x555555}));mesh.position.set(a.x-center[0],a.y-center[1],a.z-center[2]);mesh.userData.atom=a;if(sphere.color===undefined)mesh.userData.paletteElement=a.elem;group.add(mesh)}else{
+ function rebuild(){if(!T)return;dispose();for(const a of atoms){const st=selectionStyles.get(a.index)||a.style||style;const sphere=st.sphere;if(sphere){const mesh=new T.Mesh(new T.SphereGeometry(atomDisplayRadius(a,st),atoms.length>300?24:48,atoms.length>300?16:32),new T.MeshPhongMaterial({color:sphere.color??atomColor(a.elem),shininess:document.getElementById('moleculeAtomShine')?.checked?65:0,specular:document.getElementById('moleculeAtomShine')?.checked?0x555555:0x000000}));mesh.position.set(a.x-center[0],a.y-center[1],a.z-center[2]);mesh.userData.atom=a;if(sphere.color===undefined)mesh.userData.paletteElement=a.elem;group.add(mesh)}else{
  // Keep atoms pickable in line style without adding visible spheres.
  const pick=new T.Mesh(new T.SphereGeometry(.25,12,8),new T.MeshBasicMaterial({colorWrite:false,depthWrite:false}));
  pick.position.set(a.x-center[0],a.y-center[1],a.z-center[2]);pick.userData.atom=a;group.add(pick);
@@ -70,6 +69,14 @@ function createViewer(id,options={}){
   });
  });
  document.addEventListener('moleculebondcutoffchange',rebuild);
+ document.addEventListener('change',event=>{
+  if(event.target.id!=='moleculeAtomShine'||!group)return;
+  for(const mesh of group.children)if(mesh.userData.atom&&mesh.material.isMeshPhongMaterial){
+   mesh.material.shininess=event.target.checked?65:0;
+   mesh.material.specular.setHex(event.target.checked?0x555555:0x000000);
+  }
+  render();
+ });
  document.addEventListener('change',event=>{if(id==='viewer'&&event.target.id==='moleculeAtomLabels')rebuild()});
  const api={ready:null,render,resize,
  setMeasurements(items){measurements=items;rebuild()},

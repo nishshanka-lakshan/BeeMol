@@ -69,6 +69,13 @@ function lanes(atoms,edge,bonds,spacing){
  const norm=Math.hypot(...perpendicular);
  return Array.from({length:edge.order},(_,lane)=>{const shift=perpendicular.map(x=>x/norm*(lane-(edge.order-1)/2)*spacing);const move=p=>({x:p.x+shift[0],y:p.y+shift[1],z:p.z+shift[2]});return{start:move(a),end:move(b)}});
 }
-root.BeeMolBonding={infer,lanes};
+// Compressed covalent radii make element sizes readable in ball-and-stick views.
+// Unknown radii retain a neutral display size; ghost centers use a small marker.
+function displayRadius(element){
+ const symbol=elementSymbol(element);
+ if(symbol==='Ghost'||/^(?:ghost-|bq-)|-(?:ghost|bq)$/i.test(symbol))return .22;
+ return .40*Math.sqrt((radii[symbol]??.8)/.76);
+}
+root.BeeMolBonding={infer,lanes,displayRadius};
 if(typeof module!=='undefined')module.exports=root.BeeMolBonding;
 })(typeof window==='undefined'?globalThis:window);
