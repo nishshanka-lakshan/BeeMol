@@ -1098,3 +1098,32 @@
 
 #analysisSettingsPanel .spectrum-overlay-row{flex-wrap:nowrap}
 #analysisSettingsPanel .spectrum-overlay-row span{white-space:nowrap;overflow-wrap:normal;word-break:normal;writing-mode:horizontal-tb;overflow:hidden;text-overflow:ellipsis}
+
+/* Expand the orbital canvas while retaining the MO selector. */
+#orbitalFocusView { display:none;position:absolute;top:10px;left:10px;z-index:30;align-items:center;justify-content:center;width:30px;height:30px;margin:0;padding:0;font-size:20px;line-height:1; }
+#orbitalWorkspace #orbitalFocusView { display:inline-flex; }
+#orbitalWorkspace.orbital-focus-view { grid-template-columns:minmax(180px,250px) minmax(0,1fr);height:calc(100dvh - 78px);min-height:0;align-items:stretch;overflow:hidden; }
+#orbitalWorkspace.orbital-focus-view #orbitalPropertiesHost { display:none; }
+#orbitalWorkspace.orbital-focus-view #orbitalViewHost > .card { height:100%;display:flex;flex-direction:column;overflow:hidden; }
+#orbitalWorkspace.orbital-focus-view #orbitalViewHost > .card > :not(#viewerStack) { display:none; }
+#orbitalWorkspace.orbital-focus-view #viewerStack { flex:1;height:auto;min-height:180px; }
+#orbitalWorkspace.orbital-focus-view #orbitalSceneHost { min-height:0;overflow:auto; }
+#orbitalWorkspace.orbital-focus-view #orbitalListWrap { max-height:calc(100dvh - 225px);overflow:auto; }
+@media(max-width:660px){
+ #orbitalWorkspace.orbital-focus-view { grid-template-columns:minmax(110px,30%) minmax(0,1fr);gap:6px;padding:6px; }
+ #orbitalWorkspace.orbital-focus-view #viewerStack { margin:4px;width:calc(100% - 8px); }
+}
+
+/* Molecule focus view mirrors the orbital viewer's compact expand control. */
+#moleculeFocusView { display:none;position:absolute;top:10px;left:10px;z-index:30;align-items:center;justify-content:center;width:30px;height:30px;margin:0;padding:0;font-size:20px;line-height:1; }
+main.container:not(.waterbox-active):not(.analysis-active) #moleculeFocusView { display:inline-flex; }
+main.container.molecule-focus-view:not(.waterbox-active):not(.analysis-active) { grid-template-columns:minmax(220px,290px) minmax(0,1fr);height:calc(100dvh - 78px);min-height:0;align-items:stretch;overflow:hidden; }
+main.container.molecule-focus-view:not(.waterbox-active):not(.analysis-active) > .right { display:none; }
+main.container.molecule-focus-view > .left { min-height:0; }
+main.container.molecule-focus-view:not(.waterbox-active):not(.analysis-active) > .left > .card { height:100%;display:flex;flex-direction:column;overflow:hidden; }
+main.container.molecule-focus-view:not(.waterbox-active):not(.analysis-active) > .left > .card > :not(#viewerStack) { display:none; }
+main.container.molecule-focus-view:not(.waterbox-active):not(.analysis-active) #viewerStack { flex:1;height:auto;min-height:180px; }
+main.container.molecule-focus-view #moleculeSceneHost { min-height:0;overflow:auto; }
+@media(max-width:710px){
+ main.container.molecule-focus-view:not(.waterbox-active):not(.analysis-active) { grid-template-columns:minmax(120px,30%) minmax(0,1fr);gap:6px;padding:6px; }
+}

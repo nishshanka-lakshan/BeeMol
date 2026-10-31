@@ -48,6 +48,7 @@ function parseMoldenForGrid(text){
   if (/\[(?:6d|10f|15g)\]/i.test(text)) {
     throw new Error("Cartesian d/f/g functions are not supported by this browser viewer.");
   }
+  const elementSymbols='H He Li Be B C N O F Ne Na Mg Al Si P S Cl Ar K Ca Sc Ti V Cr Mn Fe Co Ni Cu Zn Ga Ge As Se Br Kr Rb Sr Y Zr Nb Mo Tc Ru Rh Pd Ag Cd In Sn Sb Te I Xe Cs Ba La Ce Pr Nd Pm Sm Eu Gd Tb Dy Ho Er Tm Yb Lu Hf Ta W Re Os Ir Pt Au Hg Tl Pb Bi Po At Rn Fr Ra Ac Th Pa U Np Pu Am Cm Bk Cf Es Fm Md No Lr Rf Db Sg Bh Hs Mt Ds Rg Cn Nh Fl Mc Lv Ts Og'.split(' ');
   const atomLines = section("Atoms");
   const atomHeader = linesAll.find(line => /^\s*\[Atoms\]/i.test(line));
   const factor = /ang/i.test(atomHeader) ? 1 / BOHR_TO_ANGSTROM : 1;
@@ -55,9 +56,17 @@ function parseMoldenForGrid(text){
   const atoms = atomLines.filter(line => line.trim() && !/^\s*[#!]/.test(line)).map(line => {
     const p = line.trim().split(/\s+/);
     if (p.length < 6) throw new Error("Invalid atom row in Molden file");
-    const atom = {symbol:p[0], number:Number(p[2]), x:numeric(p[3])*factor,
+    // ECP exporters may write an effective charge instead of atomic number.
+    // Resolve real atoms from their element label; keep ghost centers at zero.
+    const nuclearCharge=Number(p[2]);
+    const label=p[0].replace(/\d+$/, '');
+    const symbol=label.charAt(0).toUpperCase()+label.slice(1).toLowerCase();
+    const atomicNumber=/^[dt]$/i.test(symbol)?1:elementSymbols.indexOf(symbol)+1;
+    const ghost=/^(?:ghost|bq)(?:-|$)|-(?:ghost|bq)$|^x$/i.test(label);
+    const number=ghost||nuclearCharge===0?0:(atomicNumber||nuclearCharge);
+    const atom = {symbol:p[0], number, nuclearCharge, x:numeric(p[3])*factor,
                   y:numeric(p[4])*factor, z:numeric(p[5])*factor};
-    if (![atom.number, atom.x, atom.y, atom.z].every(Number.isFinite)) {
+    if (![atom.number, atom.nuclearCharge, atom.x, atom.y, atom.z].every(Number.isFinite)) {
       throw new Error("Invalid atom coordinates in Molden file");
     }
     return atom;

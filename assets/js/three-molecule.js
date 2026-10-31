@@ -19,7 +19,7 @@ function createViewer(id,options={}){
  function fit(){if(!camera)return;const distance=extent/Math.tan(camera.fov*Math.PI/360)/Math.min(1,camera.aspect)/zoom;camera.position.set(0,0,Math.max(2,distance));camera.lookAt(0,0,0);camera.far=Math.max(2000,distance+extent*10);camera.updateProjectionMatrix();render()}
  function resize(){if(!renderer)return;const w=host.clientWidth||600,h=host.clientHeight||500;renderer.setSize(w,h,false);camera.aspect=w/h;fit()}
  function dispose(){if(!group)return;for(const o of [...group.children]){group.remove(o);o.geometry?.dispose();o.material?.map?.dispose();o.material?.dispose()}}
- function bond(a,b,r,color){const va=new T.Vector3(a.x-center[0],a.y-center[1],a.z-center[2]),vb=new T.Vector3(b.x-center[0],b.y-center[1],b.z-center[2]);const delta=vb.clone().sub(va),len=delta.length();if(!len)return;const mesh=new T.Mesh(new T.CylinderGeometry(r,r,len,24),new T.MeshPhongMaterial({color}));mesh.position.copy(va).add(vb).multiplyScalar(.5);mesh.quaternion.setFromUnitVectors(new T.Vector3(0,1,0),delta.normalize());group.add(mesh)}
+ function bond(a,b,r,color,element){const va=new T.Vector3(a.x-center[0],a.y-center[1],a.z-center[2]),vb=new T.Vector3(b.x-center[0],b.y-center[1],b.z-center[2]);const delta=vb.clone().sub(va),len=delta.length();if(!len)return;const mesh=new T.Mesh(new T.CylinderGeometry(r,r,len,24),new T.MeshPhongMaterial({color}));mesh.position.copy(va).add(vb).multiplyScalar(.5);mesh.quaternion.setFromUnitVectors(new T.Vector3(0,1,0),delta.normalize());mesh.userData.paletteElement=element;group.add(mesh)}
  function label(text,position){
   const canvas=document.createElement('canvas');canvas.width=512;canvas.height=96;
   const ctx=canvas.getContext('2d');ctx.fillStyle='rgba(15,23,42,0.92)';ctx.fillRect(0,0,512,96);
@@ -36,7 +36,7 @@ function createViewer(id,options={}){
    if(measurement.text){const mid=points.reduce((sum,p)=>sum.add(p),new T.Vector3()).multiplyScalar(1/points.length);mid.y+=.65;label(measurement.text,mid)}
   }
  }
- function rebuild(){if(!T)return;dispose();for(const a of atoms){const st=selectionStyles.get(a.index)||a.style||style;const sphere=st.sphere;if(sphere){const mesh=new T.Mesh(new T.SphereGeometry(atomDisplayRadius(a,st),atoms.length>300?24:48,atoms.length>300?16:32),new T.MeshPhongMaterial({color:sphere.color??atomColor(a.elem),shininess:65,specular:0x555555}));mesh.position.set(a.x-center[0],a.y-center[1],a.z-center[2]);mesh.userData.atom=a;group.add(mesh)}else{
+ function rebuild(){if(!T)return;dispose();for(const a of atoms){const st=selectionStyles.get(a.index)||a.style||style;const sphere=st.sphere;if(sphere){const mesh=new T.Mesh(new T.SphereGeometry(atomDisplayRadius(a,st),atoms.length>300?24:48,atoms.length>300?16:32),new T.MeshPhongMaterial({color:sphere.color??atomColor(a.elem),shininess:65,specular:0x555555}));mesh.position.set(a.x-center[0],a.y-center[1],a.z-center[2]);mesh.userData.atom=a;if(sphere.color===undefined)mesh.userData.paletteElement=a.elem;group.add(mesh)}else{
  // Keep atoms pickable in line style without adding visible spheres.
  const pick=new T.Mesh(new T.SphereGeometry(.25,12,8),new T.MeshBasicMaterial({colorWrite:false,depthWrite:false}));
  pick.position.set(a.x-center[0],a.y-center[1],a.z-center[2]);pick.userData.atom=a;group.add(pick);
@@ -49,13 +49,28 @@ function createViewer(id,options={}){
   const r=edge.order>1?radius*.52:radius;
   for(const lane of window.BeeMolBonding.lanes(atoms,edge,inferred,Math.max(.19,r*2.6))){
    const mid={x:(lane.start.x+lane.end.x)/2,y:(lane.start.y+lane.end.y)/2,z:(lane.start.z+lane.end.z)/2};
-   bond(lane.start,mid,r,atomColor(a.elem));bond(mid,lane.end,r,atomColor(b.elem));
+   bond(lane.start,mid,r,atomColor(a.elem),a.elem);bond(mid,lane.end,r,atomColor(b.elem),b.elem);
   }
  }
 
- for(const l of lines){const points=[l.start,l.end].map(p=>new T.Vector3(p.x-center[0],p.y-center[1],p.z-center[2]));group.add(new T.Line(new T.BufferGeometry().setFromPoints(points),new T.LineBasicMaterial({color:l.color||0x888888})))}drawMeasurements();render()}
- document.addEventListener('atomcolorschange',rebuild);
+ for(const l of lines){const points=[l.start,l.end].map(p=>new T.Vector3(p.x-center[0],p.y-center[1],p.z-center[2]));group.add(new T.Line(new T.BufferGeometry().setFromPoints(points),new T.LineBasicMaterial({color:l.color||0x888888})))}drawMeasurements();
+ if(id==='viewer'&&document.getElementById('moleculeAtomLabels')?.checked){
+  for(const a of atoms)label(a.elem,new T.Vector3(a.x-center[0],a.y-center[1]+.55,a.z-center[2]));
+ }
+ render()}
+ let colorFramePending=false;
+ document.addEventListener('atomcolorschange',()=>{
+  if(colorFramePending)return;
+  colorFramePending=true;
+  requestAnimationFrame(()=>{
+   colorFramePending=false;
+   if(!group)return;
+   for(const mesh of group.children)if(mesh.userData.paletteElement)mesh.material.color.set(atomColor(mesh.userData.paletteElement));
+   render();
+  });
+ });
  document.addEventListener('moleculebondcutoffchange',rebuild);
+ document.addEventListener('change',event=>{if(id==='viewer'&&event.target.id==='moleculeAtomLabels')rebuild()});
  const api={ready:null,render,resize,
  setMeasurements(items){measurements=items;rebuild()},
  getAtomColor(element){const value=atomColor(element);return typeof value==='number'?'#'+value.toString(16).padStart(6,'0'):value},

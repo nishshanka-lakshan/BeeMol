@@ -160,6 +160,8 @@
       <div class="card">
 
         <div id="viewerStack">
+          <button id="moleculeFocusView" type="button" aria-label="Expand molecule view" aria-pressed="false" title="Expand molecule viewer and keep coordinates"><span aria-hidden="true">⛶</span></button>
+          <button id="orbitalFocusView" type="button" aria-label="Expand MO view" aria-pressed="false" title="Expand MO viewer and keep the orbital list"><span aria-hidden="true">⛶</span></button>
 
           <span id="atomCount" class="viewer-atom-count">0 atoms</span>
 
@@ -231,21 +233,15 @@
         <div class="viewer-toolbar atom-palette-toolbar" style="margin:0 12px 12px">
               <div class="atom-color-controls">
                 <label for="atomColorElement">Atom color</label>
-                <select id="atomColorElement" aria-label="Element to recolor" disabled></select>
+                <select id="atomColorElement" aria-label="Loaded element to recolor" disabled></select>
                 <input id="atomColorPicker" type="color" value="#909090" aria-label="Selected element color" disabled>
                 <input id="atomColorHex" type="text" value="#909090" placeholder="#333333" pattern="#[0-9a-fA-F]{6}" maxlength="7" spellcheck="false" autocomplete="off" aria-label="Selected element hex color" title="Hex color: # followed by six hexadecimal digits, for example #333333" disabled>
-                <button id="resetAtomColors" type="button" title="Restore standard element colors" disabled>Reset colors</button>
+                <button id="resetAtomColors" type="button" title="Restore morbvis-compatible CPK element colors" disabled>Reset colors</button>
               </div>
         </div>
 
         <div id="moleculeControls">
-          <div class="viewer-toolbar">
-            <label for="moleculeBondCutoff">Bond cutoff factor</label>
-            <input id="moleculeBondCutoff" type="range" min="0.50" max="1.60" step="0.01" value="1.30" aria-describedby="moleculeBondCutoffHelp">
-            <output id="moleculeBondCutoffValue" for="moleculeBondCutoff">1.30</output>
-            <button id="moleculeBondCutoffReset" type="button">Reset</button>
-            <span id="moleculeBondCutoffHelp" class="mini-note">Bonds: distance &lt; (r_A + r_B) × factor</span>
-          </div>
+
 
 
           <div class="viewer-toolbar">
@@ -516,12 +512,12 @@
           <div class="row" style="margin-top:10px">
 
             <button id="updateMol" class="secondary">Update Molecule</button>
+            <label style="display:flex;align-items:center;gap:8px;margin:0"><input id="moleculeAtomLabels" type="checkbox"> Show atom labels</label>
 
             <span id="geomStatus" class="status">Waiting for coordinates</span>
 
           </div>
 
-          <div class="mini-note">Edit the atomic coordinates here, then click Update Molecule. This viewer uses Three.js for visualization.</div>
 
           <div class="molecule-export-actions" aria-label="PySCF export">
             <button id="copyCode" type="button">Copy PySCF</button>
@@ -812,6 +808,15 @@ H -0.757200  0.000000  0.586500</textarea>
         <div class="tab-panel" id="advanced">
 
           <div class="section">
+            <div class="grid2">
+              <div>
+                <label for="moleculeBondCutoff">Bond cutoff factor</label>
+                <input id="moleculeBondCutoff" type="number" min="0.50" max="1.60" step="0.01" value="1.30">
+              </div>
+            </div>
+          </div>
+
+          <div class="section">
 
             <div class="grid2">
 
@@ -1028,21 +1033,21 @@ H -0.757200  0.000000  0.586500</textarea>
 
   </main>
 
-<script src="assets/js/atom-colors.js?v=20261029-colors4"></script>
+<script src="assets/js/atom-colors.js?v=20261030-ghost2"></script>
 <script src="assets/js/color-preferences.js?v=20261029-colors2"></script>
 <script src="assets/js/bonding.js?v=20261028-bonds3"></script>
 <script src="assets/js/measurements.js?v=20261028-measure1"></script>
-<script src="assets/js/three-molecule.js?v=20261028-bonds2"></script>
+<script src="assets/js/three-molecule.js?v=labels1-20261028-bonds2"></script>
 
 <script src="assets/js/app-core.js?v=20261028-theme2"></script>
 
 <script src="orbital-visualization/orbital-gpu.js?v=20261028-orbitals2"></script>
-<script src="orbital-visualization/orbital-grid.js?v=20261028-orbitals2"></script>
+<script src="orbital-visualization/orbital-grid.js?v=20261030-ghost2"></script>
 
-<script src="assets/js/molecule-and-ui.js?v=20261028-hex1"></script>
+<script src="assets/js/molecule-and-ui.js?v=20261030-labels1"></script>
 
 <script src="orbital-visualization/surface-gpu.js?v=20261029-surfaces1"></script>
-<script src="orbital-visualization/three-orbitals.js?v=20261029-surfaces2"></script>
+<script src="orbital-visualization/three-orbitals.js?v=20261030-labels1"></script>
 
 <script src="orbital-visualization/orbital-renderer.js?v=20261029-surfaces1"></script>
 <script src="orbital-visualization/orbital-cross-section.js?v=20261028-plane1"></script>

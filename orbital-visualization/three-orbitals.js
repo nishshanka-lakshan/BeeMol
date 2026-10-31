@@ -148,7 +148,7 @@ function createMovieOutput(height=1080){
 
 function fitCamera(){if(!camera)return;const fov=camera.fov*Math.PI/180;const aspect=Math.max(0.1,camera.aspect||1);const distance=Math.max(2,(baseExtent/2)/Math.tan(fov/2)/Math.min(1,aspect)*1.35/zoom);camera.position.set(0,0,distance);camera.lookAt(0,0,0);camera.near=Math.max(.001,distance/10000);camera.far=Math.max(100,distance+baseExtent*20);camera.updateProjectionMatrix();draw()}
 
-function clear(){if(!group)return;for(const child of [...group.children]){group.remove(child);child.geometry?.dispose();if(child.material){if(Array.isArray(child.material))child.material.forEach(m=>m.dispose());else child.material.dispose()}}}
+function clear(){if(!group)return;for(const child of [...group.children]){group.remove(child);child.geometry?.dispose();if(child.material){if(Array.isArray(child.material))child.material.forEach(m=>m.dispose());else {child.material.map?.dispose();child.material.dispose()}}}}
 
 const nums=s=>s.trim().split(/\s+/).map(x=>Number(x.replace(/[dD]/g,'E')));
 
@@ -489,11 +489,44 @@ async function surfaceGeometry(g,level,center,version){
  return geometry;
 }
 
+let atomColorFramePending=false;
 document.addEventListener('atomcolorschange',()=>{
+ if(atomColorFramePending)return;
+ atomColorFramePending=true;
+ requestAnimationFrame(()=>{
+ atomColorFramePending=false;
  if(!group)return;
  for(const mesh of group.children)if(mesh.userData.atomElement)mesh.material.color.set(window.BeeMolAtomColors.get(mesh.userData.atomElement));
  draw();
+ });
 });
+
+// Camera-facing element labels, including ghost centers.
+function updateAtomLabels(){
+ if(!group||!THREE)return;
+ for(const object of [...group.children])if(object.userData.atomLabel){
+  group.remove(object);object.material.map.dispose();object.material.dispose();
+ }
+ if(!currentGrid||!document.getElementById('orbitalAtomLabels')?.checked||document.getElementById('showOrbitalAtoms')?.checked===false){draw();return}
+ currentGrid.atoms.forEach(atom=>{
+  const symbol=atom.z===0?'Ghost':window.BeeMolAtomColors.symbol(atom.z);
+  const text=symbol;
+  const canvas=document.createElement('canvas');
+  const context=canvas.getContext('2d');
+  context.font='bold 32px sans-serif';
+  canvas.width=Math.ceil(context.measureText(text).width)+24;canvas.height=56;
+  context.font='bold 32px sans-serif';context.textAlign='center';context.textBaseline='middle';
+  context.fillStyle='rgba(15,23,42,0.8)';context.fillRect(0,0,canvas.width,canvas.height);
+  context.fillStyle='#ffffff';context.fillText(text,canvas.width/2,canvas.height/2);
+  const texture=new THREE.CanvasTexture(canvas);
+  const material=new THREE.SpriteMaterial({map:texture,depthTest:false,depthWrite:false});
+  const sprite=new THREE.Sprite(material);sprite.userData.atomLabel=true;
+  sprite.position.set(...atom.pos.map((value,k)=>value-moleculeCenter[k]));sprite.position.y+=.55;
+  sprite.scale.set(canvas.width/canvas.height*.45,.45,1);sprite.renderOrder=20;group.add(sprite);
+ });
+ draw();
+}
+document.addEventListener('change',event=>{if(event.target.id==='orbitalAtomLabels')updateAtomLabels()});
 
 function drawAtoms(g,center){const show=document.getElementById('showOrbitalAtoms')?.checked!==false;if(!show)return;const sphere=new THREE.SphereGeometry(1,g.atoms.length>300?24:48,g.atoms.length>300?16:32);const positions=[];
 
@@ -557,6 +590,7 @@ if(version!==showVersion){surfaces.forEach(geometry=>geometry?.dispose());return
 clear();
 slicePlaneMesh=slicePlaneOutline=null;moleculeCenter=center;
 for(const [index,[sign,color]] of [[1,options.positive||'#ffbf00'],[-1,options.negative||'#1555ed']].entries()){const geometry=surfaces[index];if(!geometry)continue;const mat=new THREE.MeshPhongMaterial({color,side:THREE.DoubleSide,transparent:(options.opacity??1)<1,opacity:options.opacity??1,shininess:Math.round((options.gloss??15)*1.2),specular:0x999999,emissive:color,emissiveIntensity:0.25*(1-Math.max(0,Math.min(100,options.depth||0))/100)});const object=new THREE.Mesh(geometry,mat);group.add(object)}if(options.showAtoms!==false)drawAtoms(g,center);
+updateAtomLabels();
 
 // Fit only visible orbitals and atoms, not the full padded CUBE grid.
 

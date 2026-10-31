@@ -380,19 +380,17 @@ function syncAtomColorControls(){
  const select=document.getElementById('atomColorElement'),picker=document.getElementById('atomColorPicker'),hex=document.getElementById('atomColorHex');
  const waterActive=!document.getElementById('wbViewer').classList.contains('hidden');
  const atoms=waterActive?(waterBoxViewer?.selectedAtoms()||[]).map(atom=>atom.elem):viewerMode==='orbitals'?(window.BeeMolThree?.getGrid()?.atoms||[]).map(atom=>window.BeeMolAtomColors.symbol(atom.z)):(viewer?.selectedAtoms()||[]).map(atom=>atom.elem);
- const previous=select.value,elements=[...new Set(atoms)].sort();
+ const previous=select.value,elements=[...new Set(atoms.map(element=>{
+  const symbol=String(element).trim();
+  return /^[dt]$/i.test(symbol)?'H':symbol.charAt(0).toUpperCase()+symbol.slice(1).toLowerCase();
+ }))].sort();
  select.replaceChildren(...elements.map(element=>{const option=document.createElement('option');option.value=element;option.textContent=element;return option}));
  if(elements.includes(previous))select.value=previous;
  select.disabled=picker.disabled=hex.disabled=document.getElementById('resetAtomColors').disabled=!elements.length;
  if(elements.length)picker.value=hex.value=window.BeeMolAtomColors.get(select.value);
  hex.setCustomValidity('');
 }
-document.getElementById('atomColorElement').addEventListener('change',()=>{
- const color=window.BeeMolAtomColors.get(document.getElementById('atomColorElement').value);
- document.getElementById('atomColorPicker').value=color;
- document.getElementById('atomColorHex').value=color;
- document.getElementById('atomColorHex').setCustomValidity('');
-});
+document.getElementById('atomColorElement').addEventListener('change',syncAtomColorControls);
 document.getElementById('atomColorPicker').addEventListener('input',event=>{
  window.BeeMolAtomColors.set(document.getElementById('atomColorElement').value,event.target.value);
 });
@@ -406,7 +404,22 @@ document.getElementById('atomColorHex').addEventListener('change',event=>event.t
 document.getElementById('resetAtomColors').addEventListener('click',()=>{window.BeeMolAtomColors.reset();syncAtomColorControls()});
 
 document.addEventListener('orbitalgridchange',()=>requestAnimationFrame(syncAtomColorControls));
-document.addEventListener('atomcolorschange',syncAtomColorControls);
+let atomColorControlsFrame=false;
+document.addEventListener('atomcolorschange',()=>{
+ if(atomColorControlsFrame)return;
+ atomColorControlsFrame=true;
+ requestAnimationFrame(()=>{
+  atomColorControlsFrame=false;
+  const element=document.getElementById('atomColorElement').value;
+  if(!element)return;
+  const color=window.BeeMolAtomColors.get(element);
+  for(const id of ['atomColorPicker','atomColorHex']){
+   const input=document.getElementById(id);
+   if(input.value.toLowerCase()!==color.toLowerCase())input.value=color;
+  }
+  document.getElementById('atomColorHex').setCustomValidity('');
+ });
+});
 
 function loadMolecule(){
 
@@ -851,7 +864,7 @@ function setupCompactOrbitalControls(){
   const panel=document.getElementById(id);panel.setAttribute('role','tabpanel');panel.setAttribute('aria-labelledby',tab);
  }
  const advanced=document.createElement('details');advanced.className='orbital-advanced';
- advanced.innerHTML='<summary>Advanced</summary>';
+ advanced.innerHTML='<summary>Advanced</summary><div><label style="display:flex;align-items:center;gap:8px"><input id="orbitalAtomLabels" type="checkbox"> Show atom labels</label></div>';
  advanced.append(document.getElementById('orbitalUseGPU').closest('div'),document.getElementById('gridX').closest('.grid-dimensions').parentElement);
  document.querySelector('#orbitalControlsWrap .orbital-controls-wrap').append(advanced);
  const depth=document.getElementById('orbitalDepth').parentElement;depth.classList.add('orbital-material');
@@ -876,6 +889,44 @@ function setupCompactOrbitalControls(){
  }));
  showOrbitalPropertiesTab('appearance');
 }
+
+function setMoleculeFocusView(enabled){
+ const workspace=document.querySelector('main.container');
+ workspace.classList.toggle('molecule-focus-view',enabled);
+ const button=document.getElementById('moleculeFocusView');
+ button.setAttribute('aria-pressed',String(enabled));
+ button.setAttribute('aria-label',enabled?'Restore panels':'Expand molecule view');
+ button.querySelector('span').textContent=enabled?'▣':'⛶';
+ button.title=enabled?'Restore the full molecule workspace (Escape)':'Expand molecule viewer and keep coordinates';
+ requestAnimationFrame(()=>viewer?.resize());
+}
+document.getElementById('moleculeFocusView').addEventListener('click',()=>{
+ setMoleculeFocusView(!document.querySelector('main.container').classList.contains('molecule-focus-view'));
+});
+document.addEventListener('keydown',event=>{
+ if(event.key==='Escape'&&viewerMode==='molecule'&&document.querySelector('main.container').classList.contains('molecule-focus-view')){
+  setMoleculeFocusView(false);document.getElementById('moleculeFocusView').focus();
+ }
+});
+
+function setOrbitalFocusView(enabled){
+ const workspace=document.getElementById('orbitalWorkspace');
+ workspace.classList.toggle('orbital-focus-view',enabled);
+ const button=document.getElementById('orbitalFocusView');
+ button.setAttribute('aria-pressed',String(enabled));
+ button.setAttribute('aria-label',enabled?'Restore panels':'Expand MO view');
+ button.querySelector('span').textContent=enabled?'▣':'⛶';
+ button.title=enabled?'Restore the full orbital workspace (Escape)':'Expand MO viewer and keep the orbital list';
+ requestAnimationFrame(()=>window.BeeMolThree?.resize());
+}
+document.getElementById('orbitalFocusView').addEventListener('click',()=>{
+ setOrbitalFocusView(!document.getElementById('orbitalWorkspace').classList.contains('orbital-focus-view'));
+});
+document.addEventListener('keydown',event=>{
+ if(event.key==='Escape'&&document.getElementById('orbitalWorkspace').classList.contains('orbital-focus-view')){
+  setOrbitalFocusView(false);document.getElementById('orbitalFocusView').focus();
+ }
+});
 
 function arrangeOrbitalWorkspace(isMolecule){
 
