@@ -9,7 +9,7 @@
     const controls = $('orbitalSliceControls');
     const inset = document.createElement('section');
     inset.id = 'orbitalSliceInset'; inset.hidden = true;
-    inset.innerHTML = '<header><strong id="orbitalSliceTitle">MO cross-section</strong><button id="orbitalSliceDownload" type="button">PNG</button><button id="orbitalSliceMovie" type="button" title="Download a high-quality 2160 × 2160 MP4 with its plane and position fixed">MP4</button></header><canvas id="orbitalSliceCanvas" width="600" height="600" role="img" aria-label="Molecular orbital cross-section"></canvas><p id="orbitalSliceLegend"></p>';
+    inset.innerHTML = '<header><strong id="orbitalSliceTitle">MO cross-section</strong><button id="orbitalSliceDownload" type="button">PNG</button><button id="orbitalSliceMovie" type="button" title="Download a 2160 × 2160 MP4 movie with its plane and position fixed">Movie</button></header><canvas id="orbitalSliceCanvas" width="600" height="600" role="img" aria-label="Molecular orbital cross-section"></canvas><p id="orbitalSliceLegend"></p>';
     $('orbitalViewer').append(inset);
     controls.addEventListener('input', schedule);
     for (const id of ['orbitalPositiveColor', 'orbitalNegativeColor', 'orbitalFlipPhase']) $(id).addEventListener('input', schedule);
