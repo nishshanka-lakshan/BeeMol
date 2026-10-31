@@ -502,7 +502,7 @@ function drawAtoms(g,center){const show=document.getElementById('showOrbitalAtom
  const bondmat=new THREE.MeshPhongMaterial({color:'#adb4c1',shininess:45,specular:0x444444});
 
  const atoms=g.atoms.map(a=>({elem:window.BeeMolAtomColors.symbol(a.z),x:a.pos[0],y:a.pos[1],z:a.pos[2]}));
- const inferred=window.BeeMolBonding.infer(atoms);
+ const inferred=window.BeeMolBonding.infer(atoms,document.getElementById('orbitalBondCutoff')?.value);
  for(const edge of inferred)for(const lane of window.BeeMolBonding.lanes(atoms,edge,inferred,.20)){
   const a=new THREE.Vector3(lane.start.x-center[0],lane.start.y-center[1],lane.start.z-center[2]);
   const b=new THREE.Vector3(lane.end.x-center[0],lane.end.y-center[1],lane.end.z-center[2]);

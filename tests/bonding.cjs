@@ -25,3 +25,11 @@ assert.equal(infer([atom('Na',0),atom('Cl',2.80)])[0].order,1);
 assert.equal(infer([atom('FE',0),atom('o',2.10)])[0].order,1);
 assert.equal(infer([atom('O',0),atom('D',.96)])[0].order,1);
 assert.equal(infer([atom('Fe',0),atom('O',4)]).length,0);
+
+// Cutoff controls include strict boundary handling and the full slider range.
+const cutoffPair=[atom('C',0),atom('C',1.9)];
+assert.equal(infer(cutoffPair).length,1);
+assert.equal(infer(cutoffPair,.50).length,0);
+assert.equal(infer([atom('C',0),atom('C',2.3)],1.60).length,1);
+assert.equal(infer([atom('C',0),atom('C',1.52)],1).length,0);
+assert.equal(infer(cutoffPair,NaN).length,1);

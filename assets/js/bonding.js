@@ -18,13 +18,15 @@ function elementSymbol(value){
 const valence={H:1,B:3,C:4,N:3,O:2,F:1,Si:4,P:3,S:2,Cl:1,Br:1,I:1};
 // Conservative upper lengths for double and triple bonds, keyed alphabetically.
 const multiple={'C-C':[1.45,1.25],'C-N':[1.37,1.21],'C-O':[1.30,0],'C-S':[1.68,0],'N-N':[1.33,1.15],'N-O':[1.26,0],'O-O':[1.26,0]};
-function infer(atoms){
+function infer(atoms,factor=1.30){
+ factor=Number(factor);
+ factor=Number.isFinite(factor)?Math.max(.50,Math.min(1.60,factor)):1.30;
  atoms=atoms.map(a=>({...a,elem:elementSymbol(a.elem)}));
  const bonds=[],used=atoms.map(()=>0),adj=atoms.map(()=>[]);
  for(let i=0;i<atoms.length;i++)for(let j=i+1;j<atoms.length;j++){
   const a=atoms[i],b=atoms[j];if(a.model!==b.model)continue;
   const distance=Math.hypot(a.x-b.x,a.y-b.y,a.z-b.z);
-  if(!Number.isFinite(distance)||distance<.4||distance>1.25*((radii[a.elem]??.8)+(radii[b.elem]??.8)))continue;
+  if(!Number.isFinite(distance)||distance<.4||distance>=factor*((radii[a.elem]??.8)+(radii[b.elem]??.8)))continue;
   const edge={i,j,order:1,distance};bonds.push(edge);used[i]++;used[j]++;adj[i].push(edge);adj[j].push(edge);
  }
  const available=i=>Math.max(0,(valence[atoms[i].elem]??used[i])-used[i]);

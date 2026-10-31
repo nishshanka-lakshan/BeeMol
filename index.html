@@ -239,6 +239,14 @@
         </div>
 
         <div id="moleculeControls">
+          <div class="viewer-toolbar">
+            <label for="moleculeBondCutoff">Bond cutoff factor</label>
+            <input id="moleculeBondCutoff" type="range" min="0.50" max="1.60" step="0.01" value="1.30" aria-describedby="moleculeBondCutoffHelp">
+            <output id="moleculeBondCutoffValue" for="moleculeBondCutoff">1.30</output>
+            <button id="moleculeBondCutoffReset" type="button">Reset</button>
+            <span id="moleculeBondCutoffHelp" class="mini-note">Bonds: distance &lt; (r_A + r_B) × factor</span>
+          </div>
+
 
           <div class="viewer-toolbar">
 
@@ -295,6 +303,8 @@
         </div>
 
         <div id="orbitalControlsWrap" class="hidden">
+
+
           <div><label><input id="orbitalUseGPU" type="checkbox" checked> GPU orbital calculation</label><p id="orbitalComputeBackend" class="mini-note" role="status">Automatic WebGPU with CPU fallback · applies to Molden orbitals</p></div>
 
 
@@ -396,10 +406,14 @@
 
               </div>
 
+          <div>
+            <label for="orbitalBondCutoff">Bond cutoff factor</label>
+            <input id="orbitalBondCutoff" type="number" min="0.50" max="1.60" step="0.01" value="1.30">
+          </div>
+
             </div>
 
-            <p class="mini-note">Your MO appearance is saved automatically in this browser, including after you close it. Save a style file to keep a backup or use it in another browser.</p>
-            <div class="row" style="flex-wrap:wrap;gap:8px">
+            <div class="row" style="flex-wrap:wrap;gap:12px;margin-top:18px">
               <button id="saveOrbitalStyle" type="button">Save style file</button>
               <button id="loadOrbitalStyle" type="button">Load style file</button>
               <input id="orbitalStyleFile" type="file" accept=".json,application/json" hidden>
@@ -1092,6 +1106,23 @@ H -0.757200  0.000000  0.586500</textarea>
 
 </script>
 
+<script>
+for (const mode of ['molecule', 'orbital']) {
+  const slider = document.getElementById(`${mode}BondCutoff`);
+  const update = () => {
+    if (!slider.validity.valid || slider.value === '') return;
+    const output = document.getElementById(`${mode}BondCutoffValue`);
+    if (output) output.value = Number(slider.value).toFixed(2);
+    if (mode === 'molecule') document.dispatchEvent(new Event('moleculebondcutoffchange'));
+    else document.getElementById('showOrbitalAtoms').dispatchEvent(new Event('change'));
+  };
+  slider.addEventListener('input', update);
+  document.getElementById(`${mode}BondCutoffReset`)?.addEventListener('click', () => {
+    slider.value = '1.30';
+    update();
+  });
+}
+</script>
 </body>
 
 </html>

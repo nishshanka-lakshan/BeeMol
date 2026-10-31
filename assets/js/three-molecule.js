@@ -41,7 +41,7 @@ function createViewer(id,options={}){
  const pick=new T.Mesh(new T.SphereGeometry(.25,12,8),new T.MeshBasicMaterial({colorWrite:false,depthWrite:false}));
  pick.position.set(a.x-center[0],a.y-center[1],a.z-center[2]);pick.userData.atom=a;group.add(pick);
  }}
- const inferred=window.BeeMolBonding.infer(atoms);
+ const inferred=window.BeeMolBonding.infer(atoms,document.getElementById('moleculeBondCutoff')?.value);
  for(const edge of inferred){
   const a=atoms[edge.i],b=atoms[edge.j],st=a.style||style;
   if(!st.stick&&!st.line)continue;
@@ -55,6 +55,7 @@ function createViewer(id,options={}){
 
  for(const l of lines){const points=[l.start,l.end].map(p=>new T.Vector3(p.x-center[0],p.y-center[1],p.z-center[2]));group.add(new T.Line(new T.BufferGeometry().setFromPoints(points),new T.LineBasicMaterial({color:l.color||0x888888})))}drawMeasurements();render()}
  document.addEventListener('atomcolorschange',rebuild);
+ document.addEventListener('moleculebondcutoffchange',rebuild);
  const api={ready:null,render,resize,
  setMeasurements(items){measurements=items;rebuild()},
  getAtomColor(element){const value=atomColor(element);return typeof value==='number'?'#'+value.toString(16).padStart(6,'0'):value},
