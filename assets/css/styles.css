@@ -1127,3 +1127,19 @@ main.container.molecule-focus-view #moleculeSceneHost { min-height:0;overflow:au
 @media(max-width:710px){
  main.container.molecule-focus-view:not(.waterbox-active):not(.analysis-active) { grid-template-columns:minmax(120px,30%) minmax(0,1fr);gap:6px;padding:6px; }
 }
+
+#orbitalContributions { margin-bottom: 16px; }
+#orbitalContributions summary { cursor: pointer; font-weight: 600; }
+.ao-actions { display: flex; flex-wrap: wrap; gap: 8px; margin: 10px 0; }
+.ao-table-wrap { max-height: 260px; overflow: auto; }
+.ao-table { width: 100%; border-collapse: collapse; font-size: 12px; }
+.ao-table th, .ao-table td { padding: 6px; text-align: right; border-bottom: 1px solid var(--border, #8884); }
+.ao-table th:nth-child(2), .ao-table td:nth-child(2) { text-align: left; }
+.ao-table input[type="checkbox"] { width: auto; }
+
+.ao-filter { display:flex;align-items:center;gap:8px;margin:12px 0; }
+.ao-filter input[type="number"] { width:80px; }
+.ao-coefficient-heading { display:flex;align-items:center;justify-content:space-between;gap:12px;margin:10px 0; }
+#aoCoefficientCount { color:var(--muted);font-size:12px;font-variant-numeric:tabular-nums; }
+.ao-signed-coefficient { font-weight:700;font-variant-numeric:tabular-nums; }
+.ao-table tr[hidden] { display:none; }

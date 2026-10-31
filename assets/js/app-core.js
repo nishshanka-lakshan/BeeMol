@@ -460,6 +460,7 @@ async function loadEmbeddedOrbital(number){
 
   embeddedActive=true;
 
+  contributionToken++;aoContributionMesh=false;
   const token=++orbitalLoadToken;
 
   const detail=gridDimensions();
@@ -480,6 +481,7 @@ async function loadEmbeddedOrbital(number){
 
     renderOrbitalList(suppliedMoldenModel.orbitals);
 
+    renderOrbitalContributions(suppliedMoldenModel,n);
     markActiveOrbitalRow(n);
 
     setOrbitalStatus(`Orbital ${n} displayed. Change the cutoff to adjust its surface.`);

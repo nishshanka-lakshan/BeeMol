@@ -147,6 +147,12 @@
           sharedFigureControls.append(panel.querySelector(`#${id}`).closest('label'));
         }
         phasePanel.append(sharedFigureControls);
+        const contributions = document.createElement('section');
+        contributions.id = 'phaseMagnitudeContributions';
+        contributions.className = 'extrema-report';
+        contributions.hidden = true;
+        contributions.setAttribute('aria-label', 'Selected-time autocorrelation analysis');
+        $('analysisPlot').after(contributions);
         for (const [host, id, value] of [
           [phasePanel, 'phaseFigureTitle', ''],
           [moviePanel, 'phaseMovieTitle', ''],
@@ -608,6 +614,7 @@
 
       function draw() {
         if ($('analysisPlotType')?.value !== 'autocorrelation-phase') return;
+        $('phaseMagnitudeContributions').replaceChildren();
         try {
           const inputEnergies = numbers($('phaseEnergies').value, 'Energies');
           const counts = new Map();
@@ -617,6 +624,22 @@
           const times = isMovieFigure ? [movieTime ?? Number($('phaseMovieStart').value)] : numbers($('phaseTimes').value, 'Times');
           if (inputEnergies.length > 100 || times.length > 16) throw Error('Use at most 100 energy groups and 16 times.');
           const weights = energies.map(energy => counts.get(energy) / inputEnergies.length);
+          // Analyze only explicitly requested times, independently of figure paging
+          // and the movie's current frame or extrema search range.
+          const selectedTimes = numbers($('phaseTimes').value, 'Selected times');
+          if (selectedTimes.length > 16) throw Error('Use at most 16 selected times.');
+          const formatContribution = (value, digits = 6) => value === null ? 'Undefined' : value.toFixed(digits);
+          $('phaseMagnitudeContributions').innerHTML = selectedTimes.map((time, index) => {
+              const result = complexAnalysis(inputEnergies, time);
+              return `<article class="extrema-reference-result">
+                <h3>AUTOCORRELATION AT SELECTED TIMES</h3>
+                <p>Selected time ${index + 1} | Time = ${time.toFixed(6)} fs</p>
+                <table class="extrema-reference-table" aria-label="Selected time ${index + 1} complex contributions">
+                  <thead><tr><th scope="col">Energy (eV)</th><th scope="col">Phase (deg)</th><th scope="col">Real</th><th scope="col">Imag</th><th scope="col">Abs</th><th scope="col">Signed (%)</th><th scope="col">Mag. contrib.</th></tr></thead>
+                  <tbody>${result.rows.map(row => `<tr><td>${row.energy.toFixed(8)}</td><td>${row.phase.toFixed(3)}</td><td>${row.real.toFixed(6)}</td><td>${row.imaginary.toFixed(6)}</td><td>${row.abs.toFixed(6)}</td><td>${formatContribution(row.signedPercent, 2)}</td><td>${formatContribution(row.magnitudeContribution)}</td></tr>`).join('')}</tbody>
+                  <tfoot><tr><th scope="row">TOTAL</th><td></td><td>${result.real.toFixed(6)}</td><td>${result.imaginary.toFixed(6)}</td><td>${result.magnitude.toFixed(6)}</td><td></td><td></td></tr></tfoot>
+                </table></article>`;
+            }).join('');
           const size = Number($('phasePanelSize').value);
           if (!Number.isFinite(size) || size < 360 || size > 900) throw Error('Panel size must be between 360 and 900 px.');
           const borderValue = Number($('plotBorderWidth')?.value || 2);

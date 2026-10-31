@@ -589,6 +589,7 @@
       analyticalPreview.before(figureArea);
       figureArea.append(analyticalPreview, $('analysisPlot'));
       figureArea.after($('analyticalExtremaReport'));
+      figureArea.after($('phaseMagnitudeContributions'));
       figureArea.setAttribute('aria-label', 'Combined figure. Pinch on the touchpad to zoom.');
       let figureZoom = 1;
       figureArea.addEventListener('wheel', event => {
@@ -631,6 +632,7 @@
       let selectedFigureView = 'phase';
       function alignMovieAxes() {
         const movie = phaseMode() && selectedFigureView === 'movie';
+        $('phaseMagnitudeContributions').hidden = !phaseMode() || selectedFigureView !== 'phase';
         figureArea.style.transform = movie ? `scale(${figureZoom})` : 'none';
         const setHidden = (element, hidden) => { if (element.hidden !== hidden) element.hidden = hidden; };
         if (movie) {

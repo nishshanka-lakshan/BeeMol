@@ -597,7 +597,7 @@ if(surfaceGrid!==g&&!options.preview){
 if(version!==showVersion){surfaces.forEach(geometry=>geometry?.dispose());return level;}
 clear();
 slicePlaneMesh=slicePlaneOutline=null;moleculeCenter=center;
-for(const [index,[sign,color]] of [[1,options.positive||'#ffbf00'],[-1,options.negative||'#1555ed']].entries()){const geometry=surfaces[index];if(!geometry)continue;const mat=new THREE.MeshPhongMaterial({color,side:THREE.DoubleSide,transparent:(options.opacity??1)<1,opacity:options.opacity??1,shininess:Math.round((options.gloss??15)*1.2),specular:0x999999,emissive:color,emissiveIntensity:0.25*(1-Math.max(0,Math.min(100,options.depth||0))/100)});const object=new THREE.Mesh(geometry,mat);group.add(object)}if(options.showAtoms!==false)drawAtoms(g,center);
+for(const [index,[sign,color]] of [[1,options.positive||'#ffbf00'],[-1,options.negative||'#1555ed']].entries()){const geometry=surfaces[index];if(!geometry)continue;const mat=new THREE.MeshPhongMaterial({color,wireframe:!!options.wireframe,side:THREE.DoubleSide,transparent:(options.opacity??1)<1,opacity:options.opacity??1,shininess:Math.round((options.gloss??15)*1.2),specular:0x999999,emissive:color,emissiveIntensity:0.25*(1-Math.max(0,Math.min(100,options.depth||0))/100)});const object=new THREE.Mesh(geometry,mat);group.add(object)}if(options.showAtoms!==false)drawAtoms(g,center);
 updateAtomLabels();
 
 // Fit only visible orbitals and atoms, not the full padded CUBE grid.

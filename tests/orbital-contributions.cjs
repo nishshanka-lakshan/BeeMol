@@ -1,0 +1,15 @@
+const assert=require('node:assert/strict');
+const {orbitalContributions}=require('../orbital-visualization/orbital-contributions.js');
+const atoms=[{symbol:'C'},{symbol:'H'}];
+const model={atoms,shells:[{atom:atoms[0],l:1,offset:0},{atom:atoms[1],l:0,offset:3}],orbitals:[{coeff:new Float64Array([1,-2,0,2])}]};
+const rows=orbitalContributions(model,1);
+assert.equal(rows.length,4);
+assert.equal(rows[0].label,'C 1 · 1py');
+assert.equal(rows[0].coefficient,-2);
+assert.ok(Math.abs(rows.reduce((sum,r)=>sum+r.percent,0)-100)<1e-10);
+const flipped={...model,orbitals:[{coeff:model.orbitals[0].coeff.map(c=>-c)}]};
+assert.deepEqual(orbitalContributions(flipped,1).map(r=>r.percent),rows.map(r=>r.percent));
+assert.equal(orbitalContributions(model,2),null);
+model.orbitals[0].coeff.fill(0);
+assert.ok(orbitalContributions(model,1).every(r=>r.percent===0));
+console.log('AO contribution tests passed');

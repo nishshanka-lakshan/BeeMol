@@ -100,6 +100,7 @@
         <button id="showOrbitalSlice" type="button" role="tab" aria-selected="false" aria-controls="orbitalSliceControls" tabindex="-1">Cross-section</button>
         <button id="toggleOrbitalAnimation" type="button" role="tab" aria-selected="false" aria-controls="orbitalAnimation" tabindex="-1">Animation</button>
       </div>
+
     </aside>
 
   </div>
@@ -1001,6 +1002,22 @@ H -0.757200  0.000000  0.586500</textarea>
 
         <div class="section">
 
+
+
+
+          <details id="orbitalContributions" class="orbital-advanced">
+            <summary id="aoContributionTitle">Atomic orbital contributions</summary>
+            <p id="aoContributionEmpty" class="mini-note">Open a Molden file and display an orbital to see its atomic orbital contributions.</p>
+            <label class="ao-filter" for="aoCoefficientFilter">Filter: |C| ≥
+              <input id="aoCoefficientFilter" type="number" min="0" step="0.01" value="0.04" oninput="filterOrbitalContributions()">
+            </label>
+            <div class="ao-coefficient-heading"><strong>AO coefficients</strong><span id="aoCoefficientCount" role="status">0 / 0</span></div>
+            <p id="aoFilterEmpty" class="mini-note hidden">No AO coefficients match this filter.</p>
+            <div class="ao-table-wrap"><table class="ao-table">
+              <thead><tr><th scope="col">Use</th><th scope="col">Atomic orbital</th><th scope="col">Coefficient</th><th scope="col">Weight</th></tr></thead>
+              <tbody id="aoContributionBody"></tbody>
+            </table></div>
+          </details>
           <div id="orbitalListWrap">
 
             <table id="orbitalListTable">
@@ -1045,6 +1062,7 @@ H -0.757200  0.000000  0.586500</textarea>
 <script src="assets/js/app-core.js?v=20261028-theme2"></script>
 
 <script src="orbital-visualization/orbital-gpu.js?v=20261028-orbitals2"></script>
+<script src="orbital-visualization/orbital-contributions.js?v=20261031-ao1"></script>
 <script src="orbital-visualization/orbital-grid.js?v=20261030-ghost2"></script>
 
 <script src="assets/js/molecule-and-ui.js?v=20261030-mp4"></script>

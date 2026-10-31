@@ -867,6 +867,7 @@ function setupCompactOrbitalControls(){
  advanced.innerHTML='<summary>Advanced</summary><div><label style="display:flex;align-items:center;gap:8px"><input id="orbitalAtomLabels" type="checkbox"> Show atom labels</label></div><div><label style="display:flex;align-items:center;gap:8px"><input id="orbitalAtomShine" type="checkbox"> Atom shine</label></div>';
  advanced.append(document.getElementById('orbitalUseGPU').closest('div'),document.getElementById('gridX').closest('.grid-dimensions').parentElement);
  document.querySelector('#orbitalControlsWrap .orbital-controls-wrap').append(advanced);
+ advanced.after(document.getElementById('orbitalContributions'));
  const depth=document.getElementById('orbitalDepth').parentElement;depth.classList.add('orbital-material');
  for(const id of ['orbitalDepth','orbitalGloss']){
   const input=document.getElementById(id),label=document.querySelector(`label[for="${id}"]`),group=document.createElement('div');group.append(label,input);depth.append(group);

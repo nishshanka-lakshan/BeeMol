@@ -372,6 +372,7 @@ async function loadCalculatedOrbital(number){
 
   }
 
+  contributionToken++;aoContributionMesh=false;
   const token=++importLoadToken;
 
   const detail=gridDimensions();
@@ -390,6 +391,7 @@ async function loadCalculatedOrbital(number){
 
     await handleCubeFile(new File([cube],`orbital_${String(n).padStart(2,"0")}.cube`,{type:"text/plain"}),true,true);
 
+    renderOrbitalContributions(model,n);
     markActiveOrbitalRow(n);
 
     setOrbitalStatus(`Orbital ${n} displayed from the selected Molden file.`);
