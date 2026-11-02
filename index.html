@@ -28,7 +28,7 @@
 
       rel="stylesheet">
 
-  <link rel="stylesheet" href="assets/css/styles.css?v=20261030-overlay-horizontal36">
+  <link rel="stylesheet" href="assets/css/styles.css?v=20261102-selected-atoms">
 
   <link rel="stylesheet" href="assets/css/theme.css?v=20261028-bee1">
 
@@ -107,9 +107,9 @@
 
 
   <div id="analysisWorkspace" class="hidden" aria-label="Analysis workspace">
-  <aside class="card"><div class="card-header"><h2>Datasets</h2></div><div class="analysis-pad"><label>Upload CSV files<input id="analysisFiles" type="file" accept=".csv,.tsv,.txt" multiple></label><p class="mini-note">First column: time. Remaining columns: real numeric series. Include a header row. Multiple files can be overlaid.</p><div id="analysisDatasets"></div><button id="analysisClear" type="button">Clear datasets</button></div></aside>
-  <section class="card"><div id="analysisPlot"></div><p id="analysisResult" role="status" aria-live="polite" class="analysis-pad">Upload CSV files to begin.</p></section>
-  <aside class="card"><div class="card-header"><h2>Plot settings</h2></div><div class="analysis-pad">
+  <aside id="analysisDatasetsPanel" class="card"><div class="card-header"><h2>Datasets</h2></div><div class="analysis-pad"><label>Upload CSV files<input id="analysisFiles" type="file" accept=".csv,.tsv,.txt" multiple></label><p class="mini-note">First column: time. Remaining columns: real numeric series. Include a header row. Multiple files can be overlaid.</p><div id="analysisDatasets"></div><button id="analysisClear" type="button">Clear datasets</button></div></aside>
+  <section id="analysisViewHost" class="card"><button id="analysisFocusView" type="button" aria-label="Expand analysis view" aria-pressed="false" title="Expand analysis view to fill the window"><span aria-hidden="true">⛶</span></button><div id="analysisPlot"></div><p id="analysisResult" role="status" aria-live="polite" class="analysis-pad">Upload CSV files to begin.</p></section>
+  <aside id="analysisOptionsPanel" class="card"><div class="card-header"><h2>Plot settings</h2></div><div class="analysis-pad">
   <label>Title<input id="plotTitle" value="Autocorrelation function"></label>
 
   <!-- Fixed layout: overlay all selected curves in one figure -->
@@ -161,8 +161,8 @@
       <div class="card">
 
         <div id="viewerStack">
-          <button id="moleculeFocusView" type="button" aria-label="Expand molecule view" aria-pressed="false" title="Expand molecule viewer and keep coordinates"><span aria-hidden="true">⛶</span></button>
-          <button id="orbitalFocusView" type="button" aria-label="Expand MO view" aria-pressed="false" title="Expand MO viewer and keep the orbital list"><span aria-hidden="true">⛶</span></button>
+          <button id="moleculeFocusView" type="button" aria-label="Expand molecule view" aria-pressed="false" title="Expand molecule viewer to fill the window"><span aria-hidden="true">⛶</span></button>
+          <button id="orbitalFocusView" type="button" aria-label="Expand MO view" aria-pressed="false" title="Expand MO viewer to fill the window"><span aria-hidden="true">⛶</span></button>
 
           <span id="atomCount" class="viewer-atom-count">0 atoms</span>
 
@@ -337,7 +337,8 @@
 
                 <button type="button" id="orbitalNext" title="Next orbital">▶ Next</button>
 
-                <label style="display:inline-flex;align-items:center;gap:6px;margin:0 0 0 8px"><input type="checkbox" id="showOrbitalAtoms" checked> Atoms and bonds</label>
+                <input type="checkbox" id="showOrbitalAtoms" checked hidden>
+                <label for="orbitalAtomDisplay">Molecule display</label><select id="orbitalAtomDisplay"><option value="ball-stick">Ball &amp; stick</option><option value="stick">Sticks only</option><option value="hidden">Hide atoms and bonds</option></select>
 
               </div>
 
@@ -513,6 +514,7 @@
           <div class="row" style="margin-top:10px">
 
             <button id="updateMol" class="secondary">Update Molecule</button>
+            <label for="moleculeAtomDisplay">Molecule display</label><select id="moleculeAtomDisplay"><option value="default">Normal</option><option value="stick">Sticks only</option><option value="hidden">Hide atoms and bonds</option></select>
             <label style="display:flex;align-items:center;gap:8px;margin:0"><input id="moleculeAtomLabels" type="checkbox"> Show atom labels</label>
             <label style="display:flex;align-items:center;gap:8px;margin:0" title="Atom numbers follow the coordinate order, starting at 1"><input id="moleculeAtomNumbers" type="checkbox"> Show atom numbers</label>
 
@@ -1058,7 +1060,7 @@ H -0.757200  0.000000  0.586500</textarea>
 <script src="assets/js/color-preferences.js?v=20261029-colors2"></script>
 <script src="assets/js/bonding.js?v=20261028-bonds3"></script>
 <script src="assets/js/measurements.js?v=20261028-measure1"></script>
-<script src="assets/js/three-molecule.js?v=labels1-20261028-bonds2"></script>
+<script src="assets/js/three-molecule.js?v=20261102-selected-atoms"></script>
 
 <script src="assets/js/app-core.js?v=20261028-theme2"></script>
 
@@ -1066,13 +1068,13 @@ H -0.757200  0.000000  0.586500</textarea>
 <script src="orbital-visualization/orbital-contributions.js?v=20261031-ao1"></script>
 <script src="orbital-visualization/orbital-grid.js?v=20261030-ghost2"></script>
 
-<script src="assets/js/molecule-and-ui.js?v=20261030-mp4"></script>
+<script src="assets/js/molecule-and-ui.js?v=20261102-click-hide"></script>
 
 <script src="orbital-visualization/surface-gpu.js?v=20261029-surfaces1"></script>
-<script src="orbital-visualization/three-orbitals.js?v=20261030-labels1"></script>
+<script src="orbital-visualization/three-orbitals.js?v=20261102-click-hide"></script>
 
 <script src="assets/js/mp4-encoder.js?v=20261030-mp4threads"></script>
-<script src="orbital-visualization/orbital-renderer.js?v=20261101-live-colors"></script>
+<script src="orbital-visualization/orbital-renderer.js?v=20261102-atom-display"></script>
 <script src="orbital-visualization/orbital-cross-section.js?v=20261030-mp4"></script>
 
 <script src="assets/js/waterbox.js?v=20261028-colors2"></script>
@@ -1082,7 +1084,7 @@ H -0.757200  0.000000  0.586500</textarea>
 <script src="assets/js/analysis-tools/autocorrelation.js?v=20261030-ticks32"></script>
 <script src="assets/js/analysis-tools/autocorrelation-phase.js?v=20261030-isolation12"></script>
 <script src="assets/js/analysis-tools/spectrum.js?v=20261030-overlay34"></script>
-<script src="assets/js/analysis.js?v=20261030-ticks32"></script>
+<script src="assets/js/analysis.js?v=20261102-analysis-focus"></script>
 
 <script>
 

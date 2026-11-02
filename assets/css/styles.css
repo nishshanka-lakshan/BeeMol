@@ -614,8 +614,8 @@
 .analysis-actions { display:flex;flex-wrap:wrap;gap:8px;margin-top:12px; }
 .analysis-series { border-bottom:1px solid var(--border);padding:12px 0; }
 .analysis-series input:not([type=checkbox]) { width:100%; }
-@media(max-width:1050px){#analysisWorkspace{grid-template-columns:minmax(180px,240px) minmax(300px,1fr)}#analysisWorkspace>aside:last-child{grid-column:1/-1}}
-@media(max-width:660px){#analysisWorkspace{grid-template-columns:1fr}#analysisWorkspace>aside:last-child{grid-column:auto}}
+@media(max-width:1050px){#analysisWorkspace{grid-template-columns:minmax(180px,240px) minmax(300px,1fr)}#analysisWorkspace>#analysisOptionsPanel{grid-column:1/-1}}
+@media(max-width:660px){#analysisWorkspace{grid-template-columns:1fr}#analysisWorkspace>#analysisOptionsPanel{grid-column:auto}}
 
 #phaseAnnotationSettings {
   grid-column:1 / -1;
@@ -1099,34 +1099,27 @@
 #analysisSettingsPanel .spectrum-overlay-row{flex-wrap:nowrap}
 #analysisSettingsPanel .spectrum-overlay-row span{white-space:nowrap;overflow-wrap:normal;word-break:normal;writing-mode:horizontal-tb;overflow:hidden;text-overflow:ellipsis}
 
-/* Expand the orbital canvas while retaining the MO selector. */
-#orbitalFocusView { display:none;position:absolute;top:10px;left:10px;z-index:30;align-items:center;justify-content:center;width:30px;height:30px;margin:0;padding:0;font-size:20px;line-height:1; }
-#orbitalWorkspace #orbitalFocusView { display:inline-flex; }
-#orbitalWorkspace.orbital-focus-view { grid-template-columns:minmax(180px,250px) minmax(0,1fr);height:calc(100dvh - 78px);min-height:0;align-items:stretch;overflow:hidden; }
-#orbitalWorkspace.orbital-focus-view #orbitalPropertiesHost { display:none; }
-#orbitalWorkspace.orbital-focus-view #orbitalViewHost > .card { height:100%;display:flex;flex-direction:column;overflow:hidden; }
-#orbitalWorkspace.orbital-focus-view #orbitalViewHost > .card > :not(#viewerStack) { display:none; }
-#orbitalWorkspace.orbital-focus-view #viewerStack { flex:1;height:auto;min-height:180px; }
-#orbitalWorkspace.orbital-focus-view #orbitalSceneHost { min-height:0;overflow:auto; }
-#orbitalWorkspace.orbital-focus-view #orbitalListWrap { max-height:calc(100dvh - 225px);overflow:auto; }
-@media(max-width:660px){
- #orbitalWorkspace.orbital-focus-view { grid-template-columns:minmax(110px,30%) minmax(0,1fr);gap:6px;padding:6px; }
- #orbitalWorkspace.orbital-focus-view #viewerStack { margin:4px;width:calc(100% - 8px); }
-}
-
-/* Molecule focus view mirrors the orbital viewer's compact expand control. */
-#moleculeFocusView { display:none;position:absolute;top:10px;left:10px;z-index:30;align-items:center;justify-content:center;width:30px;height:30px;margin:0;padding:0;font-size:20px;line-height:1; }
-main.container:not(.waterbox-active):not(.analysis-active) #moleculeFocusView { display:inline-flex; }
-main.container.molecule-focus-view:not(.waterbox-active):not(.analysis-active) { grid-template-columns:minmax(220px,290px) minmax(0,1fr);height:calc(100dvh - 78px);min-height:0;align-items:stretch;overflow:hidden; }
-main.container.molecule-focus-view:not(.waterbox-active):not(.analysis-active) > .right { display:none; }
-main.container.molecule-focus-view > .left { min-height:0; }
-main.container.molecule-focus-view:not(.waterbox-active):not(.analysis-active) > .left > .card { height:100%;display:flex;flex-direction:column;overflow:hidden; }
-main.container.molecule-focus-view:not(.waterbox-active):not(.analysis-active) > .left > .card > :not(#viewerStack) { display:none; }
-main.container.molecule-focus-view:not(.waterbox-active):not(.analysis-active) #viewerStack { flex:1;height:auto;min-height:180px; }
-main.container.molecule-focus-view #moleculeSceneHost { min-height:0;overflow:auto; }
-@media(max-width:710px){
- main.container.molecule-focus-view:not(.waterbox-active):not(.analysis-active) { grid-template-columns:minmax(120px,30%) minmax(0,1fr);gap:6px;padding:6px; }
-}
+/* Expanded viewers fill the window, with options available from edge drawers. */
+#moleculeFocusView,#orbitalFocusView{display:none;position:absolute;top:10px;left:10px;z-index:30;align-items:center;justify-content:center;width:30px;height:30px;margin:0;padding:0;font-size:20px;line-height:1}
+main.container:not(.waterbox-active):not(.analysis-active) #moleculeFocusView,
+#orbitalWorkspace #orbitalFocusView{display:inline-flex}
+.focus-drawer-toggle{display:none}
+:is(main.container.molecule-focus-view:not(.waterbox-active):not(.analysis-active),#orbitalWorkspace.orbital-focus-view,#analysisWorkspace.analysis-focus-view){position:fixed;inset:0;z-index:1000;display:block;width:100%;height:100dvh;min-height:0;margin:0;padding:0;overflow:hidden;background:var(--panel,#111a2d);--focus-drawer-width:min(360px,calc(100vw - 64px))}
+:is(main.container.molecule-focus-view,#orbitalWorkspace.orbital-focus-view,#analysisWorkspace.analysis-focus-view).hidden{display:none}
+:is(main.container.molecule-focus-view > .left,#orbitalWorkspace.orbital-focus-view > #orbitalViewHost){width:100%;height:100%;min-height:0}
+:is(main.container.molecule-focus-view > .left,#orbitalWorkspace.orbital-focus-view > #orbitalViewHost) > .card{height:100%;display:flex;flex-direction:column;overflow:hidden;border:0;border-radius:0;margin:0}
+:is(main.container.molecule-focus-view,#orbitalWorkspace.orbital-focus-view,#analysisWorkspace.analysis-focus-view) #viewerStack{flex:1;width:100%;height:100%;min-height:0;margin:0;border-radius:0}
+:is(main.container.molecule-focus-view > .left,#orbitalWorkspace.orbital-focus-view > #orbitalViewHost) > .card > :not(#viewerStack){display:none}
+:is(main.container.molecule-focus-view,#orbitalWorkspace.orbital-focus-view,#analysisWorkspace.analysis-focus-view) > .focus-drawer{display:none;position:absolute;top:0;bottom:0;z-index:40;width:var(--focus-drawer-width);height:100%;min-height:0;box-sizing:border-box;overflow:auto;margin:0;padding:12px;background:var(--panel,#111a2d);border:1px solid var(--border);border-radius:0;box-shadow:0 0 24px #0005}
+.focus-drawer-left{left:0}.focus-drawer-right{right:0}
+:is(main.container.molecule-focus-view,#orbitalWorkspace.orbital-focus-view,#analysisWorkspace.analysis-focus-view).focus-left-open > .focus-drawer-left{display:block}
+:is(main.container.molecule-focus-view,#orbitalWorkspace.orbital-focus-view,#analysisWorkspace.analysis-focus-view).focus-right-open > .focus-drawer-right{display:flex;flex-direction:column;gap:12px}
+:is(main.container.molecule-focus-view,#orbitalWorkspace.orbital-focus-view,#analysisWorkspace.analysis-focus-view) > .focus-drawer-toggle{display:flex;position:absolute;top:50%;transform:translateY(-50%);z-index:45;align-items:center;justify-content:center;width:32px;height:64px;margin:0;padding:0;font-size:32px;border:1px solid var(--border);background:var(--panel,#111a2d);color:var(--text);box-shadow:0 2px 12px #0004}
+.focus-toggle-left{left:0;border-radius:0 8px 8px 0}.focus-toggle-right{right:0;border-radius:8px 0 0 8px}
+.focus-left-open > .focus-toggle-left{left:var(--focus-drawer-width)}
+.focus-right-open > .focus-toggle-right{right:var(--focus-drawer-width)}
+.focus-drawer-toggle:focus-visible{outline:2px solid var(--accent);outline-offset:-3px}
+#orbitalWorkspace.orbital-focus-view #orbitalListWrap{max-height:none}
 
 #orbitalContributions { margin-bottom: 16px; }
 #orbitalContributions summary { cursor: pointer; font-weight: 600; }
@@ -1143,3 +1136,21 @@ main.container.molecule-focus-view #moleculeSceneHost { min-height:0;overflow:au
 #aoCoefficientCount { color:var(--muted);font-size:12px;font-variant-numeric:tabular-nums; }
 .ao-signed-coefficient { font-weight:700;font-variant-numeric:tabular-nums; }
 .ao-table tr[hidden] { display:none; }
+
+/* Analysis shares the expanded workspace and edge drawers. */
+#analysisViewHost{position:relative}
+#analysisFocusView{position:absolute;top:10px;left:10px;z-index:30;display:inline-flex;align-items:center;justify-content:center;width:30px;height:30px;margin:0;padding:0;font-size:20px;line-height:1}
+#analysisWorkspace.analysis-focus-view > #analysisViewHost{display:flex;flex-direction:column;width:100%;height:100%;min-height:0;border:0;border-radius:0;overflow:auto;padding-top:44px;box-sizing:border-box}
+#analysisWorkspace.analysis-focus-view #analysisFigureArea{flex:1;min-height:0;overflow:auto}
+#analysisWorkspace.analysis-focus-view #analysisPlot svg{width:100%;height:auto}
+#analysisWorkspace.analysis-focus-view #analysisFigureArea.analysis-aligned-figures svg{width:auto}
+#analysisWorkspace.analysis-focus-view #analysisResult{flex:none;margin:0;padding:8px 40px}
+
+.atom-visibility-controls{display:flex;flex-direction:column;gap:8px;margin:12px 0}
+.atom-visibility-controls > label{font-size:12px}
+.atom-visibility-controls select{width:100%}
+.atom-visibility-list{max-height:210px;overflow:auto;border:1px solid var(--border);border-radius:6px;padding:8px}
+.atom-visibility-list:empty{display:none}
+.atom-visibility-list label{display:flex;align-items:center;gap:8px;margin:5px 0;font-size:12px}
+.atom-visibility-list input[type="checkbox"]{width:auto;margin:0}
+.atom-visibility-controls > button{margin:0}

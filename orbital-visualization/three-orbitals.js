@@ -68,11 +68,21 @@ function init(){
 
  group=new THREE.Group();scene.add(group);
 
- holder.addEventListener('pointerdown',e=>{drag={x:e.clientX,y:e.clientY};holder.setPointerCapture(e.pointerId)});
+ let atomPointerStart=null;
+ holder.addEventListener('pointerdown',e=>{atomPointerStart={x:e.clientX,y:e.clientY};drag={x:e.clientX,y:e.clientY};holder.setPointerCapture(e.pointerId)});
 
  holder.addEventListener('pointermove',e=>{if(!drag)return;const dx=(e.clientX-drag.x)*0.007,dy=(e.clientY-drag.y)*0.007;drag={x:e.clientX,y:e.clientY};group.quaternion.premultiply(new THREE.Quaternion().setFromAxisAngle(new THREE.Vector3(0,1,0),dx));group.quaternion.premultiply(new THREE.Quaternion().setFromAxisAngle(new THREE.Vector3(1,0,0),dy));draw()});
 
- holder.addEventListener('pointerup',()=>drag=null);
+ holder.addEventListener('pointerup',event=>{
+  if(atomPointerStart&&Math.hypot(event.clientX-atomPointerStart.x,event.clientY-atomPointerStart.y)<5&&document.getElementById('orbitalClickToHide')?.checked){
+   const rect=holder.getBoundingClientRect(),ray=new THREE.Raycaster();
+   ray.setFromCamera(new THREE.Vector2((event.clientX-rect.left)/rect.width*2-1,-(event.clientY-rect.top)/rect.height*2+1),camera);
+   const hit=ray.intersectObjects(group.children).find(hit=>Number.isInteger(hit.object.userData.atomIndex));
+   if(hit)document.dispatchEvent(new CustomEvent('atomhideclick',{detail:{mode:'orbital',index:hit.object.userData.atomIndex}}));
+  }
+  drag=null;atomPointerStart=null;
+ });
+ holder.addEventListener('pointercancel',()=>{drag=null;atomPointerStart=null});
 
  holder.addEventListener('wheel',e=>{e.preventDefault();zoom=Math.max(.15,Math.min(6,zoom*Math.exp(-e.deltaY*.001)));fitCamera();},{passive:false});
 
@@ -502,13 +512,23 @@ document.addEventListener('atomcolorschange',()=>{
 });
 
 // Camera-facing element labels, including ghost centers.
+const hiddenAtoms=new Set();
+let hiddenAtomGeometry='';
+function refreshAtomDisplay(){
+ if(!group||!currentGrid)return;
+ for(const object of [...group.children])if(object.userData.atomElement||object.userData.atomBond||object.userData.atomPick){
+  group.remove(object);object.geometry?.dispose();object.material?.dispose();
+ }
+ drawAtoms(currentGrid,moleculeCenter);updateAtomLabels();draw();
+}
 function updateAtomLabels(){
  if(!group||!THREE)return;
  for(const object of [...group.children])if(object.userData.atomLabel){
   group.remove(object);object.material.map.dispose();object.material.dispose();
  }
  if(!currentGrid||!document.getElementById('orbitalAtomLabels')?.checked||document.getElementById('showOrbitalAtoms')?.checked===false){draw();return}
- currentGrid.atoms.forEach(atom=>{
+ currentGrid.atoms.forEach((atom,index)=>{
+  if(hiddenAtoms.has(index))return;
   const symbol=atom.z===0?'Ghost':window.BeeMolAtomColors.symbol(atom.z);
   const text=symbol;
   const canvas=document.createElement('canvas');
@@ -538,23 +558,27 @@ document.addEventListener('change',event=>{
 
 function drawAtoms(g,center){const show=document.getElementById('showOrbitalAtoms')?.checked!==false;if(!show)return;const sphere=new THREE.SphereGeometry(1,g.atoms.length>300?24:48,g.atoms.length>300?16:32);const positions=[];
 
- for(const a of g.atoms){const r=window.BeeMolBonding.displayRadius(window.BeeMolAtomColors.symbol(a.z));const mat=new THREE.MeshPhongMaterial({color:window.BeeMolAtomColors.get(window.BeeMolAtomColors.symbol(a.z)),shininess:document.getElementById('orbitalAtomShine')?.checked?65:0,specular:document.getElementById('orbitalAtomShine')?.checked?0x555555:0x000000});const m=new THREE.Mesh(sphere,mat);m.position.set(...a.pos.map((v,i)=>v-center[i]));m.scale.setScalar(r);m.userData.atomElement=window.BeeMolAtomColors.symbol(a.z);group.add(m);positions.push(m.position)}
+ for(const [index,a] of g.atoms.entries()){if(hiddenAtoms.has(index))continue;
+ if(document.getElementById('orbitalAtomDisplay')?.value==='stick'){
+  const pick=new THREE.Mesh(new THREE.SphereGeometry(.25,12,8),new THREE.MeshBasicMaterial({colorWrite:false,depthWrite:false}));
+  pick.position.set(...a.pos.map((value,k)=>value-center[k]));pick.userData.atomIndex=index;pick.userData.atomPick=true;group.add(pick);continue;
+ }const r=window.BeeMolBonding.displayRadius(window.BeeMolAtomColors.symbol(a.z));const mat=new THREE.MeshPhongMaterial({color:window.BeeMolAtomColors.get(window.BeeMolAtomColors.symbol(a.z)),shininess:document.getElementById('orbitalAtomShine')?.checked?65:0,specular:document.getElementById('orbitalAtomShine')?.checked?0x555555:0x000000});const m=new THREE.Mesh(sphere,mat);m.position.set(...a.pos.map((v,i)=>v-center[i]));m.scale.setScalar(r);m.userData.atomIndex=index;m.userData.atomElement=window.BeeMolAtomColors.symbol(a.z);group.add(m);positions.push(m.position)}
 
  const bondmat=new THREE.MeshPhongMaterial({color:'#adb4c1',shininess:45,specular:0x444444});
 
  const atoms=g.atoms.map(a=>({elem:window.BeeMolAtomColors.symbol(a.z),x:a.pos[0],y:a.pos[1],z:a.pos[2]}));
  const inferred=window.BeeMolBonding.infer(atoms,document.getElementById('orbitalBondCutoff')?.value);
- for(const edge of inferred)for(const lane of window.BeeMolBonding.lanes(atoms,edge,inferred,.20)){
+ for(const edge of inferred.filter(edge=>!hiddenAtoms.has(edge.i)&&!hiddenAtoms.has(edge.j)))for(const lane of window.BeeMolBonding.lanes(atoms,edge,inferred,.20)){
   const a=new THREE.Vector3(lane.start.x-center[0],lane.start.y-center[1],lane.start.z-center[2]);
   const b=new THREE.Vector3(lane.end.x-center[0],lane.end.y-center[1],lane.end.z-center[2]);
   const radius=edge.order>1?.065:.095;
   const cyl=new THREE.Mesh(new THREE.CylinderGeometry(radius,radius,a.distanceTo(b),24),bondmat);
-  cyl.position.copy(a).add(b).multiplyScalar(.5);cyl.quaternion.setFromUnitVectors(new THREE.Vector3(0,1,0),b.clone().sub(a).normalize());group.add(cyl);
+  cyl.position.copy(a).add(b).multiplyScalar(.5);cyl.quaternion.setFromUnitVectors(new THREE.Vector3(0,1,0),b.clone().sub(a).normalize());cyl.userData.atomBond=true;group.add(cyl);
  }
 
 }
 
-async function show(text,options={}){if(!THREE){if(!await promise)throw Error('Cannot load Three.js. Check network connection.');}const version=++showVersion;const reuse=lastCube?.text===text&&currentGrid;const g=reuse||await parseCubeAsync(text);if(version!==showVersion)return;currentGrid=g;lastCube={text,options};if(!reuse)document.dispatchEvent(new Event('orbitalgridchange'));// Center on the molecular geometry, not the sometimes asymmetric CUBE bounding box.
+async function show(text,options={}){if(!THREE){if(!await promise)throw Error('Cannot load Three.js. Check network connection.');}const version=++showVersion;const reuse=lastCube?.text===text&&currentGrid;const g=reuse||await parseCubeAsync(text);if(version!==showVersion)return;currentGrid=g;const geometryKey=JSON.stringify(g.atoms);if(geometryKey!==hiddenAtomGeometry){hiddenAtoms.clear();hiddenAtomGeometry=geometryKey}lastCube={text,options};if(!reuse)document.dispatchEvent(new Event('orbitalgridchange'));// Center on the molecular geometry, not the sometimes asymmetric CUBE bounding box.
 
 let center;
 
@@ -702,6 +726,6 @@ function alignLongAxis(axis){
 
 }
 
-window.BeeMolThree={show,exportFigure,createMovieOutput,updateSlicePlane,getSliceTransform,getGrid(){return currentGrid},ready:promise,background(c){bg=c;if(renderer){renderer.setClearColor(c);draw()}},resize,fit(){zoom=1;fitCamera()},axisView:setAxisView,align:alignLongAxis,rotateView:turnAroundViewAxis,zoom(pct){zoom=Math.max(.1,pct/100);fitCamera()},rotate(axis,deg){if(axis==='x')rotation.x+=deg*Math.PI/180;else rotation.y+=deg*Math.PI/180;if(group){group.rotation.set(rotation.x,rotation.y,0);draw()}},redraw:draw, getCanvas(){return renderer?.domElement},get isReady(){return!!renderer}};
+window.BeeMolThree={setHiddenAtoms(indices){hiddenAtoms.clear();indices.forEach(i=>hiddenAtoms.add(i));refreshAtomDisplay()},show,exportFigure,createMovieOutput,updateSlicePlane,getSliceTransform,getGrid(){return currentGrid},ready:promise,background(c){bg=c;if(renderer){renderer.setClearColor(c);draw()}},resize,fit(){zoom=1;fitCamera()},axisView:setAxisView,align:alignLongAxis,rotateView:turnAroundViewAxis,zoom(pct){zoom=Math.max(.1,pct/100);fitCamera()},rotate(axis,deg){if(axis==='x')rotation.x+=deg*Math.PI/180;else rotation.y+=deg*Math.PI/180;if(group){group.rotation.set(rotation.x,rotation.y,0);draw()}},redraw:draw, getCanvas(){return renderer?.domElement},get isReady(){return!!renderer}};
 
 })();

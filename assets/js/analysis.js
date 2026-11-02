@@ -588,6 +588,28 @@
       figureArea.id = 'analysisFigureArea';
       analyticalPreview.before(figureArea);
       figureArea.append(analyticalPreview, $('analysisPlot'));
+      const workspace = $('analysisWorkspace');
+      setupFocusDrawers(workspace, [
+        [$('analysisDatasetsPanel'), 'analysis datasets and controls'],
+        [$('analysisOptionsPanel'), 'plot settings']
+      ]);
+      const focusButton = $('analysisFocusView');
+      function setAnalysisFocusView(enabled) {
+        resetFocusDrawers(workspace);
+        workspace.classList.toggle('analysis-focus-view', enabled);
+        focusButton.setAttribute('aria-pressed', String(enabled));
+        focusButton.setAttribute('aria-label', enabled ? 'Restore analysis workspace' : 'Expand analysis view');
+        focusButton.title = enabled ? 'Restore analysis workspace (Escape)' : 'Expand analysis view to fill the window';
+        focusButton.querySelector('span').textContent = enabled ? '▣' : '⛶';
+        requestAnimationFrame(() => window.dispatchEvent(new Event('resize')));
+      }
+      focusButton.addEventListener('click', () => setAnalysisFocusView(!workspace.classList.contains('analysis-focus-view')));
+      document.addEventListener('keydown', event => {
+        if (event.key === 'Escape' && !workspace.classList.contains('hidden') && workspace.classList.contains('analysis-focus-view')) {
+          setAnalysisFocusView(false);
+          focusButton.focus();
+        }
+      });
       figureArea.after($('analyticalExtremaReport'));
       figureArea.after($('phaseMagnitudeContributions'));
       figureArea.setAttribute('aria-label', 'Combined figure. Pinch on the touchpad to zoom.');

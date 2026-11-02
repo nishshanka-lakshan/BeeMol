@@ -241,6 +241,9 @@ function enableBondAtomSelection(){
 
   viewer.onGeometryClear=()=>{selectedBondAtoms=[];updateBondSelectionStatus();showSelectedMeasurement();};
   viewer.setClickable({}, true, function(atom){
+    if(document.getElementById('moleculeClickToHide')?.checked){
+      document.dispatchEvent(new CustomEvent('atomhideclick',{detail:{mode:'molecule',index:atom.index}}));return;
+    }
 
     let index;
 
@@ -857,6 +860,61 @@ function orbitalActionIcon(name){
  const paths={previous:'m15 6-6 6 6 6',next:'m9 6 6 6-6 6',play:'m8 5 11 7-11 7Z',stop:'M6 6h12v12H6Z',image:'M4 4h16v16H4Z M4 16l5-5 4 4 3-3 4 4 M15 8h.01',cube:'m12 3 9 5v9l-9 5-9-5V8Z M3 8l9 5 9-5 M12 13v9',movie:'M3 5h13v14H3Z m13 5 5-3v10l-5-3',fit:'M9 3H3v6 M15 3h6v6 M3 15v6h6 M21 15v6h-6',horizontal:'M3 12h18 M7 8l-4 4 4 4 M17 8l4 4-4 4',vertical:'M12 3v18 M8 7l4-4 4 4 M8 17l4 4 4-4',view:'M2 12s4-7 10-7 10 7 10 7-4 7-10 7S2 12 2 12Z M12 9a3 3 0 1 0 0 6 3 3 0 0 0 0-6',zoom:'M10 4a6 6 0 1 0 0 12 6 6 0 0 0 0-12 M15 15l6 6 M7 10h6 M10 7v6'};
  return `<svg viewBox="0 0 24 24" width="19" height="19" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="${paths[name]}"/></svg>`;
 }
+function setupAtomVisibilityControls(details, mode){
+ const display=document.getElementById(`${mode}AtomDisplay`);
+ const group=document.createElement('div');group.className='atom-visibility-controls';
+ group.append(document.querySelector(`label[for="${display.id}"]`),display);
+ const clickLabel=document.createElement('label'),clickMode=document.createElement('input');
+ clickMode.type='checkbox';clickMode.id=`${mode}ClickToHide`;
+ clickLabel.append(clickMode,document.createTextNode('Click atoms in the 3D view to hide'));
+ group.append(clickLabel);
+ const list=document.createElement('div');list.className='atom-visibility-list';
+ list.setAttribute('aria-label','Select atoms to hide');
+ const note=document.createElement('p');note.className='mini-note';note.textContent='Check an atom to hide it and its connected bonds. Uncheck to show it again.';
+ const status=document.createElement('p');status.className='mini-note';status.setAttribute('role','status');
+ let hidden=new Set(),geometryKey='';
+ const api=()=>mode==='molecule'?viewer:window.BeeMolThree;
+ function populate(){
+  const atoms=mode==='molecule'?(viewer?.selectedAtoms()||[]):(window.BeeMolThree?.getGrid()?.atoms||[]);
+  const key=JSON.stringify(atoms.map(a=>[a.elem??a.z,a.pos??[a.x,a.y,a.z]]));
+  if(key!==geometryKey){hidden.clear();geometryKey=key}
+  list.replaceChildren();
+  atoms.forEach((atom,index)=>{
+   const label=document.createElement('label'),input=document.createElement('input');input.type='checkbox';input.value=index;
+   input.checked=hidden.has(index);
+   input.setAttribute('aria-label',`Hide atom ${index+1}`);
+   label.append(input,document.createTextNode(`${index+1}: ${atom.elem??window.BeeMolAtomColors.symbol(atom.z)}${input.checked?' (hidden)':''}`));list.append(label);
+  });
+  status.textContent=`${hidden.size} atoms hidden`;
+ }
+ details.addEventListener('toggle',()=>{if(details.open)populate()});
+ document.addEventListener('atomhideclick',event=>{
+  if(event.detail.mode!==mode)return;
+  // Refresh the atom list even when its disclosure is closed.
+  populate();hidden.add(event.detail.index);api()?.setHiddenAtoms([...hidden]);
+  if(mode==='molecule')clearBondSelection();
+  populate();
+ });
+ list.addEventListener('change',event=>{
+  const input=event.target;
+  if(!input.matches('input[type="checkbox"]'))return;
+  const index=Number(input.value);
+  if(input.checked)hidden.add(index);else hidden.delete(index);
+  api()?.setHiddenAtoms([...hidden]);
+  if(mode==='molecule')clearBondSelection();
+  const text=input.parentElement.lastChild;
+  text.textContent=text.textContent.replace(/ \(hidden\)$/,'')+(input.checked?' (hidden)':'');
+  status.textContent=`${hidden.size} atoms hidden`;
+ });
+ group.append(note,list,status);details.append(group);
+ if(mode==='orbital')document.addEventListener('orbitalgridchange',()=>{if(details.open)populate()});
+ if(mode==='molecule')document.addEventListener('moleculegeometryclear',()=>{hidden.clear();queueMicrotask(()=>{if(details.open)populate()})});
+}
+const moleculeAtomDetails=document.createElement('details');moleculeAtomDetails.className='orbital-advanced';
+moleculeAtomDetails.innerHTML='<summary>Atom display</summary>';
+document.querySelector('#moleculeSceneHost .section').append(moleculeAtomDetails);
+setupAtomVisibilityControls(moleculeAtomDetails,'molecule');
+
 function setupCompactOrbitalControls(){
  const host=document.getElementById('orbitalPropertiesHost');
  const slice=document.getElementById('orbitalSliceControls');host.append(slice);
@@ -865,8 +923,11 @@ function setupCompactOrbitalControls(){
  }
  const advanced=document.createElement('details');advanced.className='orbital-advanced';
  advanced.innerHTML='<summary>Advanced</summary><div><label style="display:flex;align-items:center;gap:8px"><input id="orbitalAtomLabels" type="checkbox"> Show atom labels</label></div><div><label style="display:flex;align-items:center;gap:8px"><input id="orbitalAtomShine" type="checkbox"> Atom shine</label></div>';
+ const orbitalAtomDetails=document.createElement('details');orbitalAtomDetails.className='orbital-advanced';
+ orbitalAtomDetails.innerHTML='<summary>Atom display</summary>';
+ setupAtomVisibilityControls(orbitalAtomDetails,'orbital');
  advanced.append(document.getElementById('orbitalUseGPU').closest('div'),document.getElementById('gridX').closest('.grid-dimensions').parentElement);
- document.querySelector('#orbitalControlsWrap .orbital-controls-wrap').append(advanced);
+ document.querySelector('#orbitalControlsWrap .orbital-controls-wrap').append(orbitalAtomDetails,advanced);
  advanced.after(document.getElementById('orbitalContributions'));
  const depth=document.getElementById('orbitalDepth').parentElement;depth.classList.add('orbital-material');
  for(const id of ['orbitalDepth','orbitalGloss']){
@@ -891,14 +952,49 @@ function setupCompactOrbitalControls(){
  showOrbitalPropertiesTab('appearance');
 }
 
+// Keep the existing option panels accessible as drawers in the expanded viewer.
+function setupFocusDrawers(workspace, panels){
+ panels.forEach(([panel,label],index)=>{
+  const side=index===0?'left':'right';
+  if(!panel.id)panel.id='moleculeOptionsPanel';
+  panel.classList.add('focus-drawer',`focus-drawer-${side}`);
+  const button=document.createElement('button');
+  button.type='button';button.className=`focus-drawer-toggle focus-toggle-${side}`;
+  button.setAttribute('aria-controls',panel.id);
+  function update(open){
+   workspace.classList.toggle(`focus-${side}-open`,open);
+   button.setAttribute('aria-expanded',String(open));
+   button.setAttribute('aria-label',`${open?'Hide':'Show'} ${label}`);
+   button.title=button.getAttribute('aria-label');
+   button.textContent=(side==='left')===open?'‹':'›';
+  }
+  button.addEventListener('click',()=>update(!workspace.classList.contains(`focus-${side}-open`)));
+  workspace.append(button);update(false);
+ });
+}
+setupFocusDrawers(document.querySelector('main.container'),[
+ [document.getElementById('moleculeSceneHost'),'coordinates'],
+ [document.querySelector('main.container > .right'),'molecule options']
+]);
+setupFocusDrawers(document.getElementById('orbitalWorkspace'),[
+ [document.getElementById('orbitalSceneHost'),'orbital list'],
+ [document.getElementById('orbitalPropertiesHost'),'orbital options']
+]);
+function resetFocusDrawers(workspace){
+ for(const side of ['left','right']){
+  if(workspace.classList.contains(`focus-${side}-open`))workspace.querySelector(`.focus-toggle-${side}`).click();
+ }
+}
+
 function setMoleculeFocusView(enabled){
  const workspace=document.querySelector('main.container');
+ resetFocusDrawers(workspace);
  workspace.classList.toggle('molecule-focus-view',enabled);
  const button=document.getElementById('moleculeFocusView');
  button.setAttribute('aria-pressed',String(enabled));
  button.setAttribute('aria-label',enabled?'Restore panels':'Expand molecule view');
  button.querySelector('span').textContent=enabled?'▣':'⛶';
- button.title=enabled?'Restore the full molecule workspace (Escape)':'Expand molecule viewer and keep coordinates';
+ button.title=enabled?'Restore the full molecule workspace (Escape)':'Expand molecule viewer to fill the window';
  requestAnimationFrame(()=>viewer?.resize());
 }
 document.getElementById('moleculeFocusView').addEventListener('click',()=>{
@@ -912,12 +1008,13 @@ document.addEventListener('keydown',event=>{
 
 function setOrbitalFocusView(enabled){
  const workspace=document.getElementById('orbitalWorkspace');
+ resetFocusDrawers(workspace);
  workspace.classList.toggle('orbital-focus-view',enabled);
  const button=document.getElementById('orbitalFocusView');
  button.setAttribute('aria-pressed',String(enabled));
  button.setAttribute('aria-label',enabled?'Restore panels':'Expand MO view');
  button.querySelector('span').textContent=enabled?'▣':'⛶';
- button.title=enabled?'Restore the full orbital workspace (Escape)':'Expand MO viewer and keep the orbital list';
+ button.title=enabled?'Restore the full orbital workspace (Escape)':'Expand MO viewer to fill the window';
  requestAnimationFrame(()=>window.BeeMolThree?.resize());
 }
 document.getElementById('orbitalFocusView').addEventListener('click',()=>{

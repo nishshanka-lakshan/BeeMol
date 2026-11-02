@@ -257,6 +257,10 @@ function bindControls(){const $=id=>document.getElementById(id),on=(id,fn)=>{if(
  on('showOrbitalSlice',()=>showOrbitalPropertiesTab('slice'));
  on('showOrbitalAppearance',()=>showOrbitalPropertiesTab('appearance'));on('toggleOrbitalAnimation',()=>showOrbitalPropertiesTab('animation'));on('animationPlay',playAnimation);on('animationRecord',()=>recordMovie());$('animationFrame').onchange=async()=>{stopOrbitalAnimation();await displayFrame(Number($('animationFrame').value))};
  $('orbitalNumber').onchange=showOrbitalNumber;for(const [id,delta]of [['orbitalPrev',-1],['orbitalNext',1]])on(id,()=>{const n=Math.max(1,Math.min(importedMolden?.orbitals.length||cubeFiles.size||1,Number($('orbitalNumber').value)+delta));$('orbitalNumber').value=n;showOrbitalNumber()});
+ $('orbitalAtomDisplay').addEventListener('change',()=>{
+  $('showOrbitalAtoms').checked=$('orbitalAtomDisplay').value!=='hidden';
+  $('showOrbitalAtoms').dispatchEvent(new Event('change',{bubbles:true}));
+ });
  for(const id of ['autoOrbitalIso','orbitalNegativeColor','orbitalPositiveColor','orbitalFlipPhase','orbitalGloss','orbitalDepth','orbitalTranslucency','showOrbitalAtoms'])$(id).onchange=()=>{if(id==='orbitalCutoff')$('autoOrbitalIso').checked=false;renderCube().catch(e=>setOrbitalStatus(e.message,true))};for(const id of ['gridX','gridY','gridZ'])$(id).onchange=()=>{if(importedMolden)showOrbitalNumber()};
  // Color pickers emit input while dragging; change only fires on commit.
  for(const id of ['orbitalNegativeColor','orbitalPositiveColor'])$(id).addEventListener('input',()=>{

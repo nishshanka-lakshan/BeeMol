@@ -11,7 +11,7 @@ function atomDisplayRadius(atom,style){
 }
 function createViewer(id,options={}){
  const host=document.getElementById(id);let T,renderer,scene,camera,group,drag,clickable,atoms=[],lines=[],style={stick:{radius:.18},sphere:{scale:.28}},zoom=1,center=[0,0,0],extent=8,bg=options.backgroundColor||'#ffffff';
- const selectionStyles=new Map(),models=[];
+ const selectionStyles=new Map(),models=[],hiddenAtoms=new Set();
  let measurements=[];
  const atomColor=element=>window.BeeMolAtomColors.get(element);
  const render=()=>{if(renderer)renderer.render(scene,camera)};
@@ -30,6 +30,7 @@ function createViewer(id,options={}){
  }
  function drawMeasurements(){
   for(const measurement of measurements){
+   if(measurement.indices.some(i=>hiddenAtoms.has(i)))continue;
    const points=measurement.indices.map(i=>atoms[i]).filter(Boolean).map(a=>new T.Vector3(a.x-center[0],a.y-center[1],a.z-center[2]));
    if(points.length!==measurement.indices.length)continue;
    if(points.length>1){const line=new T.Line(new T.BufferGeometry().setFromPoints(points),new T.LineDashedMaterial({color:0xf59e0b,dashSize:.15,gapSize:.08,depthTest:false}));line.computeLineDistances();line.renderOrder=9;group.add(line)}
@@ -37,14 +38,15 @@ function createViewer(id,options={}){
    if(measurement.text){const mid=points.reduce((sum,p)=>sum.add(p),new T.Vector3()).multiplyScalar(1/points.length);mid.y+=.65;label(measurement.text,mid)}
   }
  }
- function rebuild(){if(!T)return;dispose();for(const a of atoms){const st=selectionStyles.get(a.index)||a.style||style;const sphere=st.sphere;if(sphere){const mesh=new T.Mesh(new T.SphereGeometry(atomDisplayRadius(a,st),atoms.length>300?24:48,atoms.length>300?16:32),new T.MeshPhongMaterial({color:sphere.color??atomColor(a.elem),shininess:document.getElementById('moleculeAtomShine')?.checked?65:0,specular:document.getElementById('moleculeAtomShine')?.checked?0x555555:0x000000}));mesh.position.set(a.x-center[0],a.y-center[1],a.z-center[2]);mesh.userData.atom=a;if(sphere.color===undefined)mesh.userData.paletteElement=a.elem;group.add(mesh)}else{
+ function rebuild(){if(!T)return;dispose();const display=id==='viewer'?(document.getElementById('moleculeAtomDisplay')?.value||'default'):'default';if(display==='hidden'){render();return}for(const a of atoms){if(hiddenAtoms.has(a.index))continue;const st=selectionStyles.get(a.index)||a.style||style;const sphere=display==='stick'?null:st.sphere;if(sphere){const mesh=new T.Mesh(new T.SphereGeometry(atomDisplayRadius(a,st),atoms.length>300?24:48,atoms.length>300?16:32),new T.MeshPhongMaterial({color:sphere.color??atomColor(a.elem),shininess:document.getElementById('moleculeAtomShine')?.checked?65:0,specular:document.getElementById('moleculeAtomShine')?.checked?0x555555:0x000000}));mesh.position.set(a.x-center[0],a.y-center[1],a.z-center[2]);mesh.userData.atom=a;if(sphere.color===undefined)mesh.userData.paletteElement=a.elem;group.add(mesh)}else{
  // Keep atoms pickable in line style without adding visible spheres.
  const pick=new T.Mesh(new T.SphereGeometry(.25,12,8),new T.MeshBasicMaterial({colorWrite:false,depthWrite:false}));
  pick.position.set(a.x-center[0],a.y-center[1],a.z-center[2]);pick.userData.atom=a;group.add(pick);
  }}
  const inferred=window.BeeMolBonding.infer(atoms,document.getElementById('moleculeBondCutoff')?.value);
  for(const edge of inferred){
-  const a=atoms[edge.i],b=atoms[edge.j],st=a.style||style;
+  if(hiddenAtoms.has(edge.i)||hiddenAtoms.has(edge.j))continue;
+  const a=atoms[edge.i],b=atoms[edge.j],st=display==='stick'?{stick:{radius:.18}}:a.style||style;
   if(!st.stick&&!st.line)continue;
   const radius=st.stick?.radius||(st.line?.linewidth?.02:.035);
   const r=edge.order>1?radius*.52:radius;
@@ -58,7 +60,7 @@ function createViewer(id,options={}){
  const showLabels=id==='viewer'&&document.getElementById('moleculeAtomLabels')?.checked;
  const showNumbers=id==='viewer'&&document.getElementById('moleculeAtomNumbers')?.checked;
  if(showLabels||showNumbers){
-  for(const a of atoms)label((showLabels?a.elem:'')+(showNumbers?String(a.index+1):''),new T.Vector3(a.x-center[0],a.y-center[1]+.55,a.z-center[2]),true);
+  for(const a of atoms)if(!hiddenAtoms.has(a.index))label((showLabels?a.elem:'')+(showNumbers?String(a.index+1):''),new T.Vector3(a.x-center[0],a.y-center[1]+.55,a.z-center[2]),true);
  }
  render()}
  let colorFramePending=false;
@@ -81,12 +83,13 @@ function createViewer(id,options={}){
   }
   render();
  });
- document.addEventListener('change',event=>{if(id==='viewer'&&['moleculeAtomLabels','moleculeAtomNumbers'].includes(event.target.id))rebuild()});
+ document.addEventListener('change',event=>{if(id==='viewer'&&['moleculeAtomLabels','moleculeAtomNumbers','moleculeAtomDisplay'].includes(event.target.id))rebuild()});
  const api={ready:null,render,resize,
+ setHiddenAtoms(indices){hiddenAtoms.clear();indices.forEach(i=>hiddenAtoms.add(i));rebuild()},
  setMeasurements(items){measurements=items;rebuild()},
  getAtomColor(element){const value=atomColor(element);return typeof value==='number'?'#'+value.toString(16).padStart(6,'0'):value},
  setAtomColor(element,color){if(!/^#[a-f\d]{6}$/i.test(color))return;window.BeeMolAtomColors.set(element,color)},
- resetAtomColors(){window.BeeMolAtomColors.reset()},setViewStyle(){},setBackgroundColor(c){bg=c;if(renderer)renderer.setClearColor(c);render()},clear(){measurements=[];api.onGeometryClear?.();atoms=[];lines=[];models.length=0;selectionStyles.clear();dispose();render()},
+ resetAtomColors(){window.BeeMolAtomColors.reset()},setViewStyle(){},setBackgroundColor(c){bg=c;if(renderer)renderer.setClearColor(c);render()},clear(){hiddenAtoms.clear();if(id==='viewer')document.dispatchEvent(new Event('moleculegeometryclear'));measurements=[];api.onGeometryClear?.();atoms=[];lines=[];models.length=0;selectionStyles.clear();dispose();render()},
  addModel(text,format){if(format!=='xyz')throw Error('Only XYZ geometry is supported');const rows=text.trim().split(/\r?\n/),count=Number(rows[0]);if(!Number.isInteger(count)||count<1)throw Error('Invalid XYZ atom count');const model= models.length;const list=rows.slice(2,2+count).map(line=>{const p=line.trim().split(/\s+/);return{elem:p[0],x:Number(p[1]),y:Number(p[2]),z:Number(p[3]),index:0,model}});
  const base=atoms.length;list.forEach((a,i)=>a.index=base+i);atoms.push(...list);const item={setStyle(sel,st){for(const a of list)a.style=st;rebuild()}};models.push(item);rebuild();return item},
  setStyle(sel,st){if(sel.index!==undefined)selectionStyles.set(sel.index,st);else{style=st;selectionStyles.clear();for(const a of atoms)a.style=st}rebuild()},selectedAtoms(sel={}){return atoms.filter(a=>sel.index===undefined||a.index===sel.index)},setClickable(sel,enabled,callback){clickable=enabled?callback:null},
