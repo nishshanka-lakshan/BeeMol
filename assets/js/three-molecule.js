@@ -19,12 +19,14 @@ function createViewer(id,options={}){
  function resize(){if(!renderer)return;const w=host.clientWidth||600,h=host.clientHeight||500;renderer.setSize(w,h,false);camera.aspect=w/h;fit()}
  function dispose(){if(!group)return;for(const o of [...group.children]){group.remove(o);o.geometry?.dispose();o.material?.map?.dispose();o.material?.dispose()}}
  function bond(a,b,r,color,element){const va=new T.Vector3(a.x-center[0],a.y-center[1],a.z-center[2]),vb=new T.Vector3(b.x-center[0],b.y-center[1],b.z-center[2]);const delta=vb.clone().sub(va),len=delta.length();if(!len)return;const mesh=new T.Mesh(new T.CylinderGeometry(r,r,len,24),new T.MeshPhongMaterial({color}));mesh.position.copy(va).add(vb).multiplyScalar(.5);mesh.quaternion.setFromUnitVectors(new T.Vector3(0,1,0),delta.normalize());mesh.userData.paletteElement=element;group.add(mesh)}
- function label(text,position){
-  const canvas=document.createElement('canvas');canvas.width=512;canvas.height=96;
-  const ctx=canvas.getContext('2d');ctx.fillStyle='rgba(15,23,42,0.92)';ctx.fillRect(0,0,512,96);
-  ctx.fillStyle='#ffffff';ctx.font='bold 36px sans-serif';ctx.textAlign='center';ctx.textBaseline='middle';ctx.fillText(text,256,48);
+ function label(text,position,compact=false){
+  const canvas=document.createElement('canvas');canvas.height=96;
+  const ctx=canvas.getContext('2d');ctx.font='bold 36px sans-serif';
+  canvas.width=compact?Math.max(80,Math.ceil(ctx.measureText(text).width)+32):512;
+  ctx.fillStyle='rgba(15,23,42,0.92)';ctx.fillRect(0,0,canvas.width,96);
+  ctx.fillStyle='#ffffff';ctx.font='bold 36px sans-serif';ctx.textAlign='center';ctx.textBaseline='middle';ctx.fillText(text,canvas.width/2,48);
   const sprite=new T.Sprite(new T.SpriteMaterial({map:new T.CanvasTexture(canvas),depthTest:false}));
-  sprite.position.copy(position);sprite.scale.set(2.4,.45,1);sprite.renderOrder=10;group.add(sprite);
+  sprite.position.copy(position);sprite.scale.set(compact?canvas.width/96*.45:2.4,.45,1);sprite.renderOrder=10;group.add(sprite);
  }
  function drawMeasurements(){
   for(const measurement of measurements){
@@ -53,8 +55,10 @@ function createViewer(id,options={}){
  }
 
  for(const l of lines){const points=[l.start,l.end].map(p=>new T.Vector3(p.x-center[0],p.y-center[1],p.z-center[2]));group.add(new T.Line(new T.BufferGeometry().setFromPoints(points),new T.LineBasicMaterial({color:l.color||0x888888})))}drawMeasurements();
- if(id==='viewer'&&document.getElementById('moleculeAtomLabels')?.checked){
-  for(const a of atoms)label(a.elem,new T.Vector3(a.x-center[0],a.y-center[1]+.55,a.z-center[2]));
+ const showLabels=id==='viewer'&&document.getElementById('moleculeAtomLabels')?.checked;
+ const showNumbers=id==='viewer'&&document.getElementById('moleculeAtomNumbers')?.checked;
+ if(showLabels||showNumbers){
+  for(const a of atoms)label((showLabels?a.elem:'')+(showNumbers?String(a.index+1):''),new T.Vector3(a.x-center[0],a.y-center[1]+.55,a.z-center[2]),true);
  }
  render()}
  let colorFramePending=false;
@@ -77,7 +81,7 @@ function createViewer(id,options={}){
   }
   render();
  });
- document.addEventListener('change',event=>{if(id==='viewer'&&event.target.id==='moleculeAtomLabels')rebuild()});
+ document.addEventListener('change',event=>{if(id==='viewer'&&['moleculeAtomLabels','moleculeAtomNumbers'].includes(event.target.id))rebuild()});
  const api={ready:null,render,resize,
  setMeasurements(items){measurements=items;rebuild()},
  getAtomColor(element){const value=atomColor(element);return typeof value==='number'?'#'+value.toString(16).padStart(6,'0'):value},
