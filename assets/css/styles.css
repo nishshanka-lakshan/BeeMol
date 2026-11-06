@@ -956,11 +956,11 @@
 .about-content{padding:clamp(32px,7vw,88px) clamp(16px,4vw,48px)}
 .about-eyebrow{margin:0 0 24px;color:var(--accent);font-size:11px;font-weight:700;letter-spacing:.18em}
 .about-content h1{margin:0 0 24px;font-size:clamp(32px,5vw,56px);line-height:1.12;letter-spacing:-.035em;font-weight:700}
-.about-intro{max-width:660px;font-size:clamp(17px,2vw,21px);line-height:1.65;color:var(--muted)}
-#aboutDetails{max-width:680px;margin-top:56px}
+.about-intro{max-width:760px;font-size:clamp(17px,2vw,21px);line-height:1.65;color:var(--muted)}
+#aboutDetails{max-width:760px;margin-top:56px}
 .about-content h2{margin:0 0 16px;font-size:21px;letter-spacing:-.02em}
 #aboutDetails p,.about-brand-assets p{color:var(--muted);line-height:1.8;font-size:15px}
-.about-brand-assets{margin-top:48px;max-width:680px}
+.about-brand-assets{margin-top:48px;max-width:760px}
 .about-downloads{display:flex;flex-wrap:wrap;gap:12px 24px;margin-top:18px}
 #aboutWorkspace .about-downloads a,#aboutWorkspace .about-downloads button{background:transparent;border:0;border-radius:0;box-shadow:none;padding:4px 0;color:var(--accent);font:inherit;font-size:14px;text-decoration:underline;text-underline-offset:5px;cursor:pointer;min-height:0}
 #aboutDownloadStatus{font-size:12px;color:var(--muted)}
@@ -1154,3 +1154,21 @@ main.container:not(.waterbox-active):not(.analysis-active) #moleculeFocusView,
 .atom-visibility-list label{display:flex;align-items:center;gap:8px;margin:5px 0;font-size:12px}
 .atom-visibility-list input[type="checkbox"]{width:auto;margin:0}
 .atom-visibility-controls > button{margin:0}
+
+/* Orbital methodology in About; equations remain readable on narrow screens. */
+.about-documentation{max-width:760px;margin-top:48px}
+.about-documentation h3{margin:28px 0 12px;font-size:17px}
+.about-documentation p,.about-documentation li{color:var(--muted);line-height:1.8;font-size:15px}
+.about-documentation ol{padding-left:24px}
+.about-documentation li+li{margin-top:10px}
+.about-equation{margin:24px 0;padding:4px 0;color:var(--text);font-size:17px;line-height:1.6;overflow-x:auto;overflow-y:hidden}
+
+.about-equation mjx-container[display="true"]{margin:.5em 0}
+
+.about-table-wrap{overflow-x:auto;margin:20px 0}
+.about-basis-table{width:100%;border-collapse:collapse;font-size:14px;line-height:1.6;text-align:left}
+.about-basis-table caption{text-align:left;color:var(--muted);margin-bottom:12px}
+.about-basis-table th,.about-basis-table td{padding:10px 12px;border-bottom:1px solid var(--border);vertical-align:top}
+.about-basis-table td{color:var(--muted)}
+
+.about-content p{text-align:justify;hyphens:auto}

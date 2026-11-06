@@ -11,6 +11,17 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
 
   <title>BeeMol</title>
+  <script>
+    window.MathJax = {
+      options: {
+        skipHtmlTags: ['script', 'noscript', 'style', 'textarea', 'pre', 'code'],
+        ignoreHtmlClass: '.*',
+        processHtmlClass: 'about-equation'
+      },
+      chtml: { displayAlign: 'left' }
+    };
+  </script>
+  <script defer src="https://cdn.jsdelivr.net/npm/mathjax@3.2.2/es5/tex-chtml.js"></script>
   <script src="assets/js/tooltips.js?v=20261028-tooltips1" defer></script>
   <script src="assets/js/theme.js?v=20261028-theme3"></script>
 
@@ -28,7 +39,7 @@
 
       rel="stylesheet">
 
-  <link rel="stylesheet" href="assets/css/styles.css?v=20261102-selected-atoms">
+  <link rel="stylesheet" href="assets/css/styles.css?v=20261106-uniform-about-width">
 
   <link rel="stylesheet" href="assets/css/theme.css?v=20261028-bee1">
 
@@ -138,6 +149,115 @@
           <h2 id="aboutDetailsTitle">A clearer view of your chemistry</h2>
           <p>Open molecular files, edit atomic coordinates, and inspect structures in an interactive 3D viewer. Explore molecular orbitals and cross-sections, build water boxes, and visualize numerical datasets.</p>
           <p>Export PySCF input scripts to continue your calculations, or use the AI workspace to discuss your molecular data and results.</p>
+        </section>
+        <section class="about-documentation" aria-labelledby="aboutIsoTitle">
+          <h2 id="aboutIsoTitle">Orbital isovalues</h2>
+          <p>An isovalue is the amplitude cutoff used to draw an orbital surface. For an orbital calculated from a Molden file, BeeMol evaluates the molecular orbital on a three-dimensional grid using its basis functions and orbital coefficients:</p>
+          <div class="about-equation" aria-label="Psi n at r equals the sum over mu of C mu n times chi mu at r">\[
+            \psi_n(\mathbf{r}) = \sum_{\mu} C_{\mu n}\,\chi_{\mu}(\mathbf{r})\tag{1}
+          \]</div>
+          <p>Here, <i>n</i> identifies the orbital, <b>r</b> is a position in space, χ<sub>μ</sub> is a basis function, and C<sub>μn</sub> is its coefficient. For an imported Cube file, BeeMol uses the scalar values already stored in the file.</p>
+          <h3>Basis functions from Molden files</h3>
+          <p>BeeMol uses atom-centered, contracted Gaussian-type orbitals (GTOs). The Gaussian exponents and contraction coefficients come from the uploaded Molden file’s <code>[GTO]</code> section; molecular orbital coefficients come from <code>[MO]</code>. BeeMol does not choose a fixed basis set such as STO-3G or def2-SVP. The basis is supplied by the calculation that produced your file.</p>
+          <div class="about-equation" aria-label="A contracted basis function is a normalized angular solid harmonic multiplied by a sum of normalized Gaussian primitives">\[
+            \chi_{\mu}(\mathbf r) = \mathcal N_{\mu}\,R_{\ell m}(\mathbf r-\mathbf R_A)\sum_p d_{\mu p}N_{\ell p}\exp\!\left[-\alpha_{\mu p}|\mathbf r-\mathbf R_A|^2\right]\tag{2}
+          \]</div>
+          <p>Here, <b>R</b><sub>A</sub> is the atomic center, <i>p</i> indexes Gaussian primitives, α<sub>μp</sub> is a positive Gaussian exponent, and d<sub>μp</sub> is a contraction coefficient. R<sub>ℓm</sub> is a real solid-harmonic angular polynomial of degree ℓ. N<sub>ℓp</sub> normalizes each primitive, and 𝒩<sub>μ</sub> normalizes the contraction. Coordinates and exponents are evaluated in atomic units.</p>
+          <p>With the angular-polynomial convention used by BeeMol, the normalization factors are:</p>
+          <div class="about-equation" aria-label="Primitive normalization and contraction normalization used by BeeMol">\[
+            \begin{aligned}
+            N_{\ell p} &= \left(\frac{2\alpha_{\mu p}}{\pi}\right)^{3/4}\frac{(4\alpha_{\mu p})^{\ell/2}}{\sqrt{(2\ell-1)!!}} \\[8pt]
+            \mathcal N_{\mu} &= \left[\sum_{p,q}d_{\mu p}d_{\mu q}\left(\frac{2\sqrt{\alpha_{\mu p}\alpha_{\mu q}}}{\alpha_{\mu p}+\alpha_{\mu q}}\right)^{\ell+3/2}\right]^{-1/2}
+            \end{aligned}\tag{3}
+          \]</div>
+          <p>The double factorial uses the convention (−1)!! = 1 for s functions. Contraction normalization preserves the signs of the supplied coefficients.</p>
+          <div class="about-table-wrap">
+            <table class="about-basis-table">
+              <caption>Supported basis shells in the browser orbital evaluator</caption>
+              <thead><tr><th scope="col">Shell</th><th scope="col">Angular momentum ℓ</th><th scope="col">Functions per shell</th><th scope="col">Representation</th></tr></thead>
+              <tbody>
+                <tr><th scope="row">s</th><td>0</td><td>1</td><td>Constant angular factor</td></tr>
+                <tr><th scope="row">p</th><td>1</td><td>3</td><td>p<sub>x</sub>, p<sub>y</sub>, p<sub>z</sub></td></tr>
+                <tr><th scope="row">d</th><td>2</td><td>5</td><td>Real spherical (5D)</td></tr>
+                <tr><th scope="row">f</th><td>3</td><td>7</td><td>Real spherical (7F)</td></tr>
+              </tbody>
+            </table>
+          </div>
+          <p>The d and f components follow Molden’s real spherical ordering: 0, +1, −1, +2, −2, and so on. Cartesian 6D and 10F shells, g and higher angular momenta, and combined <code>sp</code> shell records are unsupported. Combined <code>sp</code> records must be exported as separate s and p shells.</p>
+          <p>For an imported Cube file, the field has already been evaluated by the program that generated it. BeeMol reads those grid values directly and does not reconstruct or evaluate the original basis functions.</p>
+          <h3>Manual isovalue</h3>
+          <p>Choose a positive cutoff <i>τ</i> in the orbital appearance controls. BeeMol draws the two level surfaces:</p>
+          <div class="about-equation" aria-label="S plus is the set of positions where psi equals tau; S minus is the set where psi equals negative tau">\[
+            \begin{aligned} S_{+} &= \left\{\mathbf{r} \mid \psi(\mathbf{r}) = +\tau\right\} \\ S_{-} &= \left\{\mathbf{r} \mid \psi(\mathbf{r}) = -\tau\right\} \end{aligned}\tag{4}
+          \]</div>
+          <p>The two colors show opposite signs (phases) of the orbital. They do not represent positive and negative charge. Smaller cutoffs generally reveal larger, more diffuse lobes; larger cutoffs retain regions of stronger amplitude. Editing the cutoff switches off Auto isovalue.</p>
+          <p>The cutoff has the same units as the grid values. For a normalized orbital expressed in atomic units, ψ has units of bohr<sup>−3/2</sup>. A cutoff such as 0.02 is an amplitude, not a 2% probability.</p>
+          <h3>Auto isovalue (85%)</h3>
+          <p>For a real orbital, its probability density is |ψ(<b>r</b>)|<sup>2</sup>. Auto iso seeks a cutoff whose high-amplitude region contains approximately 85% of the total squared amplitude within the available grid:</p>
+          <div class="about-equation" aria-label="The integral of squared psi over the region where absolute psi is at least tau, divided by its integral over the grid domain, is approximately 0.85">\[
+            F(\tau) = \frac{\displaystyle\int_{\Omega\,\cap\,\{|\psi|\geq\tau\}} |\psi(\mathbf{r})|^2\,\mathrm{d}V}{\displaystyle\int_{\Omega} |\psi(\mathbf{r})|^2\,\mathrm{d}V} \approx 0.85\tag{5}
+          \]</div>
+          <p>Ω is the finite grid domain. On a uniform grid, the common voxel volume cancels, giving the discrete approximation below, where ψ<sub>i</sub> is a grid value:</p>
+          <div class="about-equation" aria-label="F of tau is approximately the sum of squared psi i for absolute psi i at least tau divided by the sum of all squared psi i">\[
+            F(\tau) \approx \frac{\displaystyle\sum_{i:\,|\psi_i|\geq\tau} |\psi_i|^2}{\displaystyle\sum_i |\psi_i|^2}\tag{6}
+          \]</div>
+          <h3>How BeeMol estimates the automatic cutoff</h3>
+          <p>BeeMol uses a weighted histogram rather than sorting every grid value. The following steps describe the current implementation:</p>
+          <ol>
+            <li>For <i>N</i> grid values, sample every <i>s</i>-th value, with <i>s</i> = max(1, ⌈<i>N</i> / 600000⌉). Ignore non-finite values. This limits the calculation to at most 600,000 samples.</li>
+            <li>Find the largest sampled amplitude <i>M</i> and total squared amplitude <i>T</i>. Divide the range from 0 to <i>M</i> into 512 bins and add each sample’s squared amplitude to its bin.</li>
+            <li>Accumulate bins from the largest amplitude downward. Stop at the first bin <i>k</i> for which the cumulative weight reaches or exceeds 0.85<i>T</i>.</li>
+            <li>Use the midpoint of bin <i>k</i>, with a minimum cutoff of <i>M</i> / 512, as the isovalue for both orbital phases.</li>
+          </ol>
+          <div class="about-equation" aria-label="M equals max absolute psi i; T equals sum squared psi i; b i equals min of 511 and floor of 512 absolute psi i divided by M">\[
+            \begin{aligned} M &= \max_i |\psi_i|, & T &= \sum_i |\psi_i|^2 \\[6pt] b_i &= \min\!\left(511,\left\lfloor\frac{512|\psi_i|}{M}\right\rfloor\right), & H_j &= \sum_{i:\,b_i=j}|\psi_i|^2 \end{aligned}\tag{7}
+          \]</div>
+          <div class="about-equation" aria-label="Choose k by accumulating H j from 511 downward until the sum reaches 0.85 T; tau auto equals max of M over 512 and k plus one half times M over 512">\[
+            \begin{aligned} \sum_{j=k}^{511} H_j &\geq 0.85\,T \\[8pt] \tau_{\mathrm{auto}} &= \max\!\left(\frac{M}{512},\frac{(k+\tfrac{1}{2})M}{512}\right) \end{aligned}\tag{8}
+          \]</div>
+          <p>In these histogram equations, <i>i</i> runs over the finite sampled values. If the sampled maximum or total squared amplitude is zero, BeeMol falls back to 0.02. The cutoff field displays the automatic result to five decimal places; surface extraction uses the computed value.</p>
+          <p><strong>Interpreting 85%:</strong> this is an approximate fraction of the squared amplitude on the sampled, finite grid, combining both signs. Histogram binning, sampling, grid spacing, and the grid boundary affect the result. It is not an exact guarantee of 85% of an orbital’s probability over all space. For Cube data containing density or another scalar field instead of an orbital amplitude, the same algorithm weights the square of that field; its result should not be interpreted as 85% electron probability.</p>
+        </section>
+        <section class="about-documentation" aria-labelledby="aboutSliceTitle">
+          <h2 id="aboutSliceTitle">Orbital cross-sections</h2>
+          <p>A cross-section displays the signed orbital amplitude on a two-dimensional plane through the loaded grid. Open the Cross-section tab and enable Show cross-section, then choose XY, XZ, or YZ. The plane marker in the 3D viewer shows where the slice is taken. Cross-sections use the original grid values, independently of the isovalue and any reduction in surface detail.</p>
+          <h3>Plane orientation and position</h3>
+          <p>The plane axes follow the current viewer orientation. Rotating the molecule changes the physical slice sampled by a selected XY, XZ, or YZ plane. Position moves the plane along its normal: Z for XY, Y for XZ, and X for YZ. The slider percentage maps linearly across the rotated grid’s bounding extent:</p>
+          <div class="about-equation" aria-label="The slice position is the minimum normal coordinate plus the slider fraction times the normal extent">
+          \[
+            a = a_{\min} + \frac{P}{100}\left(a_{\max}-a_{\min}\right)\tag{9}
+          \]</div>
+          <p>Here, <i>P</i> is the Position slider value from 0 to 100, and <i>a</i> is the plane coordinate shown in ångströms. The bounds come from the eight corners of the grid in viewer coordinates. Thus 50% places the plane halfway across the grid’s extent along its normal.</p>
+          <h3>Sampling the original grid</h3>
+          <p>Each image sample is mapped back to fractional grid coordinates. Let <b>o</b> be the grid origin, <b>c</b> the viewer’s rotation center, <b>R</b> the viewer rotation, and <b>A</b> the matrix whose columns are the three grid step vectors. For a point <b>p</b> on the slice in viewer coordinates:</p>
+          <div class="about-equation" aria-label="Fractional grid coordinates equal the inverse rotated grid basis applied to the point minus the rotated centered origin">
+          \[
+            \mathbf q = (\mathbf R\mathbf A)^{-1}\left[\mathbf p-\mathbf R(\mathbf o-\mathbf c)\right]\tag{10}
+          \]</div>
+          <p>This mapping supports rotated and skewed Cube grids. Within each grid cell, BeeMol interpolates the eight corner values using trilinear interpolation:</p>
+          <div class="about-equation" aria-label="The interpolated orbital value is the weighted sum of the eight surrounding grid values">
+          \[
+            \begin{aligned}
+            \widetilde\psi(\mathbf q) &= \sum_{a,b,c\in\{0,1\}}\psi_{i+a,j+b,k+c}\,w_a(t_x)w_b(t_y)w_c(t_z) \\[6pt]
+            w_0(t) &= 1-t,\qquad w_1(t)=t
+            \end{aligned}\tag{11}
+          \]</div>
+          <p>The indices (<i>i</i>, <i>j</i>, <i>k</i>) identify the cell’s lower corner and (<i>t</i><sub>x</sub>, <i>t</i><sub>y</sub>, <i>t</i><sub>z</sub>) are the fractional coordinates within that cell. Samples outside the grid are left at zero and appear white. The square image uses the larger of the two in-plane extents to preserve equal distance scales along both axes.</p>
+          <h3>Colors, scale, and contours</h3>
+          <p>The positive and negative orbital colors indicate opposite phases. Flip phase swaps these colors. Color strength uses a square-root scale relative to the largest absolute sampled amplitude in the current slice:</p>
+          <div class="about-equation" aria-label="Color strength is the square root of the absolute interpolated amplitude divided by the slice peak; color blends from white to the phase color">
+          \[
+            \begin{aligned}
+            M_{\mathrm{slice}} &= \max_{\text{slice samples}}|\widetilde\psi| \\[6pt]
+            s &= \sqrt{\frac{|\widetilde\psi|}{M_{\mathrm{slice}}}},\qquad
+            \mathbf C = (1-s)\mathbf C_{\mathrm{white}}+s\mathbf C_{\mathrm{phase}}
+            \end{aligned}\tag{12}
+          \]</div>
+          <p>If the slice peak is zero, the image remains white. Zero amplitude is white and the strongest amplitude reaches the selected phase color. The legend reports the slice scale. Since each slice is scaled independently, equal color intensity across different slices does not necessarily mean equal orbital amplitude. These colors display amplitude, rather than probability density or an integrated probability.</p>
+          <p>When enabled, contour lines mark signed amplitudes of ±25%, ±50%, and ±75% of the slice peak. These are relative amplitude levels, not percentages of electron probability, and they are independent of the 3D isovalue.</p>
+          <h3>Preview and export</h3>
+          <p>The live preview samples a 240 × 240 grid. PNG export resamples the original data at 1200 × 1200 points and draws a 6000 × 6000 image with axes and labels. A larger exported image does not add information beyond the source orbital grid.</p>
+          <p>For orbital dynamics, Movie exports a 2160 × 2160 MP4. It fixes the selected plane, position, orientation, and framing for the sequence while sampling each frame’s orbital grid. Color strength is still normalized to each frame’s slice peak.</p>
         </section>
         <section class="about-brand-assets" aria-labelledby="aboutAssetsTitle">
           <h2 id="aboutAssetsTitle">BeeMol brand assets</h2>
