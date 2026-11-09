@@ -236,15 +236,18 @@ function sampleGrid(g,x,y,z){
 
  const fx=x-x0,fy=y-y0,fz=z-z0;
 
- const v=(i,j,k)=>g.data[idx(g,i,j,k)];
+ // Reuse row offsets instead of creating a sampling closure and repeatedly
+ // calculating a full 3D index for every gradient sample.
+ const data=g.data,row00=(x0*ny+y0)*nz,row10=(x1*ny+y0)*nz;
+ const row01=(x0*ny+y1)*nz,row11=(x1*ny+y1)*nz;
 
- const a=v(x0,y0,z0)*(1-fx)+v(x1,y0,z0)*fx;
+ const a=data[row00+z0]*(1-fx)+data[row10+z0]*fx;
 
- const b=v(x0,y1,z0)*(1-fx)+v(x1,y1,z0)*fx;
+ const b=data[row01+z0]*(1-fx)+data[row11+z0]*fx;
 
- const c=v(x0,y0,z1)*(1-fx)+v(x1,y0,z1)*fx;
+ const c=data[row00+z1]*(1-fx)+data[row10+z1]*fx;
 
- const d=v(x0,y1,z1)*(1-fx)+v(x1,y1,z1)*fx;
+ const d=data[row01+z1]*(1-fx)+data[row11+z1]*fx;
 
  return ((a*(1-fy)+b*fy)*(1-fz)+(c*(1-fy)+d*fy)*fz);
 
@@ -317,7 +320,8 @@ async function mesh(g,level,offset,isCurrent=()=>true){
 
  };
 
- const points=new Array(8), values=new Array(8);
+ const points=CORNERS.map(()=>[0,0,0]), values=new Array(8);
+ const cornerOffsets=CORNERS.map(q=>(q[0]*ny+q[1])*nz+q[2]);
 
  const cross=(i,j)=>{
 
@@ -365,18 +369,21 @@ async function mesh(g,level,offset,isCurrent=()=>true){
   for(let x=blocks[block];x<blocks[block+3];x++)for(let y=blocks[block+1];y<blocks[block+4];y++)for(let z=blocks[block+2];z<blocks[block+5];z++){
 
   let low=Infinity,high=-Infinity;
+  const base=(x*ny+y)*nz+z;
 
   for(let c=0;c<8;c++){
 
-   const q=CORNERS[c],gx=x+q[0],gy=y+q[1],gz=z+q[2];
-
-   const val=g.data[idx(g,gx,gy,gz)];values[c]=val;
-
-   points[c]=[gx,gy,gz];low=Math.min(low,val);high=Math.max(high,val);
+   const val=g.data[base+cornerOffsets[c]];values[c]=val;
+   low=Math.min(low,val);high=Math.max(high,val);
 
   }
 
   if(level<=low||level>=high)continue;
+  // Only prepare coordinates for cells that actually contain the surface.
+  for(let c=0;c<8;c++){
+   const q=CORNERS[c],point=points[c];
+   point[0]=x+q[0];point[1]=y+q[1];point[2]=z+q[2];
+  }
 
   for(const tet of TETS){
 
@@ -493,7 +500,7 @@ async function surfaceGeometry(g,level,center,version){
  if(version!==showVersion)return null;
  if(result.empty){cache.set(key,null);while(cache.size>4){const oldest=cache.keys().next().value;cache.get(oldest)?.dispose();cache.delete(oldest);}return null;}
  const geometry=new THREE.BufferGeometry();geometry.setAttribute('position',new THREE.BufferAttribute(result.positions,3));geometry.setAttribute('normal',new THREE.BufferAttribute(result.normals,3));geometry.computeBoundingSphere();
- geometry.userData.surfaceBackend=document.getElementById('orbitalSurfaceBackend')?.textContent.split(' · surface detail')[0];
+ geometry.userData.surfaceBackend=document.getElementById('orbitalSurfaceBackend')?.textContent;
  cache.set(key,geometry.clone());
  while(cache.size>4){const oldest=cache.keys().next().value;cache.get(oldest)?.dispose();cache.delete(oldest);}
  return geometry;
@@ -614,10 +621,6 @@ while(true){
  surfaces=results.map(result=>result.value);break;
 }
 if(!options.preview){hints.set(level,limit);while(hints.size>4)hints.delete(hints.keys().next().value);}
-if(surfaceGrid!==g&&!options.preview){
- const status=document.getElementById('orbitalSurfaceBackend');
- if(status)status.textContent=`${status.textContent.split(' · surface detail')[0]} · surface detail ${surfaceGrid.dims.join(' × ')} (reduced for complexity; isovalue unchanged)`;
-}
 if(version!==showVersion){surfaces.forEach(geometry=>geometry?.dispose());return level;}
 clear();
 slicePlaneMesh=slicePlaneOutline=null;moleculeCenter=center;

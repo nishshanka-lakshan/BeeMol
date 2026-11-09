@@ -39,10 +39,9 @@ window.Worker=class extends NativeWorker{
  window.simulateComplexSurface=true;
  await BeeMolThree.show(text,{...options,iso:.55});
  assert(BeeMolThree.getGrid()===grid,'Recovery must preserve the original grid');
- assert(document.getElementById('orbitalSurfaceBackend').textContent.includes('reduced for complexity'),'Reduced-detail notice');
- assert(document.getElementById('orbitalSurfaceBackend').textContent.includes('isovalue unchanged'),'Threshold must remain unchanged');
+ assert(document.getElementById('orbitalSurfaceBackend').textContent==='CPU surface calculation','Recovery shows only the calculation backend');
  await BeeMolThree.show(text,{...options,iso:.55});
- assert(document.getElementById('orbitalSurfaceBackend').textContent.includes('reduced for complexity'),'Cached recovery notice');
+ assert(document.getElementById('orbitalSurfaceBackend').textContent==='CPU surface calculation','Cached recovery shows only the calculation backend');
  window.simulateComplexSurface=false;
  // Also exercise fallback when workers are unavailable.
  window.Worker=undefined;
