@@ -30,13 +30,14 @@ function showOrbitalPropertiesTab(tab){
   document.getElementById(panel).classList.toggle('hidden',viewerMode!=='orbitals'||!selected);
   el.classList.toggle('active',selected);el.setAttribute('aria-selected',String(selected));el.tabIndex=selected?0:-1;
  }
+ updateAnimationTime();
 }
 function updateAnimationButton(running){
  const button=document.getElementById('animationPlay');
  button.innerHTML=orbitalActionIcon(running?'stop':'play');
  button.title=running?'Stop playback':'Play animation';button.setAttribute('aria-label',button.title);button.setAttribute('aria-pressed',String(running));
 }
-function stopOrbitalAnimation(){animationRunning=false;animationToken++;updateAnimationButton(false)}
+function stopOrbitalAnimation(){animationRunning=false;animationToken++;updateAnimationButton(false);updateAnimationTime()}
 function downloadBlob(blob,name){const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download=name;a.click();setTimeout(()=>URL.revokeObjectURL(a.href),1000)}
 async function downloadOrbitalFigure(){
  const button=document.getElementById('downloadOrbitalFigure');
@@ -58,6 +59,9 @@ async function handleCubeFile(file,fromMolden=false,preserveView=false,preloaded
 async function initOrbitalIfNeeded(){return orbitalViewerReady||await initOrbitalViewer()}
 // Use the original orbital index, never the playback index, for physical time.
 let animationDisplayedFrame=1;
+function showAnimationTime(){
+ return viewerMode==='orbitals'&&(orbitalPropertiesTab==='animation'||animationRunning||recording);
+}
 function animationTimeLabel(n=animationDisplayedFrame){
  const dt=Number(document.getElementById('animationTimeStep').value);
  const printStep=Number(document.getElementById('animationPrintStep').value);
@@ -97,6 +101,7 @@ function makeTimeLegendDraggable(legend){
  new ResizeObserver(()=>positionTimeLegend(legend)).observe(document.getElementById('orbitalViewer'));
 }
 function paintOrbitalTime(context,width,height){
+ if(!showAnimationTime())return;
  const label=animationTimeLabel();if(!label)return;
  const style=timeLegendStyle(),holder=document.getElementById('orbitalViewer');
  const scale=height/Math.max(1,holder.clientHeight),size=style.size*scale,px=10*scale,py=6*scale;
@@ -119,7 +124,7 @@ function updateAnimationTime(n=animationDisplayedFrame){
  }
  const holder=document.getElementById('orbitalViewer');
  if(legend.parentElement!==holder)holder.append(legend);
- legend.textContent=label;legend.hidden=!label;positionTimeLegend(legend);
+ legend.textContent=label;legend.hidden=!label||!showAnimationTime();positionTimeLegend(legend);
  const count=importedMolden?.orbitals.length||cubeFiles.size||1;
  document.getElementById('animationFrameLabel').textContent=`Frame ${animationDisplayedFrame} of ${count}${label?' · '+label:''}`;
 }
@@ -274,7 +279,7 @@ async function recordMovie(movieOptions={}){
   setOrbitalStatus(`${stopRequested?'Recording stopped. ':''}MP4 downloaded (${dimensions}).`);
  }catch(e){if(recorder&&recorder.state!=='inactive')recorder.stop();setOrbitalStatus(e.message,true)}
  finally{
-  softwareEncoder?.dispose();stream?.getTracks().forEach(track=>track.stop());output?.dispose();recording=false;stopMovieRecording=null;
+  softwareEncoder?.dispose();stream?.getTracks().forEach(track=>track.stop());output?.dispose();recording=false;stopMovieRecording=null;updateAnimationTime();
   for(const [el,wasDisabled,pointerEvents] of disabled){el.disabled=wasDisabled;el.style.pointerEvents=pointerEvents}
   button.disabled=false;button.innerHTML=orbitalActionIcon('movie');button.title='Download high-quality MP4 movie';button.setAttribute('aria-label',button.title);button.setAttribute('aria-pressed','false');
   if(movieOptions.buttonId){button.innerHTML=originalButton.html;button.title=originalButton.title;if(originalButton.label===null)button.removeAttribute('aria-label');else button.setAttribute('aria-label',originalButton.label);}
