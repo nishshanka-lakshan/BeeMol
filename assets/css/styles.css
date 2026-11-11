@@ -841,6 +841,9 @@
 #orbitalWorkspace .orbital-controls-wrap { padding:0; }
 #orbitalWorkspace #orbitalControlsWrap { padding:12px; }
 #orbitalWorkspace .orbital-controls label { font-size:12px; }
+#orbitalAnimation .orbital-animation-fields { display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px 10px;margin:12px 0; }
+#orbitalAnimation .orbital-animation-fields > div { min-width:0; }
+#orbitalAnimation .orbital-animation-fields input, #orbitalAnimation .orbital-animation-fields select { display:block;width:100%;min-width:0;box-sizing:border-box; }
 #orbitalWorkspace .orbital-material { display:grid;grid-template-columns:1fr 1fr;gap:10px; }
 #orbitalWorkspace .orbital-material label { margin-top:0 !important; }
 #orbitalWorkspace .orbital-actions { display:flex;gap:8px;margin-top:12px; }

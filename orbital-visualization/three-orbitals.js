@@ -109,7 +109,7 @@ function getSliceTransform(){
  return {rotation:[0,1,2].map(i=>[matrix[i],matrix[i+4],matrix[i+8]]),center:[...moleculeCenter]};
 }
 
-async function exportFigure(){
+async function exportFigure(paintOverlay){
  if(!renderer||!lastCube)throw Error('Load an orbital before downloading a figure.');
  if(lastCube.options.preview)await show(lastCube.text,{...lastCube.options,preview:false,preserveView:true});
  let output;
@@ -128,7 +128,14 @@ async function exportFigure(){
   exportCamera.aspect=width/height;
   exportCamera.updateProjectionMatrix();
   output.render(scene,exportCamera);
-  const blob=await new Promise((resolve,reject)=>output.domElement.toBlob(
+  let image=output.domElement;
+  if(paintOverlay){
+   image=document.createElement('canvas');image.width=width;image.height=height;
+   const context=image.getContext('2d');
+   if(!context)throw Error('Could not create figure canvas.');
+   context.drawImage(output.domElement,0,0);paintOverlay(context,width,height);
+  }
+  const blob=await new Promise((resolve,reject)=>image.toBlob(
    value=>value?resolve(value):reject(Error('Could not encode the figure as PNG.')),'image/png'));
   return {blob,width,height};
  }finally{

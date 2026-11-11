@@ -398,7 +398,7 @@ async function loadCalculatedOrbital(number){
 
     document.getElementById("animationFrame").value=n;
 
-    document.getElementById("animationFrameLabel").textContent=`Frame ${n} of ${model.orbitals.length}`;
+    updateAnimationTime(n);
 
     return true;
 

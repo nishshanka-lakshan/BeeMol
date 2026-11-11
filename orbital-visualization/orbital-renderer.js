@@ -46,7 +46,7 @@ async function downloadOrbitalFigure(){
  try{
   clearTimeout(isoTimer);clearTimeout(previewTimer);
   await renderCube();
-  const {blob,width,height}=await window.BeeMolThree.exportFigure();
+  const {blob,width,height}=await window.BeeMolThree.exportFigure(paintOrbitalTime);
   const name=(cubeData?.name||'orbital').replace(/\.(cube|cub)$/i,'');
   downloadBlob(blob,`${name}_figure.png`);
   setOrbitalStatus(`Figure downloaded as PNG (${width} × ${height} pixels).`);
@@ -56,9 +56,78 @@ function orbitalOptions(){const s=getOrbitalSettings(),flip=document.getElementB
 async function renderCube(options={}){if(!cubeData)return;await window.BeeMolThree.show(cubeData.text,{...orbitalOptions(),...options});window.BeeMolThree.background(orbitalBackground)}
 async function handleCubeFile(file,fromMolden=false,preserveView=false,preloadedText=null){if(!fromMolden){stopOrbitalAnimation();importedMolden=null;embeddedActive=false;renderOrbitalContributions(null);switchViewerMode('orbitals')}if(!await initOrbitalIfNeeded())throw Error('Orbital viewer failed to start');const text=preloadedText??await file.text();await window.BeeMolThree.show(text,{...orbitalOptions(),preserveView});cubeData={text,name:file.name};window.BeeMolThree.background(orbitalBackground);if(!fromMolden)setOrbitalStatus(`${file.name} loaded`)}
 async function initOrbitalIfNeeded(){return orbitalViewerReady||await initOrbitalViewer()}
-function frameRange(){const count=importedMolden?.orbitals.length||cubeFiles.size||1;const first=Math.max(1,Math.min(count,Number(document.getElementById('animationStart').value)||1)),last=Math.max(first,Math.min(count,Number(document.getElementById('animationEnd').value)||count)),step=Math.max(1,Number(document.getElementById('animationStep').value)||1);return {first,last,step,fps:Math.max(1,Math.min(12,Number(document.getElementById('animationFps').value)||6))}}
-async function displayFrame(n){document.getElementById('orbitalNumber').value=n;if(importedMolden)await loadCalculatedOrbital(n);else if(cubeFiles.has(n))await handleCubeFile(cubeFiles.get(n),true,true);document.getElementById('animationFrame').value=n}
-async function playAnimation(){if(recording)return;if(animationRunning){stopOrbitalAnimation();return}if(!importedMolden&&!cubeFiles.size){setOrbitalStatus('Open a Molden file first.',true);return}animationRunning=true;const token=++animationToken;updateAnimationButton(true);const r=frameRange();try{while(animationRunning&&token===animationToken){for(let n=r.first;n<=r.last&&animationRunning&&token===animationToken;n+=r.step){const start=performance.now();await displayFrame(n);await new Promise(resolve=>setTimeout(resolve,Math.max(0,1000/r.fps-(performance.now()-start))))}}}catch(e){setOrbitalStatus(e.message,true);stopOrbitalAnimation()}}
+// Use the original orbital index, never the playback index, for physical time.
+let animationDisplayedFrame=1;
+function animationTimeLabel(n=animationDisplayedFrame){
+ const dt=Number(document.getElementById('animationTimeStep').value);
+ const printStep=Number(document.getElementById('animationPrintStep').value);
+ const time=(n-1)*printStep*dt*0.02418884;
+ if(!(dt>0)||!Number.isInteger(printStep)||printStep<1||!Number.isFinite(time))return '';
+ return `Time: ${time.toFixed(3)} fs`;
+}
+const orbitalTimePosition={x:0.02,y:0.02};
+function timeLegendStyle(){
+ return {family:document.getElementById('animationTimeFont').value,
+ size:Math.max(10,Math.min(48,Number(document.getElementById('animationTimeFontSize').value)||14))};
+}
+function positionTimeLegend(legend){
+ const holder=legend.parentElement,{family,size}=timeLegendStyle();
+ legend.style.fontFamily=family;legend.style.fontSize=`${size}px`;legend.style.lineHeight='1.2';
+ const context=document.createElement('canvas').getContext('2d');
+ context.font=`${size}px ${family}`;
+ legend.style.width=`${context.measureText('Time: 000.000 fs').width}px`;
+ legend.style.left=`${orbitalTimePosition.x*Math.max(0,holder.clientWidth-legend.offsetWidth)}px`;
+ legend.style.top=`${orbitalTimePosition.y*Math.max(0,holder.clientHeight-legend.offsetHeight)}px`;
+}
+function makeTimeLegendDraggable(legend){
+ let drag=null;
+ legend.addEventListener('pointerdown',event=>{
+  event.stopPropagation();if(event.button!==0||recording)return;
+  const rect=legend.getBoundingClientRect();drag={x:event.clientX-rect.left,y:event.clientY-rect.top};
+  legend.setPointerCapture(event.pointerId);event.preventDefault();
+ });
+ legend.addEventListener('pointermove',event=>{
+  if(!drag)return;event.stopPropagation();
+  const holder=legend.parentElement,rect=holder.getBoundingClientRect();
+  orbitalTimePosition.x=Math.max(0,Math.min(1,(event.clientX-rect.left-drag.x)/Math.max(1,holder.clientWidth-legend.offsetWidth)));
+  orbitalTimePosition.y=Math.max(0,Math.min(1,(event.clientY-rect.top-drag.y)/Math.max(1,holder.clientHeight-legend.offsetHeight)));
+  positionTimeLegend(legend);
+ });
+ for(const name of ['pointerup','pointercancel','lostpointercapture'])legend.addEventListener(name,event=>{event.stopPropagation();drag=null;});
+ new ResizeObserver(()=>positionTimeLegend(legend)).observe(document.getElementById('orbitalViewer'));
+}
+function paintOrbitalTime(context,width,height){
+ const label=animationTimeLabel();if(!label)return;
+ const style=timeLegendStyle(),holder=document.getElementById('orbitalViewer');
+ const scale=height/Math.max(1,holder.clientHeight),size=style.size*scale,px=10*scale,py=6*scale;
+ context.save();context.font=`${size}px ${style.family}`;context.textBaseline='top';
+ const w=context.measureText('Time: 000.000 fs').width+2*px,h=size*1.2+2*py;
+ const x=orbitalTimePosition.x*Math.max(0,width-w),y=orbitalTimePosition.y*Math.max(0,height-h);
+ context.fillStyle='rgba(0,0,0,.72)';context.fillRect(x,y,w,h);
+ context.beginPath();context.rect(x+px,y+py,w-2*px,h-2*py);context.clip();
+ context.textAlign='center';context.fillStyle='#fff';context.fillText(label,x+w/2,y+py);context.restore();
+}
+function updateAnimationTime(n=animationDisplayedFrame){
+ animationDisplayedFrame=Number(n);
+ const label=animationTimeLabel();
+ let legend=document.getElementById('orbitalTimeLegend');
+ if(!legend){
+  legend=document.createElement('div');legend.id='orbitalTimeLegend';
+  legend.style.cssText='position:absolute;top:12px;left:12px;z-index:5;padding:6px 10px;box-sizing:content-box;white-space:nowrap;overflow:hidden;text-align:center;border-radius:4px;background:rgba(0,0,0,.72);color:white;font:14px system-ui;cursor:grab;touch-action:none;user-select:none';
+  legend.title='Drag to move the time legend';
+  makeTimeLegendDraggable(legend);
+ }
+ const holder=document.getElementById('orbitalViewer');
+ if(legend.parentElement!==holder)holder.append(legend);
+ legend.textContent=label;legend.hidden=!label;positionTimeLegend(legend);
+ const count=importedMolden?.orbitals.length||cubeFiles.size||1;
+ document.getElementById('animationFrameLabel').textContent=`Frame ${animationDisplayedFrame} of ${count}${label?' · '+label:''}`;
+}
+function frameRange(){const count=importedMolden?.orbitals.length||cubeFiles.size||1;const first=Math.max(1,Math.min(count,Number(document.getElementById('animationStart').value)||1)),last=Math.max(first,Math.min(count,Number(document.getElementById('animationEnd').value)||count)),step=Math.max(1,Math.floor(Number(document.getElementById('animationStep').value)||1));return {first,last,step,fps:Math.max(1,Math.min(12,Number(document.getElementById('animationFps').value)||6))}}
+// Include First, then select multiples of Frame step in the saved Molden entries.
+function nextAnimationFrame(n,step){return (Math.floor(n/step)+1)*step;}
+async function displayFrame(n){document.getElementById('orbitalNumber').value=n;if(importedMolden){if(!await loadCalculatedOrbital(n))return;}else if(cubeFiles.has(n))await handleCubeFile(cubeFiles.get(n),true,true);document.getElementById('animationFrame').value=n;updateAnimationTime(n)}
+async function playAnimation(){if(recording)return;if(animationRunning){stopOrbitalAnimation();return}if(!importedMolden&&!cubeFiles.size){setOrbitalStatus('Open a Molden file first.',true);return}animationRunning=true;const token=++animationToken;updateAnimationButton(true);const r=frameRange();try{while(animationRunning&&token===animationToken){for(let n=r.first;n<=r.last&&animationRunning&&token===animationToken;n=nextAnimationFrame(n,r.step)){const start=performance.now();await displayFrame(n);await new Promise(resolve=>setTimeout(resolve,Math.max(0,1000/r.fps-(performance.now()-start))))}}}catch(e){setOrbitalStatus(e.message,true);stopOrbitalAnimation()}}
 async function recordMovie(movieOptions={}){
  if(recording){stopMovieRecording?.();return;}
  if(!importedMolden&&!cubeFiles.size){setOrbitalStatus('Open a Molden file first.',true);return}
@@ -113,7 +182,10 @@ async function recordMovie(movieOptions={}){
      const context=canvas.getContext('2d');
      if(!context)throw Error('Could not create movie canvas.');
      output.canvas=canvas;
-     output.paint=()=>context.drawImage(source.canvas,0,0);
+     output.paint=()=>{
+      context.drawImage(source.canvas,0,0);
+      paintOrbitalTime(context,canvas.width,canvas.height);
+     };
      output.render=()=>{source.render();output.paint()};
      output.render();
      if(!canvas.captureStream)throw Error('Canvas movie recording is unavailable in this browser.');
@@ -164,7 +236,7 @@ async function recordMovie(movieOptions={}){
    softwareEncoder=await window.BeeMolMP4.create(setOrbitalStatus);
    if(!stopRequested)await transition('resume',()=>recorder.resume());
   }
-  for(let n=r.first;n<=r.last&&!stopRequested;n+=r.step){
+  for(let n=r.first;n<=r.last&&!stopRequested;n=nextAnimationFrame(n,r.step)){
    if(n!==r.first){
     // Exclude orbital calculation time from the recorded animation.
     await transition('pause',()=>recorder.pause());
@@ -256,6 +328,7 @@ function bindControls(){const $=id=>document.getElementById(id),on=(id,fn)=>{if(
  setupCompactOrbitalControls();
  on('showOrbitalSlice',()=>showOrbitalPropertiesTab('slice'));
  on('showOrbitalAppearance',()=>showOrbitalPropertiesTab('appearance'));on('toggleOrbitalAnimation',()=>showOrbitalPropertiesTab('animation'));on('animationPlay',playAnimation);on('animationRecord',()=>recordMovie());$('animationFrame').onchange=async()=>{stopOrbitalAnimation();await displayFrame(Number($('animationFrame').value))};
+ for(const id of ['animationTimeStep','animationPrintStep','animationTimeFont','animationTimeFontSize'])$(id).addEventListener('input',()=>updateAnimationTime());
  $('orbitalNumber').onchange=showOrbitalNumber;for(const [id,delta]of [['orbitalPrev',-1],['orbitalNext',1]])on(id,()=>{const n=Math.max(1,Math.min(importedMolden?.orbitals.length||cubeFiles.size||1,Number($('orbitalNumber').value)+delta));$('orbitalNumber').value=n;showOrbitalNumber()});
  $('orbitalAtomDisplay').addEventListener('change',()=>{
   $('showOrbitalAtoms').checked=$('orbitalAtomDisplay').value!=='hidden';

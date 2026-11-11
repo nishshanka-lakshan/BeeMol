@@ -550,23 +550,57 @@
 
               <strong>Orbital animation</strong>
 
-              <div class="mini-note">Each Molden orbital is one frame. Ene= is a frame index here, not a time in fs.</div>
+              <div class="mini-note">Each Molden orbital is one frame. Enter the calculation time step in atomic units (a.u.) and the number of calculation steps between printed orbitals to show elapsed time. Ene= is not used as time.</div>
 
               <input id="animationFrame" type="range" min="1" max="1" value="1" step="1" style="width:100%;margin-top:12px">
 
               <div id="animationFrameLabel" class="mini-note">Frame 1 of 1</div>
 
-              <div class="row" style="margin-top:9px;flex-wrap:wrap;gap:8px">
-
-                <label>First <input id="animationStart" type="number" min="1" value="1" style="width:75px"></label>
-
-                <label>Last <input id="animationEnd" type="number" min="1" value="1" style="width:75px"></label>
-
-                <label>FPS <input id="animationFps" type="number" min="1" max="12" value="6" style="width:65px"></label>
-
-                <label>Frame step <input id="animationStep" type="number" min="1" max="100" value="10" step="1" style="width:65px"></label>
-
+              <div class="orbital-animation-fields">
+                <div>
+                  <label for="animationStart">First</label>
+                  <input id="animationStart" type="number" min="1" value="1">
+                </div>
+                <div>
+                  <label for="animationEnd">Last</label>
+                  <input id="animationEnd" type="number" min="1" value="1">
+                </div>
+                <div>
+                  <label for="animationFps">FPS</label>
+                  <input id="animationFps" type="number" min="1" max="12" value="6">
+                </div>
+                <div>
+                  <label for="animationStep">Frame step</label>
+                  <input id="animationStep" type="number" min="1" max="100" value="10" step="1">
+                </div>
+                <div>
+                  <label for="animationTimeStep">Time step (a.u.)</label>
+                  <input id="animationTimeStep" type="number" min="0" step="any" value="0.002">
+                </div>
+                <div>
+                  <label for="animationPrintStep">Print step</label>
+                  <input id="animationPrintStep" type="number" min="1" step="1" value="50">
+                </div>
               </div>
+              <div class="mini-note">Time (fs) = (orbital number − 1) × print step × time step (a.u.) × 0.02418884. Print step counts calculation steps between consecutive orbitals in the loaded Molden file. Orbital 1 is 0 fs.</div>
+
+              <div class="orbital-animation-fields">
+                <div>
+                  <label for="animationTimeFont">Time legend font</label>
+                  <select id="animationTimeFont">
+                    <option value="system-ui">System</option>
+                    <option value="Arial, sans-serif">Arial</option>
+                    <option value="Georgia, serif">Georgia</option>
+                    <option value="'Times New Roman', serif">Times New Roman</option>
+                    <option value="monospace">Monospace</option>
+                  </select>
+                </div>
+                <div>
+                  <label for="animationTimeFontSize">Font size (px)</label>
+                  <input id="animationTimeFontSize" type="number" min="10" max="48" value="14" step="1">
+                </div>
+              </div>
+              <div class="mini-note">Drag the time legend in the viewer to position it. PNG and movie downloads use the chosen position and font.</div>
 
               <label for="animationQuality" style="margin-top:12px">MP4 quality</label>
               <select id="animationQuality" style="width:100%">
@@ -594,7 +628,7 @@
 
               </div>
 
-              <div class="mini-note">Frame step 10 shows frames 1, 11, 21, and so on. Playback and movie recording use the X, Y, and Z grid detail set in Orbital appearance. Movies download as H.264 MP4. If native encoding is unavailable, software MP4 export uses up to 1080p and may take extra time.</div>
+              <div class="mini-note">Frame step 10 shows saved Molden entries 1, 10, 20, 30, and so on when First is 1. Print step counts calculation steps between saved entries; with print step 50, entries 1, 10, and 20 represent calculation steps 0, 450, and 950. Their times use the original orbital numbers, including the skipped frames; FPS only changes playback speed. Playback and movie recording use the X, Y, and Z grid detail set in Orbital appearance. Movies download as H.264 MP4. If native encoding is unavailable, software MP4 export uses up to 1080p and may take extra time.</div>
 
             </div>
 
