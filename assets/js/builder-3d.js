@@ -68,6 +68,10 @@ window.BeeMolBuilder3D = async function(host, hooks) {
     const plane=new T.Plane().setFromNormalAndCoplanarPoint(camera.getWorldDirection(new T.Vector3()),world);
     const p=ray.ray.intersectPlane(plane,new T.Vector3());return p?group.worldToLocal(p):anchor;
   }
+  function rotationCenter(){
+    const points=hooks.state().atoms.map(position);
+    return points.length?new T.Box3().setFromPoints(points).getCenter(new T.Vector3()):new T.Vector3();
+  }
   host.addEventListener('contextmenu',e=>e.preventDefault());
   host.addEventListener('pointerdown',e=>{
     if(hooks.busy())return;
@@ -75,15 +79,23 @@ window.BeeMolBuilder3D = async function(host, hooks) {
     const source=picked?.atom;
     gesture={x:e.clientX,y:e.clientY,lastX:e.clientX,lastY:e.clientY,source,picked,moved:false,
       rotate:tool==='rotate'||e.button===2,move:tool==='move'&&source!==undefined,
+      pivot:rotationCenter(),
       anchor:source!==undefined?position(hooks.state().atoms[source]):new T.Vector3(0,0,hooks.depth()),saved:false};
     host.setPointerCapture(e.pointerId);
   });
   host.addEventListener('pointermove',e=>{
     if(!gesture)return;const g=gesture;
     if(Math.hypot(e.clientX-g.x,e.clientY-g.y)>5)g.moved=true;
-    if(!g.moved)return;
+    if(!g.moved&&!g.rotate)return;
     if(g.rotate){
-      group.quaternion.premultiply(new T.Quaternion().setFromEuler(new T.Euler((e.clientY-g.lastY)*.008,(e.clientX-g.lastX)*.008,0)));render();
+      // Match the Molecule viewer: world Y first, then world X, 0.4 degrees per pixel.
+      group.updateMatrixWorld(true);
+      const worldPivot=group.localToWorld(g.pivot.clone());
+      const radiansPerPixel=.4*Math.PI/180;
+      group.quaternion.premultiply(new T.Quaternion().setFromAxisAngle(new T.Vector3(0,1,0),(e.clientX-g.lastX)*radiansPerPixel));
+      group.quaternion.premultiply(new T.Quaternion().setFromAxisAngle(new T.Vector3(1,0,0),(e.clientY-g.lastY)*radiansPerPixel));
+      group.position.copy(worldPivot).sub(g.pivot.clone().applyQuaternion(group.quaternion));
+      render();
     }else if(g.move){
       if(!g.saved){hooks.save();g.saved=true;}
       Object.assign(hooks.state().atoms[g.source],stored(point(e,g.anchor)));rebuild();
@@ -125,5 +137,5 @@ window.BeeMolBuilder3D = async function(host, hooks) {
   host.addEventListener('wheel',e=>{e.preventDefault();distance=Math.max(2,Math.min(150,distance*Math.exp(e.deltaY*.001)));resize();},{passive:false});
   new ResizeObserver(resize).observe(host);
   resize();
-  return {rebuild,updatePositions,resize,fit(){const {atoms}=hooks.state();distance=Math.max(6,...atoms.map(a=>position(a).length()*3+3));resize();},reset(){group.quaternion.identity();resize();}};
+  return {rebuild,updatePositions,resize,fit(){const {atoms}=hooks.state();distance=Math.max(6,...atoms.map(a=>position(a).length()*3+3));resize();},reset(){group.quaternion.identity();group.position.set(0,0,0);resize();}};
 };
