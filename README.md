@@ -122,7 +122,7 @@ Serve the frontend at `http://localhost:8000`. If using another frontend origin,
 | `BEEMOL_HOST` | Backend bind address. Defaults to `127.0.0.1`; hosted deployments use `0.0.0.0`. |
 | `PORT` | Backend port. Defaults to `8787`. |
 
-The backend uses the Python standard library. The Render configuration additionally installs `certifi`.
+Analysis uses the Python standard library. Molecular geometry generation additionally requires RDKit. Install `ai/backend/requirements.txt` for RDKit and `certifi`; Render uses this same requirements file.
 
 ### Data and interpretation
 
@@ -222,3 +222,52 @@ Orbital surfaces are extracted with marching tetrahedra and rendered using Three
 
 Bug reports and focused improvements are welcome through [GitHub Issues](https://github.com/nishshanka-lakshan/BeeMol/issues) and pull requests. Include the relevant workspace, reproduction steps, browser version, and a small non-sensitive example file when possible. For visualization issues, include the grid and isovalue settings and a reference image if available.
 
+
+### Draw a molecule and prepare a PySCF starting geometry
+
+In Molecule → Coordinates, click **Draw molecule** to open the interactive 3D
+editor. Select an element and click to place an atom. Drag from an existing atom
+to empty space to add a bonded atom. For water, place O, select H, then drag twice
+from O. Repeat a drag between the same atoms to increase single → double → triple.
+Use the element selector and compact drawing, selection, movement, rotation,
+element-change, and erase icons. Repeat drags to increase bond order. Change atom
+applies the selected element; Erase, Undo, Clear, and a benzene template are also available.
+
+Right-drag, or click the rotation icon, to rotate; scroll to zoom. Click the
+move icon and drag to reposition an atom in the current view plane.
+Rotate and continue drawing/moving to construct spatial structures, by changing the viewing angle. The sketcher has no
+wedge/dash stereochemistry tool.
+
+Click **Optimize (UFF)** to relax the structure. The editor animates atoms and
+bonds moving through UFF minimization steps to the optimized 3D model, including
+explicit hydrogens. Rotate it to inspect the result. The drawn coordinates are used as the starting geometry. The status shows whether minimization converged. **Use molecule** updates the main molecule
+viewer, XYZ input, charge, spin, and generated PySCF code. Formal atom charges
+determine total charge; set PySCF spin as 2S in the main molecule settings, consistent with electron-count parity.
+
+Drawing and UFF optimization run entirely in the browser using JSmol's JavaScript
+engine. This works on GitHub Pages without Python, RDKit, a model API key, a local
+server, or any visitor-installed software. Internet access is needed to download
+JSmol on first use. The molecule is processed in the browser; optimization does
+not call the Python geometry endpoint. The first optimization may take longer
+while the engine loads. Subsequent optimizations reuse the loaded engine.
+
+Push the updated frontend files to the repository and deploy GitHub Pages normally.
+The optional Python geometry API and its requirements remain available for API
+clients, but are no longer used by the drawing workflow. The AI assistant still
+uses its separately configured backend.
+
+The browser engine adds hydrogens and minimizes with UFF. The 3D editor animates
+reported minimization coordinates, then passes the resulting XYZ, formal charge,
+and selected PySCF spin into the existing input generator. Electron-count/spin
+parity is checked before use. Bond connectivity and bond orders are retained.
+
+This is one force-field starting conformer, not an exact geometry or guaranteed
+global minimum. Force fields do not model spin-state energetics. Inspect unusual
+bonding and metal coordination and use quantum geometry refinement as appropriate.
+The existing PySCF geometry-optimization option can refine the imported structure.
+
+Run the geometry and gateway checks after installing requirements:
+
+```sh
+python -m unittest discover -s ai/backend -p 'test_*.py'
+```

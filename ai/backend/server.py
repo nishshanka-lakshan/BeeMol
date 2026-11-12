@@ -1,4 +1,5 @@
-"""Local-only BeeMol analysis gateway, Python standard library only."""
+"""BeeMol analysis and molecular geometry gateway."""
+from geometry import optimize_geometry
 import json, math, os, statistics
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from urllib.request import Request, urlopen
@@ -119,12 +120,14 @@ class Handler(BaseHTTPRequestHandler):
         self.send_header('Access-Control-Allow-Headers','Content-Type')
         self.end_headers()
     def do_POST(self):
-        if self.path != '/api/analyze': return self.reply(404,{'error':'Not found'})
+        if self.path not in ('/api/analyze', '/api/geometry'): return self.reply(404,{'error':'Not found'})
         if not self.allowed(): return self.reply(403,{'error':'Origin rejected'})
         try:
             size = int(self.headers.get('Content-Length','0'))
             if not 0 < size <= 16000000: return self.reply(413,{'error':'Request must be under 16 MB'})
             data = json.loads(self.rfile.read(size))
+            if self.path == '/api/geometry':
+                return self.reply(200, optimize_geometry(data))
             question = data.get('question','')
             if not isinstance(question,str) or not question.strip() or len(question)>8000:
                 raise ValueError('Provide a question of 1 to 8000 characters.')
@@ -140,6 +143,8 @@ class Handler(BaseHTTPRequestHandler):
             evidence = analyze(data)
             context = data.get('context',{})
             if len(json.dumps(context)) > 150000: raise ValueError('Molecular context too large.')
+        except RuntimeError as error:
+            return self.reply(503, {'error': str(error)})
         except (ValueError,TypeError,AttributeError,KeyError) as error:
             return self.reply(400,{'error':str(error)})
         try:

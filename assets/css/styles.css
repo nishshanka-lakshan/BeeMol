@@ -556,7 +556,7 @@
 
     /* Molecule setup uses the same scene / canvas / properties arrangement. */
 
-    main.container{grid-template-columns:minmax(245px,290px) minmax(400px,1fr) minmax(330px,410px);align-items:start;gap:12px;padding:12px}
+    main.container{grid-template-columns:minmax(240px,285px) minmax(420px,1fr) minmax(290px,335px);align-items:start;gap:12px;padding:12px}
 
     main.container.hidden{display:none}
 
@@ -576,9 +576,9 @@
 
     main.container>.right #codeOutput{max-height:55vh;overflow:auto}
 
-    @media(max-width:1150px){main.container{grid-template-columns:minmax(220px,270px) minmax(350px,1fr)}main.container>.right{grid-column:1/-1}}
+    @media(max-width:1050px){main.container{grid-template-columns:minmax(180px,240px) minmax(300px,1fr)}main.container>.right{grid-column:1/-1}}
 
-    @media(max-width:710px){main.container{grid-template-columns:1fr}main.container>.right{grid-column:auto}main.container #viewerStack{height:430px}}
+    @media(max-width:660px){main.container{grid-template-columns:1fr}main.container>.right{grid-column:auto}main.container #viewerStack{height:430px}}
 
 /* Three.js canvas fills the actual orbital viewport */
 
@@ -882,6 +882,36 @@
  #orbitalWorkspace #viewerStack { height:350px; }
 }
 
+/* Keep every workspace's center panel the same size as the orbital panel. */
+@media(min-width:1051px){
+ :is(main.container,#analysisWorkspace) {
+  height:calc(100dvh - 78px);min-height:0;
+  grid-template-columns:minmax(200px,250px) minmax(0,1fr) minmax(290px,335px);
+  align-items:stretch;overflow:hidden;
+ }
+ main.container > :is(aside,.left,.right),#analysisViewHost { min-height:0;min-width:0; }
+ main.container > .left > .card,#analysisViewHost {
+  height:100%;display:flex;flex-direction:column;overflow:hidden;
+ }
+ main.container > :is(aside,.right) { overflow:auto; }
+ main.container #viewerStack { height:auto;min-height:180px;flex:1;margin:10px 12px; }
+ main.container #orientationControls { gap:5px !important;flex-shrink:0;font-size:12px; }
+ #analysisWorkspace > aside { min-height:0;overflow:auto; }
+ #analysisViewHost > #analysisFigureArea { flex:1;min-height:0;overflow:auto; }
+ #analysisViewHost > #analysisResult { flex-shrink:0; }
+}
+@media(max-width:1050px){
+ main.container,#analysisWorkspace { min-height:0; }
+ main.container #viewerStack { height:clamp(280px,50dvh,560px); }
+ #analysisWorkspace:not(.analysis-focus-view) #analysisViewHost { height:clamp(280px,50dvh,560px);display:flex;flex-direction:column;overflow:hidden; }
+ #analysisWorkspace:not(.analysis-focus-view) #analysisFigureArea { flex:1;min-height:0;overflow:auto; }
+ #analysisWorkspace:not(.analysis-focus-view) #analysisResult { flex-shrink:0; }
+}
+@media(max-width:660px){
+ main.container #viewerStack { height:350px; }
+ #analysisWorkspace:not(.analysis-focus-view) #analysisViewHost { height:350px; }
+}
+
 /* Connected navigation tabs, matching the orbital settings tabs. */
 .mode-tabs,
 #orbitalWorkspace .mode-tabs,
@@ -1175,3 +1205,44 @@ main.container:not(.waterbox-active):not(.analysis-active) #moleculeFocusView,
 .about-basis-table td{color:var(--muted)}
 
 .about-content p{text-align:justify;hyphens:auto}
+
+#drawMolecule { margin-bottom:10px; }
+#moleculeBuilder { width:min(900px,calc(100vw - 32px));max-height:90dvh;overflow:auto;box-sizing:border-box;padding:20px;border:1px solid var(--border);border-radius:12px;background:var(--panel);color:var(--text); }
+#moleculeBuilder::backdrop { background:#0008; }
+#moleculeBuilder [hidden] { display:none !important; }
+.builder-heading { display:flex;align-items:center;justify-content:space-between;gap:12px; }
+.builder-heading h2 { margin:0; }
+.builder-tools { display:flex;flex-wrap:wrap;gap:12px;margin:12px 0; }
+.builder-tools label { flex:1;min-width:130px; }
+#moleculeBuilder label { display:block; }
+#moleculeBuilder input:not([type=checkbox]),#moleculeBuilder select { display:block;width:100%;box-sizing:border-box; }
+#builderCanvas { display:block;width:100%;background:white;border:1px solid var(--border);border-radius:8px;cursor:crosshair;touch-action:none; }
+#builderPreview { max-height:220px;overflow:auto;padding:12px;background:var(--panel2);white-space:pre; }
+#builderStatus { overflow-wrap:anywhere; }
+
+#builderCanvas { height:380px;position:relative;overflow:hidden; }
+#builderCanvas canvas { width:100%;height:100%;display:block; }
+
+.builder-icon-tools { display:flex;align-items:end;gap:5px;flex-wrap:wrap; }
+.builder-icon-tools button { width:36px;height:36px;display:inline-flex;align-items:center;justify-content:center;padding:0;font-size:23px;line-height:1;border-radius:6px; }
+.builder-icon-tools button[aria-pressed="true"] { background:var(--accent);color:#fff;border-color:var(--accent); }
+.builder-icon-tools button:focus-visible { outline:2px solid var(--accent);outline-offset:2px; }
+
+.builder-icon-tools button { position:relative; }
+.builder-icon-tools button:hover,.builder-icon-tools button:focus-visible { z-index:10; }
+.builder-icon-tools button::after { content:attr(aria-label);position:absolute;top:calc(100% + 7px);left:0;display:none;width:max-content;max-width:230px;padding:6px 9px;border-radius:5px;background:#172033;color:#fff;font:12px/1.4 sans-serif;white-space:normal;text-align:left;pointer-events:none;box-shadow:0 2px 8px #0003;z-index:20; }
+.builder-icon-tools button:hover::after,.builder-icon-tools button:focus-visible::after { display:block; }
+.builder-run-tools { margin-top:10px; }
+#builderStatus:empty { display:none; }
+
+#builderDrawing > .builder-tools { align-items:center;gap:12px; }
+#builderPeriodicPicker { flex:none; }
+#builderPeriodicPicker > summary { cursor:pointer;list-style:none;border:1px solid var(--border);border-radius:6px;padding:8px 12px; }
+.builder-periodic-scroll { position:absolute;left:20px;right:20px;z-index:30;overflow-x:auto;background:var(--panel);border:1px solid var(--border);border-radius:8px;padding:12px;box-shadow:0 8px 24px #0003; }
+#builderPeriodicTable { display:grid;grid-template-columns:repeat(18,minmax(30px,1fr));gap:3px;min-width:650px; }
+#builderPeriodicTable button { display:flex;flex-direction:column;align-items:center;justify-content:center;padding:3px 0;min-height:40px;line-height:1.1;border-radius:4px; }
+#builderPeriodicTable small { font-size:9px;opacity:.7; }
+#builderPeriodicTable strong { font-size:14px; }
+#builderPeriodicTable button[aria-pressed="true"] { background:var(--accent);color:#fff; }
+
+#builderLabels,#builderNumbers { font-size:14px;font-weight:600; }

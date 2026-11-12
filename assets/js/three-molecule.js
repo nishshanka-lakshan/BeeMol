@@ -18,7 +18,7 @@ function createViewer(id,options={}){
  function fit(){if(!camera)return;const distance=extent/Math.tan(camera.fov*Math.PI/360)/Math.min(1,camera.aspect)/zoom;camera.position.set(0,0,Math.max(2,distance));camera.lookAt(0,0,0);camera.far=Math.max(2000,distance+extent*10);camera.updateProjectionMatrix();render()}
  function resize(){if(!renderer)return;const w=host.clientWidth||600,h=host.clientHeight||500;renderer.setSize(w,h,false);camera.aspect=w/h;fit()}
  function dispose(){if(!group)return;for(const o of [...group.children]){group.remove(o);o.geometry?.dispose();o.material?.map?.dispose();o.material?.dispose()}}
- function bond(a,b,r,color,element){const va=new T.Vector3(a.x-center[0],a.y-center[1],a.z-center[2]),vb=new T.Vector3(b.x-center[0],b.y-center[1],b.z-center[2]);const delta=vb.clone().sub(va),len=delta.length();if(!len)return;const mesh=new T.Mesh(new T.CylinderGeometry(r,r,len,24),new T.MeshPhongMaterial({color}));mesh.position.copy(va).add(vb).multiplyScalar(.5);mesh.quaternion.setFromUnitVectors(new T.Vector3(0,1,0),delta.normalize());mesh.userData.paletteElement=element;group.add(mesh)}
+ function bond(a,b,r,color,element){const va=new T.Vector3(a.x-center[0],a.y-center[1],a.z-center[2]),vb=new T.Vector3(b.x-center[0],b.y-center[1],b.z-center[2]);const delta=vb.clone().sub(va),len=delta.length();if(!len)return;const mesh=new T.Mesh(new T.CylinderGeometry(r,r,len,24),new T.MeshPhongMaterial({color,shininess:45,specular:0x444444}));mesh.position.copy(va).add(vb).multiplyScalar(.5);mesh.quaternion.setFromUnitVectors(new T.Vector3(0,1,0),delta.normalize());mesh.userData.paletteElement=element;group.add(mesh)}
  function label(text,position,compact=false){
   const canvas=document.createElement('canvas');canvas.height=96;
   const ctx=canvas.getContext('2d');ctx.font='bold 36px sans-serif';
@@ -49,10 +49,10 @@ function createViewer(id,options={}){
   const a=atoms[edge.i],b=atoms[edge.j],st=display==='stick'?{stick:{radius:.18}}:a.style||style;
   if(!st.stick&&!st.line)continue;
   const radius=st.stick?.radius||(st.line?.linewidth?.02:.035);
-  const r=edge.order>1?radius*.52:radius;
-  for(const lane of window.BeeMolBonding.lanes(atoms,edge,inferred,Math.max(.19,r*2.6))){
-   const mid={x:(lane.start.x+lane.end.x)/2,y:(lane.start.y+lane.end.y)/2,z:(lane.start.z+lane.end.z)/2};
-   bond(lane.start,mid,r,atomColor(a.elem),a.elem);bond(mid,lane.end,r,atomColor(b.elem),b.elem);
+  // Match the orbital viewer's neutral, slender ball-and-stick bonds.
+  const r=st.stick?(edge.order>1?.065:.095):radius;
+  for(const lane of window.BeeMolBonding.lanes(atoms,edge,inferred,.20)){
+   bond(lane.start,lane.end,r,'#adb4c1');
   }
  }
 
@@ -95,10 +95,9 @@ function createViewer(id,options={}){
  setStyle(sel,st){if(sel.index!==undefined)selectionStyles.set(sel.index,st);else{style=st;selectionStyles.clear();for(const a of atoms)a.style=st}rebuild()},selectedAtoms(sel={}){return atoms.filter(a=>sel.index===undefined||a.index===sel.index)},setClickable(sel,enabled,callback){clickable=enabled?callback:null},
  addLine(l){lines.push(l);rebuild()},zoomTo(){const points=atoms.map(a=>[a.x,a.y,a.z]).concat(lines.flatMap(l=>[[l.start.x,l.start.y,l.start.z],[l.end.x,l.end.y,l.end.z]]));if(points.length){center=[0,1,2].map(k=>(Math.min(...points.map(p=>p[k]))+Math.max(...points.map(p=>p[k])))/2);extent=Math.max(2,...points.map(p=>Math.hypot(p[0]-center[0],p[1]-center[1],p[2]-center[2])+1));}zoom=1;rebuild();fit()},
  getView(){const q=group?.quaternion;return [...center,zoom,...(q?[q.x,q.y,q.z,q.w]:[0,0,0,1])]},setView(v){center=v.slice(0,3);zoom=v[3]||1;if(group)group.quaternion.set(...v.slice(4,8));rebuild();fit()},rotate(deg,axis){if(group){axis=axis.replace(/^-/, '');group.quaternion.premultiply(new T.Quaternion().setFromAxisAngle(new T.Vector3(axis==='x'?1:0,axis==='y'?1:0,axis==='z'?1:0),deg*Math.PI/180));render()}},zoom(factor){zoom*=factor;fit()}};
- api.ready=moduleReady.then(m=>{T=m;renderer=new T.WebGLRenderer({antialias:true,preserveDrawingBuffer:true});renderer.setPixelRatio(Math.min(Math.max(devicePixelRatio||1,1.5),2));renderer.setClearColor(bg);renderer.domElement.style.cssText='width:100%;height:100%;display:block';host.replaceChildren(renderer.domElement);scene=new T.Scene();camera=new T.PerspectiveCamera(42,1,.01,2000);group=new T.Group();scene.add(group);scene.add(new T.HemisphereLight(0xffffff,0x697586,1.4));const light=new T.DirectionalLight(0xffffff,2);light.position.set(3,5,10);scene.add(light);
- // Soft fill and rim lights make the round atom surfaces easier to distinguish.
- const fill=new T.DirectionalLight(0xffffff,.6);fill.position.set(-5,1,4);scene.add(fill);
- const rim=new T.DirectionalLight(0xffffff,.8);rim.position.set(2,3,-5);scene.add(rim);
+ api.ready=moduleReady.then(m=>{T=m;renderer=new T.WebGLRenderer({antialias:true,preserveDrawingBuffer:true});renderer.setPixelRatio(2);renderer.outputColorSpace=T.SRGBColorSpace;renderer.setClearColor(bg);renderer.domElement.style.cssText='width:100%;height:100%;display:block';host.replaceChildren(renderer.domElement);scene=new T.Scene();camera=new T.PerspectiveCamera(42,1,.01,2000);group=new T.Group();scene.add(group);scene.add(new T.HemisphereLight(0xffffff,0x9298a3,2.1));const light=new T.DirectionalLight(0xffffff,2);light.position.set(4,7,11);scene.add(light);
+ // Use the same fill light as the orbital molecule view.
+ const fill=new T.DirectionalLight(0xffffff,.65);fill.position.set(-8,-3,5);scene.add(fill);
  host.addEventListener('pointerdown',e=>{drag={x:e.clientX,y:e.clientY,startX:e.clientX,startY:e.clientY};host.setPointerCapture(e.pointerId)});host.addEventListener('pointermove',e=>{if(!drag)return;api.rotate((e.clientX-drag.x)*.4,'y');api.rotate((e.clientY-drag.y)*.4,'x');drag.x=e.clientX;drag.y=e.clientY});host.addEventListener('pointerup',e=>{if(drag&&Math.hypot(e.clientX-drag.startX,e.clientY-drag.startY)<5&&clickable){const rect=host.getBoundingClientRect(),ray=new T.Raycaster();ray.setFromCamera(new T.Vector2((e.clientX-rect.left)/rect.width*2-1,-(e.clientY-rect.top)/rect.height*2+1),camera);const hit=ray.intersectObjects(group.children).find(h=>h.object.userData.atom);if(hit)clickable(hit.object.userData.atom,api,e)}drag=null});host.addEventListener('pointercancel',()=>{drag=null});host.addEventListener('wheel',e=>{e.preventDefault();api.zoom(Math.exp(-e.deltaY*.001))},{passive:false});window.addEventListener('resize',resize);rebuild();resize();return api});return api;
 }
 window.BeeMolMoleculeThree={createViewer};

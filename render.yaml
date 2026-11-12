@@ -3,7 +3,7 @@ services:
     name: beemol-ai
     runtime: python
     plan: free
-    buildCommand: python -m pip install --upgrade certifi
+    buildCommand: python -m pip install -r ai/backend/requirements.txt
     startCommand: python ai/backend/server.py
     healthCheckPath: /health
     envVars:

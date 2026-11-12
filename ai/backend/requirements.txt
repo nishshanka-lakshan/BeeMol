@@ -1,0 +1,2 @@
+certifi
+rdkit==2025.9.6
