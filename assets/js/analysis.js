@@ -460,6 +460,9 @@
         body.append(...nodes); group.append(legend, body); plotSettings.append(group);
         return body;
       }
+      const generalFields = ['plotTitle', 'plotXLabel', 'plotYLabel', 'plotTransform', 'plotXMin', 'plotXMax', 'plotYMin', 'plotYMax'].map(controlLabel);
+      const generalGroup = plotGroup('Labels and ranges', generalFields);
+      plotSettings.prepend(generalGroup.parentElement);
       plotGroup('Size', ['plotBoxWidth', 'plotBoxHeight'].map(controlLabel));
       plotGroup('Appearance', ['plotTwoTone', 'plotWidth', 'plotBorderWidth'].map(controlLabel));
       const axisFields = [];
@@ -490,11 +493,12 @@
       $('plotFontTarget').closest('label').firstChild.textContent = 'Text element';
       plotGroup('Text', [$('plotFontPanel')]);
       plotSettings.append(plotSettings.querySelector('.spectrum-plot-settings'));
+      plotGroup('Export', [plotSettings.querySelector('.analysis-actions')]);
       // Native disclosure controls preserve all existing input nodes and values.
       for (const group of [...plotSettings.children]) {
         if (group.tagName !== 'FIELDSET') continue;
         const legend = group.querySelector(':scope > legend');
-        if (!legend || !['Size', 'Appearance', 'Axis numbers', 'Legend', 'Text', 'Plot'].includes(legend.textContent)) continue;
+        if (!legend || !['Labels and ranges', 'Size', 'Appearance', 'Axis numbers', 'Legend', 'Text', 'Plot', 'Export'].includes(legend.textContent)) continue;
         const disclosure = document.createElement('details');
         disclosure.className = group.className + ' plot-disclosure';
         const summary = document.createElement('summary'); summary.textContent = legend.textContent;
@@ -503,7 +507,6 @@
         group.replaceWith(disclosure);
       }
 
-      plotGroup('Export', [plotSettings.querySelector('.analysis-actions')]);
       for (const [id, text] of Object.entries({
         plotBoxWidth: 'Width', plotBoxHeight: 'Height', plotLegendPosition: 'Position',
         plotLegendX: 'Horizontal offset (px)', plotLegendY: 'Vertical offset (px)'

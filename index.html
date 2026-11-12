@@ -39,15 +39,15 @@
 
       rel="stylesheet">
 
-  <link rel="stylesheet" href="assets/css/styles.css?v=20261111-builder-labels">
+  <link rel="stylesheet" href="assets/css/styles.css?v=20261111-about-guide">
 
   <link rel="stylesheet" href="assets/css/theme.css?v=20261028-bee1">
 
 </head>
 
 <script src="assets/js/beemol-config.js?v=20261021-render1"></script>
-<script src="assets/js/beemol-ai.js?v=20261030-nav2"></script>
-<script src="assets/js/about.js?v=20261030-nav2" defer></script>
+<script src="assets/js/beemol-ai.js?v=20261111-chat-nav"></script>
+<script src="assets/js/about.js?v=20261111-chat-nav" defer></script>
 
 <body>
 
@@ -140,6 +140,14 @@
 
   <section id="aboutWorkspace" class="hidden" aria-label="About BeeMol">
     <div class="about-page">
+      <nav class="about-sidebar" aria-label="About feature sections">
+        <p>FEATURE GUIDE</p>
+        <a href="#aboutMolecule">Molecule</a>
+        <a href="#aboutOrbitals">Orbitals</a>
+        <a href="#aboutWaterBox">Water box</a>
+        <a href="#aboutAnalysis">Analysis</a>
+        <a href="#aboutAI">Chat</a>
+      </nav>
       <div class="about-content">
         <img class="about-logo" src="assets/images/beemol-logo.svg?v=20261028-bee2" alt="BeeMol — Quantum Chemistry Visualization" width="1800" height="520">
         <p class="about-eyebrow">QUANTUM CHEMISTRY VISUALIZATION</p>
@@ -149,6 +157,31 @@
           <h2 id="aboutDetailsTitle">A clearer view of your chemistry</h2>
           <p>Open molecular files, edit atomic coordinates, and inspect structures in an interactive 3D viewer. Explore molecular orbitals and cross-sections, build water boxes, and visualize numerical datasets.</p>
           <p>Export PySCF input scripts to continue your calculations, or use the AI workspace to discuss your molecular data and results.</p>
+        </section>
+        <section id="aboutMolecule" class="about-documentation" aria-labelledby="aboutMoleculeTitle">
+          <h2 id="aboutMoleculeTitle">Molecule</h2>
+          <p>Import XYZ or Molden coordinates, edit atoms, rotate and zoom, measure distances and angles, and show atom labels or numbers. The browser drawing editor provides a periodic-table picker, bonded-atom dragging, repeated drags for double and triple bonds, atom replacement, and UFF relaxation. Optimized coordinates can be sent directly to the molecule viewer and PySCF input generator.</p>
+          <h3>Geometry and displayed bonds</h3>
+          <p>For coordinate files without explicit connectivity, BeeMol estimates connections from interatomic distance and covalent radii. The adjustable cutoff factor is initially 1.30. Bond orders are estimated using distance thresholds, available valence, and ring checks; these are display estimates, not a quantum bond-order calculation.</p>
+          <div class="about-equation">\[
+            d_{ij}=\lVert\mathbf r_j-\mathbf r_i\rVert,\qquad
+            0.4\,\mathrm{\AA}\le d_{ij}&lt;f\bigl(r_i^{\mathrm{cov}}+r_j^{\mathrm{cov}}\bigr)
+          \]</div>
+          <p>Distances are measured in angstrom. Bond angles use the vectors from the central atom to its two neighbors:</p>
+          <div class="about-equation">\[
+            \theta=\cos^{-1}\!\left(\frac{(\mathbf r_i-\mathbf r_j)\cdot(\mathbf r_k-\mathbf r_j)}{\lVert\mathbf r_i-\mathbf r_j\rVert\,\lVert\mathbf r_k-\mathbf r_j\rVert}\right)
+          \]</div>
+          <h3>UFF optimization in the browser</h3>
+          <p>JSmol runs UFF in JavaScript, adds missing hydrogens, and relaxes the drawn coordinates. BeeMol animates reported optimization coordinates and renders the result with Three.js. No Python installation or geometry server is needed. The force-field objective contains bonded and nonbonded contributions; the following shows its energy decomposition, rather than a complete parameterization:</p>
+          <div class="about-equation">\[
+            \mathbf R_*\approx\operatorname*{arg\,min}_{\mathbf R} E_{\mathrm{UFF}}(\mathbf R),\qquad
+            E_{\mathrm{UFF}}=E_{\mathrm{bond}}+E_{\mathrm{angle}}+E_{\mathrm{torsion}}+E_{\mathrm{inversion}}+E_{\mathrm{nonbonded}}
+          \]</div>
+          <p>This finds a local force-field geometry, not an exact quantum structure or guaranteed global minimum. The PySCF generator exports coordinates, basis, method, charge, spin, and optional quantum geometry optimization. PySCF spin is 2S = N<sub>α</sub> − N<sub>β</sub>; electronic-structure calculations run separately from BeeMol.</p>
+        </section>
+        <section id="aboutOrbitals" class="about-documentation" aria-labelledby="aboutOrbitalsTitle">
+          <h2 id="aboutOrbitalsTitle">Orbitals</h2>
+          <p>Load Molden orbitals or Cube grids, select an orbital, adjust phase colors, opacity and isovalue, inspect atomic-orbital contributions, and explore planar cross-sections. Frame sequences can be animated and exported as movies. Three.js displays signed isosurfaces extracted from the scalar grid with marching tetrahedra. The equations below describe basis evaluation, thresholding, and cross-section interpolation.</p>
         </section>
         <section class="about-documentation" aria-labelledby="aboutIsoTitle">
           <h2 id="aboutIsoTitle">Orbital isovalues</h2>
@@ -258,6 +291,53 @@
           <h3>Preview and export</h3>
           <p>The live preview samples a 240 × 240 grid. PNG export resamples the original data at 1200 × 1200 points and draws a 6000 × 6000 image with axes and labels. A larger exported image does not add information beyond the source orbital grid.</p>
           <p>For orbital dynamics, Movie exports a 2160 × 2160 MP4. It fixes the selected plane, position, orientation, and framing for the sequence while sampling each frame’s orbital grid. Color strength is still normalized to each frame’s slice peak.</p>
+        </section>
+        <section id="aboutWaterBox" class="about-documentation" aria-labelledby="aboutWaterBoxTitle">
+          <h2 id="aboutWaterBoxTitle">Water box</h2>
+          <p>Place water molecules around a solute inside a rectangular box, inspect the packed structure, and export coordinates. The builder centers the solute and samples translations and random rotations for water candidates. If a water template is supplied, its internal geometry is retained during placement.</p>
+          <div class="about-equation">\[
+            \mathbf r_{m,a}=\mathbf R_m+\mathbf Q_m\mathbf u_a,\qquad
+            \mathbf Q_m^{\mathsf T}\mathbf Q_m=\mathbf I
+          \]</div>
+          <p>Here <b>u</b><sub>a</sub> is an atom's template coordinate, <b>Q</b><sub>m</sub> rotates water molecule <i>m</i>, and <b>R</b><sub>m</sub> translates it. Candidates are rejected if they cross the box margin or are closer than the implemented pair-distance limits:</p>
+          <div class="about-equation">\[
+            \lVert\mathbf r_a-\mathbf r_b\rVert\ge d_{\min}(a,b)
+          \]</div>
+          <p>Between water molecules, the limits are 2.65 Å for O–O, 1.45 Å for H–H, and 1.80 Å for O–H. Against the solute, the limit is 2.75 Å for water oxygen near a non-hydrogen solute atom, and 1.90 Å for other pairs. Atoms must remain at least 0.4 Å inside the box. This is geometric packing; it does not equilibrate a liquid or run molecular dynamics.</p>
+        </section>
+        <section id="aboutAnalysis" class="about-documentation" aria-labelledby="aboutAnalysisTitle">
+          <h2 id="aboutAnalysisTitle">Analysis</h2>
+          <p>Upload numeric time-series files, overlay datasets, change line styles and axes, and export SVG or PNG figures. Collapsible plot settings control labels, ranges, size, appearance, axis numbers, legends, and text. CSV time values are interpreted as atomic units and converted for display:</p>
+          <div class="about-equation">\[
+            t_{\mathrm{fs}}=0.024188843265857\,t_{\mathrm{a.u.}}
+          \]</div>
+          <h3>Autocorrelation and phase alignment</h3>
+          <p>Uploaded real series are plotted as provided, as absolute values, or as their squares. Squaring a real column is not equivalent to computing the magnitude squared of an unknown complex amplitude. The analytical energy model builds an autocorrelation amplitude from stationary-state phase factors:</p>
+          <div class="about-equation">\[
+            A(t)=\sum_n w_n e^{-iE_nt/\hbar},\quad \sum_n w_n=1,\qquad
+            \hbar=0.6582119569\ \mathrm{eV\,fs}
+          \]</div>
+          <p>The analytical autocorrelation model uses equal state populations. Phase-alignment figures show individual phase vectors and their weighted resultant; this illustrates phase alignment, not a spatial charge density or direct evidence of charge migration. Peak and extremum tools identify sampled features with the configured thresholds.</p>
+          <h3>Broadened spectra</h3>
+          <p>MRADC transition energies and intensities, or QDNEVPT2 total energies with transition intensities, are converted to a sampled Lorentzian spectrum. For QDNEVPT2, excitation energies are differences from the first, ground-state energy; Hartree differences are multiplied by 27.211386245988 to obtain eV.</p>
+          <div class="about-equation">\[
+            S(\omega)=\sum_j I_j\frac{\gamma}{\pi\bigl[(\omega-\Delta E_j-\delta)^2+\gamma^2\bigr]}
+          \]</div>
+          <p><i>I</i><sub>j</sub> is the supplied transition intensity, γ is the positive Lorentzian half-width, and δ shifts transition positions. The grid starts at the selected minimum and excludes its upper bound. This is broadening supplied transitions, not an electronic-structure calculation or Fourier transform of uploaded time data.</p>
+        </section>
+        <section id="aboutAI" class="about-documentation" aria-labelledby="aboutAITitle">
+          <h2 id="aboutAITitle">Chat</h2>
+          <p>The AI workspace sends selected datasets, the user's question, and enabled molecule or orbital metadata to the configured analysis gateway. The gateway calculates numerical summaries before asking the configured language model to explain the supplied evidence. Model access requires its separate backend and credentials; browser UFF optimization does not use the AI service.</p>
+          <h3>Numerical evidence before interpretation</h3>
+          <p>The gateway checks finite values and strictly increasing times, converts atomic time units to femtoseconds, and reports ranges, sample counts, median time steps, and interior sampled maxima. A strict local maximum satisfies:</p>
+          <div class="about-equation">\[
+            y_{k-1}&lt;y_k,\qquad y_{k+1}&lt;y_k
+          \]</div>
+          <p>For a flat maximum from indices <i>a</i> through <i>b</i>, both exterior neighbors must be lower; its reported time is the midpoint:</p>
+          <div class="about-equation">\[
+            t_{\mathrm{peak}}=\tfrac12(t_a+t_b)
+          \]</div>
+          <p>These summaries use the raw uploaded values, without plot transforms, smoothing, or the current viewport. Sampled maxima are not automatically physical revivals. Model explanations can be mistaken: check the numerical evidence and provenance. Molden orbital energies may be placeholders and are not automatically total-state or excitation energies.</p>
         </section>
         <section class="about-brand-assets" aria-labelledby="aboutAssetsTitle">
           <h2 id="aboutAssetsTitle">BeeMol brand assets</h2>
@@ -1241,7 +1321,7 @@ H -0.757200  0.000000  0.586500</textarea>
 <script src="assets/js/analysis-tools/autocorrelation.js?v=20261030-ticks32"></script>
 <script src="assets/js/analysis-tools/autocorrelation-phase.js?v=20261030-isolation12"></script>
 <script src="assets/js/analysis-tools/spectrum.js?v=20261030-overlay34"></script>
-<script src="assets/js/analysis.js?v=20261102-analysis-focus"></script>
+<script src="assets/js/analysis.js?v=20261111-settings-disclosures"></script>
 
 <script>
 

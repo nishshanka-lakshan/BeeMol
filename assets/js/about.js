@@ -2,6 +2,16 @@
  'use strict';
  document.addEventListener('DOMContentLoaded',()=>{
   const workspace=document.getElementById('aboutWorkspace');
+  workspace.querySelectorAll('.about-sidebar a').forEach(link=>{
+   link.addEventListener('click',event=>{
+    const target=document.getElementById(link.hash.slice(1));
+    if(!target)return;
+    event.preventDefault();
+    workspace.querySelectorAll('.about-sidebar a').forEach(item=>item.removeAttribute('aria-current'));
+    link.setAttribute('aria-current','location');
+    target.scrollIntoView({behavior:'smooth',block:'start'});
+   });
+  });
   function open(){
    if(typeof stopOrbitalAnimation==='function')stopOrbitalAnimation();
    for(const selector of ['main.container','#orbitalWorkspace','#analysisWorkspace','#aiWorkspace'])document.querySelector(selector)?.classList.add('hidden');
@@ -9,7 +19,7 @@
   }
   // AI controls are created by beemol-ai.js before this callback runs.
   for(const anchor of document.querySelectorAll('.mode-tabs > button, #aiModes > button')){
-   if(anchor.closest('#aboutWorkspace')||anchor.textContent.trim()!=='AI')continue;
+   if(anchor.closest('#aboutWorkspace')||anchor.textContent.trim()!=='Chat')continue;
    const button=document.createElement('button');button.type='button';button.textContent='About';button.dataset.openAbout='true';button.onclick=open;anchor.after(button);
   }
   // The shared header remains available in every workspace.

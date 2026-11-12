@@ -37,8 +37,8 @@ function init(){
     )
   );
  
- for(const [i,anchor]of anchors.entries()){const b=document.createElement('button');b.type='button';b.textContent='AI';b.id=i===0?'aiOpen':'aiOpen'+i;b.onclick=open;anchor.after(b);}
- if(!anchors.length){const b=document.createElement('button');b.textContent='AI';b.onclick=open;document.querySelector('.top-actions')?.append(b);}
+ for(const [i,anchor]of anchors.entries()){const b=document.createElement('button');b.type='button';b.textContent='Chat';b.id=i===0?'aiOpen':'aiOpen'+i;b.onclick=open;anchor.after(b);}
+ if(!anchors.length){const b=document.createElement('button');b.textContent='Chat';b.onclick=open;document.querySelector('.top-actions')?.append(b);}
 
  $('aiNew').onclick=newChat;
  $('aiCancel').onclick=()=>controller?.abort();
