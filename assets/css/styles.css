@@ -574,7 +574,9 @@
 
     main.container .viewer-toolbar{flex-wrap:wrap}
 
-    main.container>.right #codeOutput{max-height:55vh;overflow:auto}
+    main.container>.right > .card{flex:0 0 auto}
+
+    main.container>.right #codeOutput{min-height:0;max-height:none;overflow-x:auto}
 
     @media(max-width:1050px){main.container{grid-template-columns:minmax(180px,240px) minmax(300px,1fr)}main.container>.right{grid-column:1/-1}}
 
@@ -735,7 +737,7 @@
 }
 #analysisFigureArea.analysis-aligned-figures > div {
   display:block; box-sizing:border-box; margin:0; padding:8px;
-  min-width:0; min-height:0; overflow:hidden;
+  min-width:0; min-height:0; overflow:auto;
   background:white; border-radius:0;
 }
 #analysisFigureArea.analysis-aligned-figures > div:first-child { border-radius:8px 8px 0 0; }
@@ -1030,7 +1032,12 @@
 
 /* Spectrum has its own energy inputs; shared figure styling remains available. */
 #analysisWorkspace.spectrum-active > aside:first-child .analysis-pad > :not(#spectrumControls):not(label:has(#analysisPlotType)){display:none}
-#spectrumControls label{display:block;margin:12px 0}
+#spectrumControls label,
+#analysisWorkspace.spectrum-active label:has(> #analysisPlotType){display:flex;flex-direction:column;gap:8px;margin:0 0 16px;min-width:0}
+#spectrumControls label > :is(select,textarea),
+#analysisWorkspace.spectrum-active #analysisPlotType{display:block;width:100%;min-width:0;box-sizing:border-box;margin:0}
+#spectrumControls h3{margin:20px 0 16px}
+#spectrumControls .mini-note{margin:0 0 16px;line-height:1.6}
 #spectrumControls textarea{width:100%;box-sizing:border-box;min-height:100px}
 #spectrumControls button{margin:6px 6px 0 0}
 #analysisWorkspace.spectrum-active #analysisSettingsPanel label:has(#plotTitle),
@@ -1268,4 +1275,74 @@ main.container:not(.waterbox-active):not(.analysis-active) #moleculeFocusView,
  .about-sidebar p { flex-basis:100%;margin-bottom:4px; }
  .about-sidebar a { padding:8px 10px; }
  #aboutWorkspace .about-content { padding-top:20px; }
+}
+
+/* Keep autocorrelation figures above their reports at their full height. */
+#analysisWorkspace #analysisViewHost:has(> :is(#phaseMagnitudeContributions, #analyticalExtremaReport):not([hidden])) {
+  overflow:auto;
+}
+#analysisWorkspace #analysisViewHost:has(> :is(#phaseMagnitudeContributions, #analyticalExtremaReport):not([hidden])) > #analysisFigureArea {
+  flex:0 0 auto;
+  overflow:visible;
+}
+#analysisWorkspace #analysisViewHost > :is(#phaseMagnitudeContributions, #analyticalExtremaReport) {
+  flex:0 0 auto;
+}
+
+/* Movie figures keep their natural height and share the panel scrollbar. */
+#analysisWorkspace.analysis-movie-compare #analysisViewHost {
+  overflow:auto;
+}
+#analysisWorkspace.analysis-movie-compare #analysisViewHost > #analysisFigureArea {
+  flex:0 0 auto;
+  height:auto;
+  overflow:visible;
+}
+#analysisWorkspace.analysis-movie-compare #analysisFigureArea > div {
+  height:auto;
+  max-height:none;
+  overflow:visible;
+}
+#analysisWorkspace.analysis-movie-compare #analysisFigureArea svg {
+  max-height:none;
+  height:auto;
+}
+
+/* Fit the complete spectrum to the center panel without clipping its axes. */
+#analysisWorkspace.spectrum-active #analysisViewHost {
+  overflow:auto;
+}
+#analysisWorkspace.spectrum-active #analysisViewHost > #analysisFigureArea {
+  flex:0 0 auto;
+  min-width:0;
+  overflow:visible;
+}
+#analysisWorkspace.spectrum-active #analysisPlot {
+  min-width:0;
+  overflow:visible;
+}
+#analysisWorkspace.spectrum-active #analysisPlot svg {
+  display:block;
+  width:100%;
+  max-width:100%;
+  height:auto;
+  max-height:none;
+}
+
+#spectrumControls #spectrumEnergyInputLabel[hidden]{display:none}
+
+/* Use one label-to-field distance for wrapped and separate labels. */
+:root { --label-field-gap:8px; }
+label:has(> :is(input:not([type="checkbox"]):not([type="radio"]):not([type="hidden"]),select,textarea)) {
+  row-gap:0 !important;
+}
+label > :is(input:not([type="checkbox"]):not([type="radio"]):not([type="hidden"]),select,textarea) {
+  display:block;
+  margin-top:var(--label-field-gap) !important;
+}
+label:has(+ :is(input:not([type="checkbox"]):not([type="radio"]):not([type="hidden"]),select,textarea)) {
+  margin-bottom:var(--label-field-gap) !important;
+}
+label + :is(input:not([type="checkbox"]):not([type="radio"]):not([type="hidden"]),select,textarea) {
+  margin-top:0 !important;
 }

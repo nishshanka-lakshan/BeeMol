@@ -690,13 +690,13 @@
         const phaseFigure = figures[1];
         if (phaseFigure) {
           if (!phaseFigure.dataset.fullViewBox) phaseFigure.dataset.fullViewBox = phaseFigure.getAttribute('viewBox');
-          const [x, y, width, height] = phaseFigure.dataset.fullViewBox.split(/\s+/).map(Number);
-          const crop = comparing && phaseFigure.dataset.hasTitle === 'false' ? Math.max(0, Number(phaseFigure.dataset.axesTop) - 2) : 0;
-          phaseFigure.setAttribute('viewBox', `${x} ${y + crop} ${width} ${height - crop}`);
+          phaseFigure.setAttribute('viewBox', phaseFigure.dataset.fullViewBox);
         }
         if (!comparing) {
           figures.filter(Boolean).forEach(svg => {
-            svg.style.width = ''; svg.style.height = ''; svg.style.marginLeft = '';
+            svg.style.width = phaseMode() ? '100%' : '';
+            svg.style.height = phaseMode() ? 'auto' : '';
+            svg.style.marginLeft = '';
             svg.querySelectorAll('text[data-original-font-size]').forEach(text => {
               text.setAttribute('font-size', text.dataset.originalFontSize);
             });

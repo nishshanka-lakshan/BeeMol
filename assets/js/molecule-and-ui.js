@@ -548,10 +548,6 @@ function commonMolCode(){
 
   const verbose = document.getElementById("verbose").value;
 
-  const chk = document.getElementById("checkpoint").checked;
-
-  const jobName = document.getElementById("jobName").value.trim() || "pyscf_job";
-
   return `mol = gto.M(
     atom='''\n${atomBlock()}\n    ''',
     basis='${basis}',
@@ -559,7 +555,7 @@ function commonMolCode(){
     spin=${spin},
     max_memory=${memory},
     verbose=${verbose},
-)${chk ? `\n\nchkfile = '${jobName}.chk'` : ""}`;
+)`;
 
 }
 
@@ -576,8 +572,6 @@ function scfSetup(type="RHF"){
   if(densityFit) code += `.density_fit()`;
 
   code += `\nmf.conv_tol = ${convTol}\nmf.max_cycle = ${maxCycle}`;
-
-  if(document.getElementById("checkpoint").checked) code += `\nmf.chkfile = chkfile`;
 
   code += `\nmf.kernel()`;
 
@@ -625,8 +619,6 @@ function generateCode(){
 
   body += `\nmf.conv_tol = ${document.getElementById("convTol").value}\nmf.max_cycle = ${document.getElementById("maxCycle").value}`;
 
-  if(document.getElementById("checkpoint").checked) body += `\nmf.chkfile = chkfile`;
-
   body += `\nmf.kernel()`;
 
 } else {
@@ -657,7 +649,7 @@ if(method2==="MP2"){
 
   if(method2==="CASSCF"){
 
-    post = `\n\nmc = mcscf.CASSCF(mf, ${ncas}, ${nelecas})\nmc.verbose = 4\n#cas_list = []\n#mo = pyscf.mcscf.sort_mo(mc, init_mo, cas_list)\nemc = mc.mc1step()[0]\nmc.analyze()`;
+    post = `\n\n# CASSCF calculations\nmc = mcscf.CASSCF(mf, ${ncas}, ${nelecas})\nmc.verbose = 4\n#cas_list = []\n#mo = pyscf.mcscf.sort_mo(mc, init_mo, cas_list)\nemc = mc.mc1step()[0]\nmc.analyze()`;
 
   } else if(method2==="CASCI"){
 
@@ -691,7 +683,7 @@ if(method2==="MP2"){
 
   if(["CASSCF", "CASCI", "NEVPT2"].includes(method2)){
 
-    moldenExport += `\n\n\n# CASSCF/CASCI optimized orbitals; no SCF energy assigned to them\nmolden.from_mo(mf.mol, 'casscf.molden', mc.mo_coeff)`;
+    moldenExport += `\n\n\n# CASSCF/CASCI optimized orbitals\nmolden.from_mo(mf.mol, 'casscf.molden', mc.mo_coeff)`;
 
   }
 
@@ -702,8 +694,6 @@ if(method2==="MP2"){
       post += `\n\n# Geometry optimization\nmol_eq = optimize(mf)`;
 
     }
-
-    imports.push("import pyscf\npyscf.lib.num_threads(" + document.getElementById("threads").value + ")");
 
     const code = `${imports.join("\n")}\n\n${commonMolCode()}\n\n${body}${post}${moldenExport}\n`;
 
