@@ -665,13 +665,7 @@
 
             entries.length &&
 
-            (
-
-              entries.length >= 4 ||
-
-              rowWidth + 28 + entryWidth > PW
-
-            )
+            rowWidth + 28 + entryWidth > PW
 
           ) {
 
