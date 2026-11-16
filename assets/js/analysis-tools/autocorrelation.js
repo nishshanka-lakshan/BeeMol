@@ -185,6 +185,9 @@
             <option value="bottom">Bottom center</option>
           </select>
         </label>
+        <label>Legend entry gap (px)
+          <input id="plotLegendGap" type="number" min="0" max="100" step="1" value="8">
+        </label>
         <label>Legend horizontal offset (px)
           <input id="plotLegendX" type="number" step="5" value="0">
         </label>
@@ -643,6 +646,8 @@
 
 
 
+      const legendGap = setting('plotLegendGap', 8, 0, 100);
+      const legendTextOffset = 32;
       const legendRows = [];
 
       let entries = [];
@@ -655,7 +660,7 @@
 
         for (const dataset of shown) {
 
-          const entryWidth = 42 +
+          const entryWidth = legendTextOffset +
 
             measure.measureText(dataset.label).width;
 
@@ -665,7 +670,7 @@
 
             entries.length &&
 
-            rowWidth + 28 + entryWidth > PW
+            rowWidth + legendGap + entryWidth > PW
 
           ) {
 
@@ -681,7 +686,7 @@
 
           rowWidth +=
 
-            (entries.length ? 28 : 0) + entryWidth;
+            (entries.length ? legendGap : 0) + entryWidth;
 
 
 
@@ -1025,7 +1030,7 @@
 
           svg += `
 
-            <path d="M${x} ${y - 5}h32"
+            <path d="M${x} ${y - 5}h24"
 
                   stroke="${dataset.color}"
 
@@ -1039,7 +1044,7 @@
 
 
 
-            <text x="${x + 42}" y="${y}" font-size="${legendFontSize}" font-weight="${fontWeight('plotLegendFontBold')}">
+            <text x="${x + legendTextOffset}" y="${y}" font-size="${legendFontSize}" font-weight="${fontWeight('plotLegendFontBold')}">
 
               ${esc(dataset.label)}
 
@@ -1049,7 +1054,7 @@
 
 
 
-          x += entry.width + 28;
+          x += entry.width + legendGap;
 
         }
 

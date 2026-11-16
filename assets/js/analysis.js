@@ -480,7 +480,7 @@
       plotGroup('Axis numbers', axisFields);
 
       const legendOptions = document.createElement('div'); legendOptions.className = 'compact-legend-options';
-      legendOptions.append(...['plotLegendPosition', 'plotLegendX', 'plotLegendY', 'plotLegendLineWidth'].map(controlLabel));
+      legendOptions.append(...['plotLegendPosition', 'plotLegendX', 'plotLegendY', 'plotLegendLineWidth', 'plotLegendGap'].map(controlLabel));
       const spectrumLegendLabel = controlLabel('spectrumLegend');
       spectrumLegendLabel.classList.add('spectrum-legend-name');
       legendOptions.append(spectrumLegendLabel);
