@@ -630,7 +630,7 @@
 
 
 
-      const L = options.target ? 160 : 100;
+      const L = 100;
 
       const W = L + PW + 50;
 
@@ -657,7 +657,12 @@
 
 
       const legendGap = setting('plotLegendGap', 8, 0, 100);
-      const legendTextOffset = setting('plotLegendTextOffset', 32, 28, 100);
+      // Show several repeats so dashed and dotted samples stay recognizable.
+      const legendSampleLength = shown.some(dataset => dataset.dash)
+        ? Math.max(24, Math.max(2, legendLineWidth) * 15) : 24;
+      const legendTextOffset = Math.max(
+        setting('plotLegendTextOffset', 32, 28, 100), legendSampleLength + 8
+      );
       const legendMaxColumns = Math.round(setting('plotLegendMaxColumns', 100, 1, 100));
       const entryFontSize = dataset => Number.isFinite(dataset.legendFontSize)
         ? Math.max(8, Math.min(48, dataset.legendFontSize)) : legendFontSize;
@@ -918,7 +923,7 @@
 
 
 
-        <text transform="translate(${options.target ? L - 90 : 25} ${T + PH / 2}) rotate(-90)"
+        <text transform="translate(25 ${T + PH / 2}) rotate(-90)"
 
               text-anchor="middle" font-size="${yLabelFontSize}"
                font-weight="${fontWeight('plotYLabelFontBold')}">
@@ -1043,7 +1048,7 @@
 
           svg += `
 
-            <path d="M${x} ${y - 5}h24"
+            <path d="M${x} ${y - 5}h${legendSampleLength}"
 
                   stroke="${dataset.color}"
 

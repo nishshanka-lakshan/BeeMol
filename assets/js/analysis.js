@@ -583,7 +583,7 @@
         ['plotTransform', 'none'], ['plotTwoTone', '', false], ['plotLegend', '', true],
         ['plotXMin', ''], ['plotXMax', ''], ['plotYMin', ''], ['plotYMax', '1'],
         ['plotBoxWidth', '1200'], ['plotBoxHeight', '300'],
-        ['plotLegendPosition', 'inside-top-right'], ['plotLegendX', '0'], ['plotLegendY', '0']
+        ['plotLegendPosition', 'top'], ['plotLegendX', '0'], ['plotLegendY', '0']
       ]) analyticalStyle[id] = { value, checked };
       const analyticalFields = $('analysisEnergyPanel').querySelector('.analysis-individual-style');
       for (const [id, name] of [
