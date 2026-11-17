@@ -1106,7 +1106,7 @@
 
 
 
-  function svgText() {
+  function exportFigure() {
 
     const svg = $('analysisPlot').querySelector('svg');
 
@@ -1121,8 +1121,8 @@
 
 
     const copy = svg.cloneNode(true);
-    if ($('analysisPlotType')?.value === 'autocorrelation-phase') {
-      // Export the full figure independently of the comparison layout and zoom.
+    {
+      // Export every plot independently of the display layout and figure zoom.
       const viewBox = svg.dataset.fullViewBox || svg.getAttribute('viewBox');
       const [, , width, height] = viewBox.split(/\s+/).map(Number);
       copy.setAttribute('viewBox', viewBox);
@@ -1138,7 +1138,7 @@
         text.setAttribute('font-size', text.dataset.originalFontSize);
       });
     }
-    return new XMLSerializer().serializeToString(copy);
+    return copy;
 
   }
 
@@ -1178,7 +1178,7 @@
 
       download(
 
-        new Blob([svgText()], {
+        new Blob([new XMLSerializer().serializeToString(exportFigure())], {
 
           type: 'image/svg+xml;charset=utf-8'
 
@@ -1214,9 +1214,9 @@
 
     try {
 
-      const svg = $('analysisPlot').querySelector('svg');
+      const svg = exportFigure();
 
-      const text = svgText();
+      const text = new XMLSerializer().serializeToString(svg);
 
 
 
