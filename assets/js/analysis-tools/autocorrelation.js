@@ -613,6 +613,14 @@
       const line = setting('plotWidth', 3.0, 0.5, 8);
 
       const legendLineWidth = setting('plotLegendLineWidth', 3.0, 0.2, 10);
+      // Keep visible gaps even when users increase the curve or legend thickness.
+      const dashPattern = (dash, width) => {
+        if (!dash) return '';
+        const unit = Math.max(2, width);
+        if (dash === '2 4' || dash === '1 6') return `0 ${unit * 3.5}`;
+        if (dash === '8 4' || dash === '10 6') return `${unit * 3} ${unit * 3}`;
+        return dash;
+      };
 
 
 
@@ -956,8 +964,7 @@
                   stroke-width="${line * 2.5}"
                   ${options.target ? 'vector-effect="non-scaling-stroke"' : ''}
 
-                  stroke-dasharray="${dataset.dash}"
-                  ${dataset.dash === '1 6' ? 'stroke-linecap="round"' : ''}
+                  stroke-dasharray="${dashPattern(dataset.dash, line)}"
 
                   stroke-linecap="round"
 
@@ -980,8 +987,7 @@
                 stroke-width="${line}"
                 ${options.target ? 'vector-effect="non-scaling-stroke"' : ''}
 
-                stroke-dasharray="${dataset.dash}"
-                  ${dataset.dash === '1 6' ? 'stroke-linecap="round"' : ''}
+                stroke-dasharray="${dashPattern(dataset.dash, line)}"
 
                 stroke-linecap="round"
 
@@ -1045,7 +1051,7 @@
 
                   stroke-linecap="round"
 
-                  stroke-dasharray="${dataset.dash}"
+                  stroke-dasharray="${dashPattern(dataset.dash, legendLineWidth)}"
 
                   fill="none"/>
 
