@@ -375,12 +375,18 @@
 
       color.oninput = () => {
 
+        if (phaseMode()) return;
         dataset.color = color.value;
 
         draw();
 
       };
 
+      color.onchange = () => {
+        if (!phaseMode()) return;
+        dataset.color = color.value;
+        renderAnalytical();
+      };
 
 
       const style = document.createElement('select');
@@ -885,7 +891,7 @@
           for (const [key, title, type] of [['label', 'Name', 'text'], ['color', 'Color', 'color']]) {
             const label = document.createElement('label'); label.textContent = title;
             const input = document.createElement('input'); input.type = type; input.value = style[key];
-            input.addEventListener('input', () => {
+            input.addEventListener(type === 'color' ? 'change' : 'input', () => {
               style[key] = input.value;
               if (styleKey === 'total' && key === 'label') analyticalLegendName.value = input.value;
               renderAnalytical();
@@ -958,6 +964,8 @@
           analyticalPreview.replaceChildren();
           return;
         }
+        const yMinimum = analyticalStyle.plotYMin;
+        yMinimum.placeholder = showContributions ? 'Auto' : '0';
         autocorrelation.draw({
           datasets, target: analyticalPreview,
           settings: showContributions ? {
@@ -969,7 +977,10 @@
             plotLegendTextOffset: { value: '48' },
             plotXTickFontSize: { value: '16' }, plotYTickFontSize: { value: '16' },
             plotXDecimals: { value: '0' }, plotYDecimals: { value: '1' }
-          } : analyticalStyle,
+          } : {
+            ...analyticalStyle,
+            plotYMin: { value: yMinimum.value || '0' }
+          },
           onCoordinates: coordinates => {
             analyticalCoordinates = coordinates;
             updateAnalyticalMarker();
