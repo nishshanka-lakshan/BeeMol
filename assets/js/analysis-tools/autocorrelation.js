@@ -396,6 +396,19 @@
 
 
 
+
+
+
+  // ------------------------------------------------------------
+
+  // Autocorrelation plot
+
+  // ------------------------------------------------------------
+
+
+
+  function draw(options = {}) {
+    const $ = id => options.settings?.[id] || document.getElementById(id);
   function setting(id, fallback, min, max) {
 
     const input = $(id);
@@ -426,18 +439,6 @@
 
   }
 
-
-
-  // ------------------------------------------------------------
-
-  // Autocorrelation plot
-
-  // ------------------------------------------------------------
-
-
-
-  function draw(options = {}) {
-    const $ = id => options.settings?.[id] || document.getElementById(id);
     if (!options.datasets && $('analysisPlotType')?.value === 'spectrum') { window.BeeMolSpectrumRedraw?.(); return; }
     if (!options.datasets && $('analysisPlotType')?.value === 'autocorrelation-phase' && redrawPhase) { redrawPhase(); return; }
 
@@ -459,7 +460,7 @@
 
             timeAU * AU_TO_FS,
 
-            transform === 'abs'
+            dataset.allowGaps && value === null ? null : transform === 'abs'
 
               ? Math.abs(value)
 
@@ -510,6 +511,7 @@
       for (const dataset of shown) {
 
         for (const [x, y] of dataset.points) {
+          if (dataset.allowGaps && y === null) continue;
 
           if (!Number.isFinite(x) || !Number.isFinite(y)) {
 
@@ -647,7 +649,11 @@
 
 
       const legendGap = setting('plotLegendGap', 8, 0, 100);
-      const legendTextOffset = 32;
+      const legendTextOffset = setting('plotLegendTextOffset', 32, 28, 100);
+      const legendMaxColumns = Math.round(setting('plotLegendMaxColumns', 100, 1, 100));
+      const entryFontSize = dataset => Number.isFinite(dataset.legendFontSize)
+        ? Math.max(8, Math.min(48, dataset.legendFontSize)) : legendFontSize;
+      const maxLegendFontSize = Math.max(legendFontSize, ...shown.map(entryFontSize));
       const legendRows = [];
 
       let entries = [];
@@ -660,6 +666,7 @@
 
         for (const dataset of shown) {
 
+          measure.font = `${fontWeight('plotLegendFontBold')} ${entryFontSize(dataset)}px Arial`;
           const entryWidth = legendTextOffset +
 
             measure.measureText(dataset.label).width;
@@ -670,7 +677,7 @@
 
             entries.length &&
 
-            rowWidth + legendGap + entryWidth > PW
+            (entries.length >= legendMaxColumns || rowWidth + legendGap + entryWidth > PW)
 
           ) {
 
@@ -719,10 +726,10 @@
       if (!Number.isFinite(legendOffsetX) || !Number.isFinite(legendOffsetY)) {
         throw Error('Legend offsets must be numbers.');
       }
-      const legendRowHeight = Math.max(28, legendFontSize + 10);
-      const legendStartY = Math.max(65, legendFontSize + 45);
+      const legendRowHeight = Math.max(28, maxLegendFontSize + 10);
+      const legendStartY = Math.max(65, maxLegendFontSize + 45);
       const legendHeight = legendRows.length
-        ? legendFontSize + (legendRows.length - 1) * legendRowHeight
+        ? maxLegendFontSize + (legendRows.length - 1) * legendRowHeight
         : 0;
       const isTopLegend = ['top', 'top-left', 'top-right'].includes(legendPosition);
       const T = isTopLegend && legendRows.length
@@ -922,17 +929,15 @@
 
       for (const dataset of shown) {
 
-        const path = dataset.points
-
-          .map(([x, y], index) =>
-
-            (dataset.samplesOnly ?? options.samplesOnly)
-              ? `M${X(x).toFixed(3)} ${Y(y).toFixed(3)}h0`
-              : `${index ? 'L' : 'M'}${X(x).toFixed(3)} ${Y(y).toFixed(3)}`
-
-          )
-
-          .join(' ');
+        let startSegment = true;
+        const path = dataset.points.map(([x, y]) => {
+          if (dataset.allowGaps && y === null) { startSegment = true; return ''; }
+          const command = startSegment ? 'M' : 'L';
+          startSegment = false;
+          return (dataset.samplesOnly ?? options.samplesOnly)
+            ? `M${X(x).toFixed(3)} ${Y(y).toFixed(3)}h0`
+            : `${command}${X(x).toFixed(3)} ${Y(y).toFixed(3)}`;
+        }).join(' ');
 
 
 
@@ -952,6 +957,7 @@
                   ${options.target ? 'vector-effect="non-scaling-stroke"' : ''}
 
                   stroke-dasharray="${dataset.dash}"
+                  ${dataset.dash === '1 6' ? 'stroke-linecap="round"' : ''}
 
                   stroke-linecap="round"
 
@@ -975,6 +981,7 @@
                 ${options.target ? 'vector-effect="non-scaling-stroke"' : ''}
 
                 stroke-dasharray="${dataset.dash}"
+                  ${dataset.dash === '1 6' ? 'stroke-linecap="round"' : ''}
 
                 stroke-linecap="round"
 
@@ -1044,7 +1051,7 @@
 
 
 
-            <text x="${x + legendTextOffset}" y="${y}" font-size="${legendFontSize}" font-weight="${fontWeight('plotLegendFontBold')}">
+            <text x="${x + legendTextOffset}" y="${y}" font-size="${entryFontSize(dataset)}" font-weight="${fontWeight('plotLegendFontBold')}">
 
               ${esc(dataset.label)}
 
@@ -1106,9 +1113,9 @@
 
 
 
-  function exportFigure() {
+  function exportFigure(target = $('analysisPlot')) {
 
-    const svg = $('analysisPlot').querySelector('svg');
+    const svg = target.querySelector('svg');
 
 
 
@@ -1172,19 +1179,19 @@
 
 
 
-  function exportSVG() {
+  function exportSVG(options = {}) {
 
     try {
 
       download(
 
-        new Blob([new XMLSerializer().serializeToString(exportFigure())], {
+        new Blob([new XMLSerializer().serializeToString(exportFigure(options.plotTarget))], {
 
           type: 'image/svg+xml;charset=utf-8'
 
         }),
 
-        `${exportName()}.svg`
+        `${options.filename || exportName()}.svg`
 
       );
 
@@ -1204,9 +1211,9 @@
 
 
 
-  function exportPNG() {
+  function exportPNG(options = {}) {
 
-    const button = $('analysisPNG');
+    const button = options.button || $('analysisPNG');
 
     let url;
 
@@ -1214,7 +1221,7 @@
 
     try {
 
-      const svg = exportFigure();
+      const svg = exportFigure(options.plotTarget);
 
       const text = new XMLSerializer().serializeToString(svg);
 
@@ -1341,7 +1348,7 @@
 
               blob,
 
-              `${exportName()}_high_resolution.png`
+              `${options.filename || exportName()}_high_resolution.png`
 
             );
 

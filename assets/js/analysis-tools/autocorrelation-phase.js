@@ -23,6 +23,13 @@
     const imaginary = phases.reduce((sum, phase, i) => sum + weights[i] * Math.sin(phase), 0);
     return { phases, degrees: phases.map(p => Math.atan2(Math.sin(p), Math.cos(p)) * 180 / Math.PI), real, imaginary, magnitude: Math.hypot(real, imaginary) };
   }
+  function signedContributions(energies, weights, time, total = calculate(energies, weights, time)) {
+    if (total.magnitude <= 1e-12) return energies.map(() => null);
+    return energies.map((energy, index) => {
+      const phase = -energy * time / HBAR;
+      return weights[index] * (Math.cos(phase) * total.real + Math.sin(phase) * total.imaginary) / total.magnitude;
+    });
+  }
   function complexAnalysis(energies, time) {
     const counts = new Map();
     energies.forEach(energy => counts.set(energy, (counts.get(energy) || 0) + 1));
@@ -46,6 +53,7 @@
 
   window.BeeMolAutocorrelationPhase = {
     calculate,
+    signedContributions,
     parseEnergies: text => numbers(text, 'Energies'),
     complexAnalysis,
 
@@ -72,6 +80,7 @@
           <section class="phase-player" aria-labelledby="phasePlayerHeading">
             <div class="phase-player-heading"><h3 id="phasePlayerHeading">Phase movie</h3><span>PLAYER</span></div>
             <label class="phase-player-loop"><input id="phaseMovieShowAnalytical" type="checkbox" checked> Show analytical autocorrelation</label>
+            <label class="phase-player-loop"><input id="phaseMovieShowContributions" type="checkbox" checked> Show signed state contributions dₙ(t) + total |A(t)|</label>
             <label class="phase-player-loop"><input id="phaseMovieShowPhase" type="checkbox" checked> Show phase figure</label>
             <output id="phaseMovieReadout" class="phase-player-clock" aria-live="off">0.000000 fs</output>
             <label class="phase-player-timeline">Timeline<input id="phaseMovieTimeline" type="range" min="0" max="10000" step="1" value="0"></label>

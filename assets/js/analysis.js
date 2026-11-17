@@ -425,7 +425,10 @@
 
 
 
-      box.append(title, label, color, style);
+      const legendLabel = document.createElement('label');
+      legendLabel.textContent = 'Real-time legend name';
+      legendLabel.append(label);
+      box.append(title, legendLabel, color, style);
 
       host.append(box);
 
@@ -516,11 +519,13 @@
       boldLabel.hidden = true;
       for (const node of boldLabel.childNodes) if (node.nodeType === Node.TEXT_NODE) node.textContent = ' Bold';
 
-      const theoretical = document.createElement('section');
+      const theoretical = document.createElement('details');
+      theoretical.className = 'plot-disclosure';
       theoretical.id = 'analysisTheoreticalControls';
       theoretical.hidden = true;
       theoretical.setAttribute('aria-labelledby', 'analyticalHeading');
-      theoretical.innerHTML = `<header class="analytical-heading"><span>ENERGY MODEL</span><h3 id="analyticalHeading">Analytical autocorrelation</h3></header>
+      theoretical.innerHTML = `<summary id="analyticalHeading">Analytical autocorrelation</summary>
+        <header class="analytical-heading"><span>ENERGY MODEL</span></header>
         <p class="analytical-formula">A(t) = (1/N) Σ exp(−i Eₙ t / ℏ)</p>
         <p class="mini-note">Equal population per state. Repeat energies for degeneracy. ℏ = 0.6582119569 eV·fs.</p>
         <p class="mini-note">Uses the energies entered in the left sidebar. End time and time step apply only to the analytical solution. Uploaded CSV curves retain their original time points and ranges.</p>
@@ -537,6 +542,12 @@
           <button id="analyticalCSV" type="button">Download CSV</button>
         </div>`;
       $('analysisEnergyPanel').append(theoretical);
+      const stateDropdown = document.createElement('details');
+      stateDropdown.className = 'compact-plot-group plot-disclosure';
+      const stateSummary = document.createElement('summary'); stateSummary.textContent = 'Signed cationic state contributions';
+      const stateControls = document.createElement('div'); stateControls.className = 'analytical-state-controls';
+      stateDropdown.append(stateSummary, $('phaseMovieShowContributions').closest('label'), stateControls);
+      $('analysisEnergyPanel').append(stateDropdown);
       const datasetActions = document.createElement('div');
       datasetActions.className = 'analysis-dataset-actions';
       $('analysisClear').before(datasetActions);
@@ -546,15 +557,33 @@
       const analyticalOptions = document.createElement('fieldset');
       analyticalOptions.className = 'analysis-individual-style';
       const analyticalOptionsHeading = document.createElement('legend');
-      analyticalOptionsHeading.textContent = 'Analytical plot options';
+      analyticalOptionsHeading.textContent = 'Plot settings';
       analyticalOptions.append(analyticalOptionsHeading);
-      $('analysisEnergyPanel').append(analyticalOptions);
+      const analyticalOptionsDropdown = document.createElement('details');
+      analyticalOptionsDropdown.className = 'compact-plot-group plot-disclosure';
+      const analyticalOptionsSummary = document.createElement('summary');
+      analyticalOptionsSummary.textContent = 'Plot settings';
+      analyticalOptionsHeading.hidden = true;
+      analyticalOptionsDropdown.append(analyticalOptionsSummary, analyticalOptions);
+      $('analysisEnergyPanel').append(analyticalOptionsDropdown);
+      const analyticalLegendLabel = document.createElement('label');
+      analyticalLegendLabel.textContent = 'Analytical legend name';
+      const analyticalLegendName = document.createElement('input');
+      analyticalLegendName.id = 'analyticalLegendName';
+      analyticalLegendName.value = 'Analytical |A(t)|';
+      analyticalLegendName.addEventListener('input', () => {
+        if (stateStyles.total) stateStyles.total.label = analyticalLegendName.value;
+        renderAnalytical();
+        syncStateControls();
+      });
+      analyticalLegendLabel.append(analyticalLegendName);
+      analyticalOptions.prepend(analyticalLegendLabel);
       // Analytical-only options must not read shared plot controls.
       for (const [id, value, checked] of [
         ['plotTransform', 'none'], ['plotTwoTone', '', false], ['plotLegend', '', true],
-        ['plotXMin', ''], ['plotXMax', ''], ['plotYMin', '0'], ['plotYMax', '1'],
+        ['plotXMin', ''], ['plotXMax', ''], ['plotYMin', ''], ['plotYMax', '1'],
         ['plotBoxWidth', '1200'], ['plotBoxHeight', '300'],
-        ['plotLegendPosition', 'top'], ['plotLegendX', '0'], ['plotLegendY', '0']
+        ['plotLegendPosition', 'inside-top-right'], ['plotLegendX', '0'], ['plotLegendY', '0']
       ]) analyticalStyle[id] = { value, checked };
       const analyticalFields = $('analysisEnergyPanel').querySelector('.analysis-individual-style');
       for (const [id, name] of [
@@ -582,6 +611,19 @@
         label.append(input, document.createTextNode(name));
         analyticalFields.append(label);
       }
+      const analyticalExports = document.createElement('div');
+      analyticalExports.className = 'analysis-actions';
+      for (const format of ['SVG', 'PNG']) {
+        const button = document.createElement('button');
+        button.id = `analytical${format}`;
+        button.type = 'button';
+        button.textContent = `Download ${format}`;
+        button.onclick = () => autocorrelation[`export${format}`]({
+          plotTarget: $('analyticalPreview'), filename: 'analytical_autocorrelation', button
+        });
+        analyticalExports.append(button);
+      }
+      $('analysisEnergyPanel').append(analyticalExports);
       for (const id of ['phaseMovieFontTarget', 'phaseMovieFontSize']) $(id).closest('label').hidden = true;
       const analyticalPreview = document.createElement('div');
       analyticalPreview.id = 'analyticalPreview';
@@ -661,7 +703,7 @@
         figureArea.style.transform = movie ? `scale(${figureZoom})` : 'none';
         const setHidden = (element, hidden) => { if (element.hidden !== hidden) element.hidden = hidden; };
         if (movie) {
-          setHidden(analyticalPreview, !$('phaseMovieShowAnalytical').checked || !analyticalPreview.querySelector('svg'));
+          setHidden(analyticalPreview, !($('phaseMovieShowAnalytical').checked || $('phaseMovieShowContributions').checked) || !analyticalPreview.querySelector('svg'));
           setHidden($('analysisPlot'), !$('phaseMovieShowPhase').checked);
         } else {
           const analytical = phaseMode() && selectedFigureView === 'analytical';
@@ -717,11 +759,9 @@
           g.svg.style.width = `${g.width * scale}px`;
           g.svg.style.height = `${g.height * scale}px`;
           g.svg.style.marginLeft = `${left * axisLength - g.left * scale}px`;
-          g.svg.querySelectorAll('text').forEach(text => {
-            if (!text.dataset.originalFontSize) {
-              text.dataset.originalFontSize = String(parseFloat(getComputedStyle(text).fontSize));
-            }
-            text.setAttribute('font-size', String(Number(text.dataset.originalFontSize) / scale));
+          // Keep text at its measured SVG size so legend spacing scales with it.
+          g.svg.querySelectorAll('text[data-original-font-size]').forEach(text => {
+            text.setAttribute('font-size', text.dataset.originalFontSize);
           });
         }
       }
@@ -741,19 +781,21 @@
         updateAnalyticalMarker();
         if (leavingMovie) phase.stopAnimation();
         if (next === 'movie') phase.seekMovie(Number($('phaseMovieCurrent').value));
-        if (phaseMode() && (next === 'analytical' || (next === 'movie' && $('phaseMovieShowAnalytical').checked)) && !analyticalPreview.querySelector('svg')) {
+        if (phaseMode() && (next === 'analytical' || (next === 'movie' && ($('phaseMovieShowAnalytical').checked || $('phaseMovieShowContributions').checked))) && !analyticalPreview.querySelector('svg')) {
           generateAnalytical();
         }
+        renderAnalytical();
         alignMovieAxes();
       });
-      for (const id of ['phaseMovieShowAnalytical', 'phaseMovieShowPhase']) {
+      for (const id of ['phaseMovieShowAnalytical', 'phaseMovieShowContributions', 'phaseMovieShowPhase']) {
         $(id).addEventListener('change', () => {
-          if (id === 'phaseMovieShowAnalytical' && $(id).checked && !analyticalPreview.querySelector('svg')) generateAnalytical();
+          if ($(id).checked && id !== 'phaseMovieShowPhase' && !analyticalPreview.querySelector('svg')) generateAnalytical();
+          renderAnalytical();
           alignMovieAxes();
         });
       }
       $('analysisMovieTab').addEventListener('click', () => {
-        if ($('phaseMovieShowAnalytical').checked && !analyticalPreview.querySelector('svg')) generateAnalytical();
+        if (($('phaseMovieShowAnalytical').checked || $('phaseMovieShowContributions').checked) && !analyticalPreview.querySelector('svg')) generateAnalytical();
         alignMovieAxes();
       });
 
@@ -782,6 +824,91 @@
       }
 
       let analyticalDataset = null;
+      let stateContributionDatasets = [];
+      const stateStyles = [];
+      let stateLegendFontSize = 23;
+      let stateLineWidth = 5;
+      let selectedStateControl = 0;
+      function syncStateControls() {
+        stateControls.replaceChildren();
+        const fontLabel = document.createElement('label'); fontLabel.textContent = 'Font size for all labels (px)';
+        const fontInput = document.createElement('input');
+        Object.assign(fontInput, { type: 'number', min: '8', max: '48', step: '1', value: stateLegendFontSize });
+        fontInput.addEventListener('input', () => {
+          if (!Number.isFinite(fontInput.valueAsNumber)) return;
+          stateLegendFontSize = Math.max(8, Math.min(48, fontInput.valueAsNumber));
+          renderAnalytical();
+        });
+        fontLabel.append(fontInput); stateControls.append(fontLabel);
+        const widthLabel = document.createElement('label'); widthLabel.textContent = 'Line width for all curves (px)';
+        const widthInput = document.createElement('input');
+        Object.assign(widthInput, { type: 'number', min: '0.5', max: '8', step: '0.5', value: stateLineWidth });
+        widthInput.addEventListener('input', () => {
+          if (!Number.isFinite(widthInput.valueAsNumber)) return;
+          stateLineWidth = Math.max(0.5, Math.min(8, widthInput.valueAsNumber));
+          renderAnalytical();
+        });
+        widthLabel.append(widthInput);
+        const sharedControls = document.createElement('div');
+        sharedControls.className = 'analytical-state-shared-controls';
+        sharedControls.append(fontLabel, widthLabel);
+        stateControls.append(sharedControls);
+        const editableDatasets = [...stateContributionDatasets, analyticalDataset].filter(Boolean);
+        const pickerLabel = document.createElement('label'); pickerLabel.textContent = 'Pick state';
+        const picker = document.createElement('select');
+        editableDatasets.forEach((dataset, index) => {
+          const option = document.createElement('option'); option.value = String(index);
+          option.textContent = index === stateContributionDatasets.length ? 'Total |A(t)|' : `State ${index + 1}`;
+          picker.append(option);
+        });
+        selectedStateControl = Math.min(selectedStateControl, Math.max(0, editableDatasets.length - 1));
+        picker.value = String(selectedStateControl);
+        pickerLabel.append(picker); stateControls.append(pickerLabel);
+        const editor = document.createElement('div'); stateControls.append(editor);
+        function showStateEditor() {
+          editor.replaceChildren();
+          const index = selectedStateControl;
+          const dataset = editableDatasets[index];
+          if (!dataset) return;
+          const styleKey = index === stateContributionDatasets.length ? 'total' : index;
+          const style = stateStyles[styleKey] ||= { label: index === stateContributionDatasets.length ? analyticalLegendName.value : dataset.label, color: dataset.color, dash: '', visible: true };
+          const group = document.createElement('fieldset');
+          const heading = document.createElement('legend'); heading.textContent = index === stateContributionDatasets.length ? 'Total' : `State ${index + 1}`;
+          group.append(heading);
+          const visibilityLabel = document.createElement('label');
+          visibilityLabel.className = 'state-visibility-toggle';
+          const visibilityInput = document.createElement('input'); visibilityInput.type = 'checkbox';
+          visibilityInput.checked = style.visible !== false;
+          visibilityInput.addEventListener('change', () => { style.visible = visibilityInput.checked; renderAnalytical(); });
+          visibilityLabel.append(visibilityInput, document.createTextNode('Show contribution'));
+          group.append(visibilityLabel);
+          for (const [key, title, type] of [['label', 'Name', 'text'], ['color', 'Color', 'color']]) {
+            const label = document.createElement('label'); label.textContent = title;
+            const input = document.createElement('input'); input.type = type; input.value = style[key];
+            input.addEventListener('input', () => {
+              style[key] = input.value;
+              if (styleKey === 'total' && key === 'label') analyticalLegendName.value = input.value;
+              renderAnalytical();
+            });
+            label.append(input); group.append(label);
+          }
+          const lineStyleLabel = document.createElement('label'); lineStyleLabel.textContent = 'Line style';
+          const lineStyle = document.createElement('select');
+          for (const [value, name] of [['', 'Solid'], ['10 6', 'Dashed'], ['1 6', 'Dotted']]) {
+            const option = document.createElement('option'); option.value = value; option.textContent = name;
+            lineStyle.append(option);
+          }
+          lineStyle.value = style.dash || '';
+          lineStyle.addEventListener('change', () => { style.dash = lineStyle.value; renderAnalytical(); });
+          lineStyleLabel.append(lineStyle); group.append(lineStyleLabel);
+          editor.append(group);
+        }
+        picker.addEventListener('change', () => {
+          selectedStateControl = Number(picker.value);
+          showStateEditor();
+        });
+        showStateEditor();
+      }
       let analyticalCoordinates = null;
       let analyticalEnergies = [];
       let markerTime = 0;
@@ -805,10 +932,10 @@
         let magnitude = window.BeeMolAutocorrelationPhase.calculate(
           analyticalEnergies, analyticalEnergies.map(() => 1 / analyticalEnergies.length), markerTime
         ).magnitude;
-        if (analyticalStyle.plotTransform.value === 'square') magnitude *= magnitude;
+        if (!$('phaseMovieShowContributions').checked && analyticalStyle.plotTransform.value === 'square') magnitude *= magnitude;
         const points = analyticalDataset.points;
         const inRange = markerTime >= points[0][0] * AU_TO_FS && markerTime <= points[points.length - 1][0] * AU_TO_FS;
-        dot.style.display = selectedFigureView === 'movie' && inRange && markerTime >= xmin && markerTime <= xmax && magnitude >= ymin && magnitude <= ymax ? '' : 'none';
+        dot.style.display = !($('phaseMovieShowContributions').checked && stateStyles.total?.visible === false) && selectedFigureView === 'movie' && inRange && markerTime >= xmin && markerTime <= xmax && magnitude >= ymin && magnitude <= ymax ? '' : 'none';
         dot.setAttribute('cx', X(markerTime));
         dot.setAttribute('cy', Y(magnitude));
         dot.setAttribute('aria-label', `Movie time ${markerTime.toFixed(6)} fs`);
@@ -821,8 +948,10 @@
       $('phaseMovieDotSize').addEventListener('input', updateAnalyticalMarker);
       renderAnalytical = () => {
         if (!phaseMode()) return;
+        const showContributions = $('phaseMovieShowContributions').checked;
         const datasets = [
-          ...(analyticalDataset ? [analyticalDataset] : []),
+          ...(showContributions ? stateContributionDatasets.map((dataset, index) => ({ ...dataset, ...stateStyles[index] })) : []),
+          ...(analyticalDataset ? [showContributions ? { ...analyticalDataset, samplesOnly: false, ...stateStyles.total, label: analyticalLegendName.value } : { ...analyticalDataset, label: analyticalLegendName.value }] : []),
           ...series
         ];
         if (!datasets.some(dataset => dataset.visible)) {
@@ -831,12 +960,21 @@
         }
         autocorrelation.draw({
           datasets, target: analyticalPreview,
-          settings: analyticalStyle,
+          settings: showContributions ? {
+            ...analyticalStyle,
+            plotTransform: { value: 'none' },
+            plotLegendGap: { value: '48' }, plotLegendFontSize: { value: String(stateLegendFontSize) },
+            plotLegendLineWidth: { value: String(stateLineWidth) }, plotWidth: { value: String(stateLineWidth) },
+            plotLegendMaxColumns: { value: '100' },
+            plotLegendTextOffset: { value: '48' },
+            plotXTickFontSize: { value: '16' }, plotYTickFontSize: { value: '16' },
+            plotXDecimals: { value: '0' }, plotYDecimals: { value: '1' }
+          } : analyticalStyle,
           onCoordinates: coordinates => {
             analyticalCoordinates = coordinates;
             updateAnalyticalMarker();
           },
-          title: $('analyticalFigureTitle').value, xLabel: 'Time (fs)', yLabel: '|A(t)|'
+          title: $('analyticalFigureTitle').value, xLabel: 'Time (fs)', yLabel: showContributions ? 'dₙ(t) and |A(t)|' : '|A(t)|'
         });
         alignMovieAxes();
       };
@@ -850,10 +988,25 @@
             samplesOnly: true,
             points: samples.map(row => [row[0], row[4]])
           };
+          const stateColors = ['#1f77b4', '#ff7f0e', '#2ca02c', '#d62728', '#9467bd', '#8c564b', '#e377c2', '#7f7f7f', '#bcbd22', '#17becf'];
+          stateContributionDatasets = analyticalEnergies.map((energy, index) => ({
+            label: `S${index + 1}`,
+            visible: true, color: stateColors[index % stateColors.length], dash: '',
+            allowGaps: true, points: []
+          }));
+          const weights = analyticalEnergies.map(() => 1 / analyticalEnergies.length);
+          for (const [timeAU, timeFS, real, imaginary, magnitude] of samples) {
+            const contributions = window.BeeMolAutocorrelationPhase.signedContributions(
+              analyticalEnergies, weights, timeFS, { real, imaginary, magnitude }
+            );
+            contributions.forEach((value, index) => stateContributionDatasets[index].points.push([timeAU, value]));
+          }
+          syncStateControls();
           analyticalPreview.hidden = false;
           renderAnalytical();
         } catch (error) {
           analyticalDataset = null;
+          stateContributionDatasets = [];
           analyticalCoordinates = null;
           analyticalEnergies = [];
           renderAnalytical();
