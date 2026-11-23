@@ -842,9 +842,8 @@
         };
         analyticalOverlays.push(dataset);
 
-        const row = document.createElement('details');
-        row.open = true;
-        const legend = document.createElement('summary');
+        const row = document.createElement('fieldset');
+        const legend = document.createElement('legend');
         const fields = document.createElement('div');
         legend.textContent = plotName;
         const nameLabel = document.createElement('label');
@@ -864,6 +863,31 @@
         const energies = document.createElement('textarea');
         energies.rows = 4;
         energyLabel.append(energies);
+
+        const styleFields = document.createElement('div');
+        styleFields.className = 'analytical-overlay-style';
+        styleFields.innerHTML = `
+          <label>Color<input type="color"></label>
+          <label>Line style
+            <select>
+              <option value="">Solid</option>
+              <option value="8 4">Dashed</option>
+              <option value="2 4">Dotted</option>
+            </select>
+          </label>`;
+        const color = styleFields.querySelector('input');
+        const style = styleFields.querySelector('select');
+        color.value = dataset.color;
+        style.value = dataset.dash;
+        color.addEventListener('input', () => {
+          dataset.color = color.value;
+          if (dataset.visible) renderAnalytical();
+        });
+        style.addEventListener('change', () => {
+          dataset.dash = style.value;
+          if (dataset.visible) renderAnalytical();
+        });
+
         const errorMessage = document.createElement('p');
         errorMessage.className = 'mini-note';
         errorMessage.setAttribute('role', 'status');
@@ -897,7 +921,7 @@
         const actions = document.createElement('div');
         actions.className = 'analytical-actions';
         actions.append(apply, remove);
-        fields.append(nameLabel, energyLabel, actions, errorMessage);
+        fields.append(nameLabel, energyLabel, styleFields, actions, errorMessage);
         row.append(legend, fields);
         $('analyticalOverlays').append(row);
         energies.focus();

@@ -697,6 +697,16 @@
 .analysis-sidebar-tabs [role="tab"] { min-width:0; white-space:normal; }
 .analysis-sidebar-tabs { flex-wrap:wrap; }
 .analysis-sidebar-tabs [role="tab"] { flex:1 1 calc(50% - 6px); }
+.phase-analysis-active .analysis-sidebar-tabs {
+  display:grid;
+  grid-template-columns:repeat(2,minmax(0,1fr));
+  grid-auto-rows:1fr;
+}
+.phase-analysis-active .analysis-sidebar-tabs [role="tab"] {
+  display:grid;
+  place-items:center;
+  text-align:center;
+}
 #analysisPhasePanel { padding:14px; }
 .analysis-view-title { display:block; margin-bottom:14px; font-size:12px; color:var(--muted); }
 .analysis-view-title input { display:block; box-sizing:border-box; width:100%; margin-top:6px; }
@@ -1392,8 +1402,16 @@ label + :is(input:not([type="checkbox"]):not([type="radio"]):not([type="hidden"]
 }
 
 .analytical-overlays:not(:empty) { display:grid; gap:8px; margin:8px 0; }
-.analytical-overlays > details { min-width:0; padding:8px; border:1px solid var(--border); border-radius:6px; }
-.analytical-overlays > details > div { display:grid; gap:8px; margin-top:8px; }
+.analytical-overlays > fieldset { min-width:0; margin:0; padding:8px; border:1px solid var(--border); border-radius:6px; }
+.analytical-overlays > fieldset > legend { max-width:100%; overflow-wrap:anywhere; font-size:12px; font-weight:700; }
+.analytical-overlays > fieldset > div { display:grid; gap:8px; }
+.analytical-overlays :is(.analytical-overlay-style, .analytical-actions) {
+  display:grid;
+  grid-template-columns:repeat(2,minmax(0,1fr));
+  gap:8px;
+}
 .analytical-overlays label { display:grid; gap:4px; }
-.analytical-overlays :is(input, textarea) { min-width:0; width:100%; box-sizing:border-box; }
+.analytical-overlays :is(input, select, textarea) { min-width:0; width:100%; box-sizing:border-box; }
+.analytical-overlay-style :is(input[type="color"], select) { height:38px; }
+.analytical-overlay-style input[type="color"] { padding:4px 8px; }
 .analytical-overlays [role="status"]:empty { display:none; }
