@@ -828,15 +828,15 @@
 
       let analyticalDataset = null;
       const analyticalOverlays = [];
-      const overlayColors = ['#d55e00', '#0072b2', '#cc79a7', '#009e73', '#9467bd'];
       let nextOverlay = 1;
       $('analyticalAddCurve').onclick = () => {
         const number = nextOverlay++;
         const plotName = `Additional plot ${number}`;
         const dataset = {
+          analyticalOverlayId: number,
           label: plotName,
-          color: overlayColors[(number - 1) % overlayColors.length],
-          dash: '8 4',
+          color: palette[1],
+          dash: '',
           visible: false,
           points: []
         };
@@ -879,10 +879,16 @@
         const style = styleFields.querySelector('select');
         color.value = dataset.color;
         style.value = dataset.dash;
-        color.addEventListener('input', () => {
+        const updateColor = () => {
+          if (dataset.color === color.value) return;
           dataset.color = color.value;
-          if (dataset.visible) renderAnalytical();
-        });
+          if (!dataset.visible) return;
+          analyticalPreview.querySelectorAll(`[data-analytical-overlay="${number}"]`).forEach(path => {
+            path.setAttribute('stroke', dataset.color);
+          });
+        };
+        color.addEventListener('input', updateColor);
+        color.addEventListener('change', updateColor);
         style.addEventListener('change', () => {
           dataset.dash = style.value;
           if (dataset.visible) renderAnalytical();
@@ -995,7 +1001,7 @@
           const samples = analyticalSamples(settings);
           analyticalEnergies = settings.energies;
           analyticalDataset = {
-            label: 'Analytical |A(t)|', visible: true, color: '#008080', dash: '',
+            label: 'Analytical |A(t)|', visible: true, color: palette[0], dash: '',
             points: samples.map(row => [row[0], row[4]])
           };
           analyticalPreview.hidden = false;

@@ -941,8 +941,12 @@
 
 
 
+      const overlayAttribute = dataset => Number.isInteger(dataset.analyticalOverlayId)
+        ? ` data-analytical-overlay="${dataset.analyticalOverlayId}"`
+        : '';
       for (const dataset of shown) {
 
+        const overlay = overlayAttribute(dataset);
         let startSegment = true;
         const path = dataset.points.map(([x, y]) => {
           if (dataset.verticalSticks) {
@@ -963,7 +967,7 @@
 
           svg += `
 
-            <path d="${path}"
+            <path d="${path}"${overlay}
 
                   fill="none"
 
@@ -988,7 +992,7 @@
 
         svg += `
 
-          <path d="${path}"
+          <path d="${path}"${overlay}
 
                 fill="none"
 
@@ -1053,7 +1057,7 @@
 
           svg += `
 
-            <path d="M${x} ${y - 5}h${legendSampleLength}"
+            <path d="M${x} ${y - 5}h${legendSampleLength}"${overlayAttribute(dataset)}
 
                   stroke="${dataset.color}"
 
