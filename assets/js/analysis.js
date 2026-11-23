@@ -1170,6 +1170,9 @@
           $(id).value = value;
           $(id).checked = checked;
         });
+        if (spectrumMode() && !incomingSettings) {
+          for (const id of ['plotBoxWidth', 'plotBoxHeight']) $(id).value = $(id).defaultValue;
+        }
         $('plotTitle').value = plotTitles[activePlotType];
         spectrum.setVisible(spectrumMode());
         const isPhase = phaseMode();

@@ -944,6 +944,10 @@
 
         let startSegment = true;
         const path = dataset.points.map(([x, y]) => {
+          if (dataset.verticalSticks) {
+            const pixelX = X(x).toFixed(3);
+            return `M${pixelX} ${Y(0).toFixed(3)}V${Y(y).toFixed(3)}`;
+          }
           if (dataset.allowGaps && y === null) { startSegment = true; return ''; }
           const command = startSegment ? 'M' : 'L';
           startSegment = false;

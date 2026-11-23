@@ -1,15 +1,18 @@
 (function () {
   'use strict';
   const HARTREE_TO_EV = 27.211386245988;
-  function calculate(energies, intensities, { method, energyInput = 'hartree', broadening = 0.05, min = 0, max = 30, step = 0.01, shift = 0 } = {}) {
+  const DEFAULT_STICK_COLOR = '#d55e00';
+  function transitions(energies, intensities, { method, energyInput = 'hartree', shift = 0 }) {
     if (!energies.length || !energies.every(Number.isFinite) || !intensities.every(Number.isFinite)) throw Error('Enter finite numeric energies and intensities.');
     if (method === 'qdnevpt2' && energyInput === 'hartree') energies = energies.slice(1).map(e => (e - energies[0]) * HARTREE_TO_EV);
     if (!energies.length || energies.length !== intensities.length) throw Error(method === 'qdnevpt2' && energyInput === 'hartree' ? 'Include the ground-state energy first and provide one intensity per excited transition, omitting the ground-state intensity.' : 'Provide one intensity per transition energy.');
-    if (![broadening, min, max, step].every(Number.isFinite) || broadening <= 0 || step <= 0 || max <= min) throw Error('Broadening and step must be positive; omega maximum must exceed minimum.');
     if (!Number.isFinite(shift)) throw Error('Spectrum shift must be a finite number in eV.');
-    energies = energies.map(energy => energy + shift);
+    return energies.map((energy, index) => [energy + shift, intensities[index]]);
+  }
+  function broaden(sticks, { broadening = 0.05, min = 0, max = 30, step = 0.01 }) {
+    if (![broadening, min, max, step].every(Number.isFinite) || broadening <= 0 || step <= 0 || max <= min) throw Error('Broadening and step must be positive; omega maximum must exceed minimum.');
     const count = Math.ceil((max - min) / step);
-    if (count > 100000 || count * energies.length > 20000000) throw Error('Too many calculation points. Increase omega step or reduce the range.');
+    if (count > 100000 || count * sticks.length > 20000000) throw Error('Too many calculation points. Increase omega step or reduce the range.');
     const points = [];
     for (let i = 0; i < count; i++) {
       const omega = min + i * step;
@@ -17,15 +20,18 @@
       // Imaginary part of sum(I / (omega - E + i * broadening)),
       // followed by -Im(chi) / pi, as in prism.tools.spectrum.plot.
       let chiImaginary = 0;
-      for (let pole = 0; pole < energies.length; pole++) {
-        const delta = omega - energies[pole];
-        chiImaginary += -intensities[pole] * broadening / (delta * delta + broadening * broadening);
+      for (const [energy, intensity] of sticks) {
+        const delta = omega - energy;
+        chiImaginary += -intensity * broadening / (delta * delta + broadening * broadening);
       }
       const value = -chiImaginary / Math.PI;
       if (!Number.isFinite(value)) throw Error('Spectrum exceeds the numeric range. Check the input values.');
       points.push([omega, value]);
     }
     return points;
+  }
+  function calculate(energies, intensities, options = {}) {
+    return broaden(transitions(energies, intensities, options), options);
   }
   window.BeeMolSpectrum = { calculate, create({ renderer, status }) {
     const $ = id => document.getElementById(id);
@@ -34,18 +40,36 @@
     const number = id => { if (!$(id).value.trim()) throw Error('Fill in all spectrum parameters.'); return Number($(id).value); };
     const values = id => $(id).value.trim().split(/[\s,;]+/).filter(Boolean).map(v => Number(v.replace(/[dD]/g, 'e')));
     function samples() {
-      return calculate(values('spectrumEnergies'), values('spectrumIntensities'), {
-        method: $('spectrumMethod').value, energyInput: $('spectrumEnergyInput').value, broadening: number('spectrumBroadening'),
-        min: number('spectrumMin'), max: number('spectrumMax'), step: number('spectrumStep'), shift: number('spectrumShift')
+      const sticks = transitions(values('spectrumEnergies'), values('spectrumIntensities'), {
+        method: $('spectrumMethod').value, energyInput: $('spectrumEnergyInput').value, shift: number('spectrumShift')
       });
+      return { sticks, points: broaden(sticks, {
+        broadening: number('spectrumBroadening'), min: number('spectrumMin'), max: number('spectrumMax'), step: number('spectrumStep')
+      }) };
     }
     function draw() {
       try {
-        const points = samples();
-        if ($('spectrumPlot').checked) renderer.draw({ datasets: [...($('spectrumOverlay').checked ? overlays : []), { label: $('spectrumLegend').value.trim() || 'Spectrum', points, color: $('spectrumColor').value, visible: true }],
-          title: $('spectrumTitle').value, xLabel: $('spectrumX').value, yLabel: $('spectrumY').value,
-          settings: { plotTransform: { value: 'raw' }, plotXMin: { value: $('spectrumMin').value }, plotXMax: { value: $('spectrumMax').value }, plotYMin: { value: '0' }, plotYMax: { value: '' } } });
-        else $('analysisPlot').replaceChildren();
+        const { points, sticks } = samples();
+        if ($('spectrumPlot').checked) {
+          const min = number('spectrumMin');
+          const max = number('spectrumMax');
+          const curves = [...($('spectrumOverlay').checked ? overlays : []), {
+            label: $('spectrumLegend').value.trim() || 'Spectrum', points, sticks, color: $('spectrumColor').value, visible: true
+          }];
+          const stickDatasets = $('spectrumSticks').checked ? curves.flatMap(curve => {
+            const scale = curve.sticks.reduce((maxIntensity, [, intensity]) => Math.max(maxIntensity, Math.abs(intensity)), 0) || 1;
+            const points = curve.sticks
+              .filter(([energy]) => energy >= min && energy <= max)
+              .map(([energy, intensity]) => [energy, intensity / scale]);
+            return points.length ? [{
+              label: curve.label + ' (sticks)', points, color: $('spectrumStickColor').value, visible: true, verticalSticks: true
+            }] : [];
+          }) : [];
+          const hasNegativeSticks = stickDatasets.some(dataset => dataset.points.some(([, intensity]) => intensity < 0));
+          renderer.draw({ datasets: [...stickDatasets, ...curves],
+            title: $('spectrumTitle').value, xLabel: $('spectrumX').value, yLabel: $('spectrumY').value,
+            settings: { plotTransform: { value: 'raw' }, plotXMin: { value: String(min) }, plotXMax: { value: String(max) }, plotYMin: { value: hasNegativeSticks ? '' : '0' }, plotYMax: { value: '' } } });
+        } else $('analysisPlot').replaceChildren();
         status($('spectrumPlot').checked
           ? `${points.length} spectrum samples plotted. Omega maximum is excluded, as in NumPy arange.`
           : `${points.length} spectrum samples calculated. Plotting is off. Click Calculate spectrum to display the plot, or enable Plot spectrum under Plot settings → Plot.`);
@@ -68,8 +92,10 @@
         <label>Omega step (eV)<input id="spectrumStep" type="number" min="0" step="any" value="0.01"></label>
         <label>Filename<input id="spectrumFilename" value="spectrum"></label>
         <label><input id="spectrumPlot" type="checkbox" checked> Plot spectrum</label>
-        <label>X label<input id="spectrumX" value="x"></label>
-        <label>Y label<input id="spectrumY" value="y"></label>
+        <label><input id="spectrumSticks" type="checkbox">Show sticks</label>
+        <input id="spectrumStickColor" type="color" value="${DEFAULT_STICK_COLOR}" aria-label="Stick color" title="Stick color">
+        <label>X label<input id="spectrumX" value="Energy (eV)"></label>
+        <label>Y label<input id="spectrumY" value="Intensity"></label>
         <label>Spectrum color<input id="spectrumColor" type="color" value="#0072b2"></label>
         <label><input id="spectrumOverlay" type="checkbox" checked> Show saved overlays</label>
         <button id="spectrumKeep" type="button">Keep current spectrum as overlay</button>
@@ -84,11 +110,12 @@
       const firstSetting = $('spectrumBroadening').closest('label');
       while (firstSetting.nextSibling) settingsPanel.append(firstSetting.nextSibling);
       settingsPanel.prepend(firstSetting);
-      function group(title, ids, className = '') {
-        const section = document.createElement('fieldset');
-        section.className = 'spectrum-settings-group ' + className;
-        const legend = document.createElement('legend'); legend.textContent = title;
-        section.append(legend);
+      function group(title, ids, { className = '', collapsible = false } = {}) {
+        const section = document.createElement(collapsible ? 'details' : 'fieldset');
+        section.className = ['spectrum-settings-group', collapsible ? 'plot-disclosure' : '', className].filter(Boolean).join(' ');
+        const heading = document.createElement(collapsible ? 'summary' : 'legend');
+        heading.textContent = title;
+        section.append(heading);
         const fields = document.createElement('div'); fields.className = 'spectrum-settings-fields';
         for (const id of ids) {
           const input = $(id);
@@ -98,9 +125,10 @@
         return section;
       }
       group('Calculation', ['spectrumBroadening', 'spectrumStep', 'spectrumMin', 'spectrumMax', 'spectrumShift', 'spectrumCalculate']);
-      const plotGroup = group('Plot', ['spectrumPlot', 'spectrumTitle', 'spectrumLegend', 'spectrumColor', 'spectrumOverlay', 'spectrumKeep', 'spectrumClearOverlays', 'spectrumOverlayList', 'spectrumX', 'spectrumY'], 'spectrum-plot-settings');
+      group('Stick spectrum', ['spectrumSticks', 'spectrumStickColor'], { className: 'spectrum-stick-settings', collapsible: true });
+      const plotGroup = group('Plot', ['spectrumPlot', 'spectrumTitle', 'spectrumLegend', 'spectrumColor', 'spectrumOverlay', 'spectrumKeep', 'spectrumClearOverlays', 'spectrumOverlayList', 'spectrumX', 'spectrumY'], { className: 'spectrum-plot-settings' });
       $('analysisSettingsPanel').append(plotGroup);
-      group('Export', ['spectrumFilename', 'spectrumDownload'], 'spectrum-export-settings');
+      group('Export', ['spectrumFilename', 'spectrumDownload'], { className: 'spectrum-export-settings' });
       $('spectrumCalculate').classList.add('primary');
 
       function methodChanged() {
@@ -111,7 +139,7 @@
         $('spectrumHint').textContent = hartree ? 'Transition energy = (excited total energy − ground total energy) × 27.211386245988 eV/Hartree.' : 'Enter one transition energy in eV per intensity. Omit the ground-state energy; no conversion is applied.';
       }
       const storageKey = 'beemol.spectrum.settings.v1';
-      const savedFields = ['spectrumEnergyInput', 'spectrumEnergies', 'spectrumIntensities', 'spectrumBroadening', 'spectrumMin', 'spectrumMax', 'spectrumStep', 'spectrumFilename', 'spectrumPlot', 'spectrumX', 'spectrumY', 'spectrumTitle', 'spectrumLegend', 'spectrumShift', 'spectrumColor', 'spectrumOverlay'];
+      const savedFields = ['spectrumEnergyInput', 'spectrumEnergies', 'spectrumIntensities', 'spectrumBroadening', 'spectrumMin', 'spectrumMax', 'spectrumStep', 'spectrumFilename', 'spectrumPlot', 'spectrumSticks', 'spectrumStickColor', 'spectrumX', 'spectrumY', 'spectrumTitle', 'spectrumLegend', 'spectrumShift', 'spectrumColor', 'spectrumOverlay'];
       let saved = { method: 'mradc', methods: {} };
       try {
         const data = JSON.parse(localStorage.getItem(storageKey));
@@ -121,9 +149,14 @@
       if (oldMRADC && oldMRADC.spectrumBroadening === '0.05' && oldMRADC.spectrumMin === '0' && oldMRADC.spectrumMax === '30') {
         Object.assign(oldMRADC, { spectrumBroadening: '0.5', spectrumMin: '410', spectrumMax: '415' });
         for (const [id, oldValue, newValue] of [
-          ['spectrumFilename', 'spectrum', 'mr_adc'], ['spectrumX', 'x', 'Energy, eV'],
-          ['spectrumY', 'y', 'Intensity'], ['spectrumTitle', 'Spectrum', 'XPS spectrum']
+          ['spectrumFilename', 'spectrum', 'mr_adc'], ['spectrumTitle', 'Spectrum', 'XPS spectrum']
         ]) if (oldMRADC[id] === oldValue) oldMRADC[id] = newValue;
+      }
+      for (const method of ['mradc', 'qdnevpt2']) {
+        const labels = saved.methods[method];
+        if (!labels || typeof labels !== 'object') continue;
+        if (typeof labels.spectrumX === 'string' && /^(x|energy, ev)$/i.test(labels.spectrumX.trim())) labels.spectrumX = 'Energy (eV)';
+        if (typeof labels.spectrumY === 'string' && /^y$/i.test(labels.spectrumY.trim())) labels.spectrumY = 'Intensity';
       }
       function restoreMethod(method) {
         const values = saved.methods[method];
@@ -144,10 +177,10 @@
         const q = $('spectrumMethod').value === 'qdnevpt2';
         for (const [id, value] of Object.entries(q ? {
           spectrumShift: '0', spectrumBroadening: '0.1', spectrumMin: '7', spectrumMax: '17', spectrumFilename: 'qdnevpt',
-          spectrumX: 'Energy, eV', spectrumY: 'Intensity', spectrumTitle: 'UV/vis spectrum'
+          spectrumX: 'Energy (eV)', spectrumY: 'Intensity', spectrumTitle: 'UV/vis spectrum'
         } : {
           spectrumShift: '0', spectrumBroadening: '0.5', spectrumMin: '410', spectrumMax: '415', spectrumFilename: 'mr_adc',
-          spectrumX: 'Energy, eV', spectrumY: 'Intensity', spectrumTitle: 'XPS spectrum'
+          spectrumX: 'Energy (eV)', spectrumY: 'Intensity', spectrumTitle: 'XPS spectrum'
         })) $(id).value = value;
       }
       $('spectrumMethod').value = saved.method;
@@ -158,6 +191,8 @@
       $('spectrumMethod').addEventListener('change', () => {
         applyMethodDefaults();
         $('spectrumPlot').checked = true;
+        $('spectrumSticks').checked = false;
+        $('spectrumStickColor').value = DEFAULT_STICK_COLOR;
         restoreMethod($('spectrumMethod').value);
         methodChanged(); remember(); draw();
       });
@@ -182,7 +217,7 @@
       $('spectrumKeep').onclick = () => {
         try {
           overlays.push({ label: $('spectrumLegend').value.trim() || `Spectrum ${overlays.length + 1}`,
-            points: samples(), color: $('spectrumColor').value, visible: true });
+            ...samples(), color: $('spectrumColor').value, visible: true });
           $('spectrumOverlay').checked = true; $('spectrumPlot').checked = true;
           renderOverlays(); remember(); draw();
           status('Spectrum saved as overlay. Change the current data, method, or parameters to compare another spectrum.');
@@ -196,7 +231,7 @@
       };
       $('spectrumDownload').onclick = () => {
         try {
-          const text = samples().map(row => row.map(v => v.toFixed(12).padStart(20, ' ')).join('\t')).join('\n') + '\n';
+          const text = samples().points.map(row => row.map(v => v.toFixed(12).padStart(20, ' ')).join('\t')).join('\n') + '\n';
           const url = URL.createObjectURL(new Blob([text], { type: 'text/plain' }));
           const link = document.createElement('a'); link.href = url; link.download = filename() + '.txt'; link.click(); setTimeout(() => URL.revokeObjectURL(url), 1000);
         } catch (error) { status(error.message); }

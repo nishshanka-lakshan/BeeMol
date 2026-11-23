@@ -1108,15 +1108,42 @@
 #analysisSettingsPanel .spectrum-plot-settings #spectrumPlot{width:15px;height:15px;margin:0}
 
 
-#analysisWorkspace #analysisSettingsPanel>.plot-disclosure{grid-column:1/-1;min-width:0;width:100%;box-sizing:border-box;margin:12px 0 0;padding:10px 0;border:0;border-top:1px solid var(--border)}
-#analysisSettingsPanel .plot-disclosure>summary{cursor:pointer;font-size:12px;font-weight:700;color:var(--text);padding:4px 0}
-#analysisSettingsPanel .plot-disclosure[open]>summary{margin-bottom:12px}
+#analysisWorkspace :is(#analysisSettingsPanel,#analysisSpectrumPanel)>.plot-disclosure{grid-column:1/-1;min-width:0;width:100%;box-sizing:border-box;margin:12px 0 0;padding:10px 0;border:0;border-top:1px solid var(--border)}
+:is(#analysisSettingsPanel,#analysisSpectrumPanel) .plot-disclosure>summary{cursor:pointer;font-size:12px;font-weight:700;color:var(--text);padding:4px 0}
+:is(#analysisSettingsPanel,#analysisSpectrumPanel) .plot-disclosure[open]>summary{margin-bottom:12px}
 
 /* Tighter spacing between plot-setting disclosures and their controls. */
 #analysisWorkspace #analysisSettingsPanel{row-gap:6px}
-#analysisWorkspace #analysisSettingsPanel>.plot-disclosure{margin-top:3px;padding:5px 0}
-#analysisSettingsPanel .plot-disclosure>summary{padding:3px 0}
-#analysisSettingsPanel .plot-disclosure[open]>summary{margin-bottom:7px}
+#analysisWorkspace :is(#analysisSettingsPanel,#analysisSpectrumPanel)>.plot-disclosure{margin-top:3px;padding:5px 0}
+:is(#analysisSettingsPanel,#analysisSpectrumPanel) .plot-disclosure>summary{padding:3px 0}
+:is(#analysisSettingsPanel,#analysisSpectrumPanel) .plot-disclosure[open]>summary{margin-bottom:7px}
+#analysisWorkspace #analysisSpectrumPanel > .spectrum-stick-settings { margin-top:16px; }
+#analysisWorkspace #analysisSpectrumPanel .spectrum-stick-settings .spectrum-settings-fields {
+  grid-template-columns:minmax(0,1fr) auto;
+  align-items:center;
+  gap:12px;
+}
+#analysisWorkspace #analysisSpectrumPanel .spectrum-stick-settings .spectrum-settings-fields label {
+  flex-direction:row;
+  align-items:center;
+  justify-content:flex-start;
+  gap:8px;
+  min-height:38px;
+  color:var(--text);
+}
+#analysisSpectrumPanel .spectrum-stick-settings #spectrumSticks {
+  width:16px;
+  height:16px;
+  margin:0;
+}
+#analysisWorkspace #analysisSpectrumPanel .spectrum-stick-settings #spectrumStickColor {
+  width:42px;
+  height:28px;
+  min-height:0;
+  padding:2px 4px;
+  margin:0 !important;
+}
+
 #analysisWorkspace #analysisSettingsPanel .compact-plot-fields,
 #analysisWorkspace #analysisSettingsPanel .compact-legend-options{gap:7px 10px}
 #analysisWorkspace #analysisSettingsPanel #plotFontPanel{gap:7px}
@@ -1308,7 +1335,7 @@ main.container:not(.waterbox-active):not(.analysis-active) #moleculeFocusView,
   height:auto;
 }
 
-/* Fit the complete spectrum to the center panel without clipping its axes. */
+/* Keep the Spectrum plot at its configured size and scroll within the center panel. */
 #analysisWorkspace.spectrum-active #analysisViewHost {
   overflow:auto;
 }
@@ -1317,14 +1344,13 @@ main.container:not(.waterbox-active):not(.analysis-active) #moleculeFocusView,
   min-width:0;
   overflow:visible;
 }
-#analysisWorkspace.spectrum-active #analysisPlot {
-  min-width:0;
-  overflow:visible;
+#analysisWorkspace.spectrum-active #analysisPlot:has(> svg) {
+  width:max-content;
 }
 #analysisWorkspace.spectrum-active #analysisPlot svg {
   display:block;
-  width:100%;
-  max-width:100%;
+  width:auto;
+  max-width:none;
   height:auto;
   max-height:none;
 }
