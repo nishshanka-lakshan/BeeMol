@@ -1391,55 +1391,9 @@ label + :is(input:not([type="checkbox"]):not([type="radio"]):not([type="hidden"]
   margin:0; padding:8px 0 0; border:0; border-radius:0;
 }
 
-.analytical-state-controls { display:grid; gap:12px; margin-top:12px; }
-.analytical-state-controls fieldset { min-width:0; margin:0; padding:10px; border:1px solid var(--border); border-radius:6px; }
-.analytical-state-controls legend { color:var(--text); font-size:12px; font-weight:700; }
-.analytical-state-controls label { display:flex; align-items:center; justify-content:space-between; gap:12px; margin:6px 0; color:var(--muted); font-size:12px; }
-.analytical-state-controls input { min-width:0; width:60%; box-sizing:border-box; }
-.analytical-state-controls input[type=color] { width:48px; height:30px; padding:2px; }
-
-#analysisEnergyPanel .analytical-state-controls fieldset {
-  display:grid;
-  grid-template-columns:minmax(0,1fr) 54px minmax(80px,0.7fr);
-  gap:12px;
-  align-items:start;
-}
-#analysisEnergyPanel .analytical-state-controls fieldset label {
-  display:flex; flex-direction:column; align-items:stretch;
-  justify-content:flex-start; gap:6px; min-width:0; margin:0;
-}
-#analysisEnergyPanel .analytical-state-controls fieldset input[type=text] {
-  display:block; flex:none; width:100%; min-width:0; height:36px; margin:0;
-}
-#analysisEnergyPanel .analytical-state-controls fieldset input[type=color] {
-  display:block; width:100%; height:36px; margin:0; padding:3px;
-}
-
-#analysisEnergyPanel .analytical-state-shared-controls {
-  display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:12px;
-}
-#analysisEnergyPanel .analytical-state-shared-controls label {
-  display:flex; flex-direction:column; align-items:stretch;
-  justify-content:flex-start; gap:6px; min-width:0; margin:0;
-}
-#analysisEnergyPanel .analytical-state-shared-controls input {
-  box-sizing:border-box; width:100%; min-width:0; height:36px; margin:0;
-}
-
-#analysisEnergyPanel .analytical-state-controls fieldset select {
-  box-sizing:border-box; width:100%; min-width:0; height:36px; margin:0; padding:4px;
-}
-
-#analysisEnergyPanel .analytical-state-controls > label:has(select) {
-  display:flex; flex-direction:column; align-items:stretch; gap:6px;
-}
-#analysisEnergyPanel .analytical-state-controls > label > select {
-  width:100%; min-width:0; height:36px;
-}
-
-#analysisEnergyPanel .analytical-state-controls fieldset .state-visibility-toggle {
-  grid-column:1/-1; flex-direction:row; align-items:center; justify-content:flex-start;
-}
-#analysisEnergyPanel .analytical-state-controls .state-visibility-toggle input {
-  width:16px; height:16px; flex:none; margin:0;
-}
+.analytical-overlays:not(:empty) { display:grid; gap:8px; margin:8px 0; }
+.analytical-overlays > details { min-width:0; padding:8px; border:1px solid var(--border); border-radius:6px; }
+.analytical-overlays > details > div { display:grid; gap:8px; margin-top:8px; }
+.analytical-overlays label { display:grid; gap:4px; }
+.analytical-overlays :is(input, textarea) { min-width:0; width:100%; box-sizing:border-box; }
+.analytical-overlays [role="status"]:empty { display:none; }

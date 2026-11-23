@@ -545,15 +545,9 @@
         <button id="analyticalFindExtrema" type="button" hidden>Analyze</button>
         <section id="analyticalExtremaReport" class="extrema-report" hidden aria-label="Autocorrelation extrema analysis" aria-live="polite"></section>
         <div class="analytical-actions">
-          <button id="analyticalCSV" type="button">Download CSV</button>
+          <button id="analyticalCSV" type="button">Download current curve CSV</button>
         </div>`;
       $('analysisEnergyPanel').append(theoretical);
-      const stateDropdown = document.createElement('details');
-      stateDropdown.className = 'compact-plot-group plot-disclosure';
-      const stateSummary = document.createElement('summary'); stateSummary.textContent = 'Signed cationic state contributions';
-      const stateControls = document.createElement('div'); stateControls.className = 'analytical-state-controls';
-      stateDropdown.append(stateSummary, $('phaseMovieShowContributions').closest('label'), stateControls);
-      $('analysisEnergyPanel').append(stateDropdown);
       const datasetActions = document.createElement('div');
       datasetActions.className = 'analysis-dataset-actions';
       $('analysisClear').before(datasetActions);
@@ -563,25 +557,29 @@
       const analyticalOptions = document.createElement('fieldset');
       analyticalOptions.className = 'analysis-individual-style';
       const analyticalOptionsHeading = document.createElement('legend');
-      analyticalOptionsHeading.textContent = 'Plot settings';
+      analyticalOptionsHeading.textContent = 'Analytical autocorrelation plot settings';
       analyticalOptions.append(analyticalOptionsHeading);
       const analyticalOptionsDropdown = document.createElement('details');
       analyticalOptionsDropdown.className = 'compact-plot-group plot-disclosure';
       const analyticalOptionsSummary = document.createElement('summary');
-      analyticalOptionsSummary.textContent = 'Plot settings';
+      analyticalOptionsSummary.textContent = 'Analytical autocorrelation plot settings';
       analyticalOptionsHeading.hidden = true;
       analyticalOptionsDropdown.append(analyticalOptionsSummary, analyticalOptions);
       $('analysisEnergyPanel').append(analyticalOptionsDropdown);
+      analyticalOptionsDropdown.insertAdjacentHTML('afterend', `
+        <details class="compact-plot-group plot-disclosure">
+          <summary>Additional analytical plots</summary>
+          <div class="analytical-actions">
+            <button id="analyticalAddCurve" type="button">Add another plot</button>
+          </div>
+          <div id="analyticalOverlays" class="analytical-overlays"></div>
+        </details>`);
       const analyticalLegendLabel = document.createElement('label');
       analyticalLegendLabel.textContent = 'Analytical legend name';
       const analyticalLegendName = document.createElement('input');
       analyticalLegendName.id = 'analyticalLegendName';
       analyticalLegendName.value = 'Analytical |A(t)|';
-      analyticalLegendName.addEventListener('input', () => {
-        if (stateStyles.total) stateStyles.total.label = analyticalLegendName.value;
-        renderAnalytical();
-        syncStateControls();
-      });
+      analyticalLegendName.addEventListener('input', () => renderAnalytical());
       analyticalLegendLabel.append(analyticalLegendName);
       analyticalOptions.prepend(analyticalLegendLabel);
       // Analytical-only options must not read shared plot controls.
@@ -709,7 +707,7 @@
         figureArea.style.transform = movie ? `scale(${figureZoom})` : 'none';
         const setHidden = (element, hidden) => { if (element.hidden !== hidden) element.hidden = hidden; };
         if (movie) {
-          setHidden(analyticalPreview, !($('phaseMovieShowAnalytical').checked || $('phaseMovieShowContributions').checked) || !analyticalPreview.querySelector('svg'));
+          setHidden(analyticalPreview, !$('phaseMovieShowAnalytical').checked || !analyticalPreview.querySelector('svg'));
           setHidden($('analysisPlot'), !$('phaseMovieShowPhase').checked);
         } else {
           const analytical = phaseMode() && selectedFigureView === 'analytical';
@@ -787,13 +785,13 @@
         updateAnalyticalMarker();
         if (leavingMovie) phase.stopAnimation();
         if (next === 'movie') phase.seekMovie(Number($('phaseMovieCurrent').value));
-        if (phaseMode() && (next === 'analytical' || (next === 'movie' && ($('phaseMovieShowAnalytical').checked || $('phaseMovieShowContributions').checked))) && !analyticalPreview.querySelector('svg')) {
+        if (phaseMode() && (next === 'analytical' || (next === 'movie' && $('phaseMovieShowAnalytical').checked)) && !analyticalPreview.querySelector('svg')) {
           generateAnalytical();
         }
         renderAnalytical();
         alignMovieAxes();
       });
-      for (const id of ['phaseMovieShowAnalytical', 'phaseMovieShowContributions', 'phaseMovieShowPhase']) {
+      for (const id of ['phaseMovieShowAnalytical', 'phaseMovieShowPhase']) {
         $(id).addEventListener('change', () => {
           if ($(id).checked && id !== 'phaseMovieShowPhase' && !analyticalPreview.querySelector('svg')) generateAnalytical();
           renderAnalytical();
@@ -801,12 +799,12 @@
         });
       }
       $('analysisMovieTab').addEventListener('click', () => {
-        if (($('phaseMovieShowAnalytical').checked || $('phaseMovieShowContributions').checked) && !analyticalPreview.querySelector('svg')) generateAnalytical();
+        if ($('phaseMovieShowAnalytical').checked && !analyticalPreview.querySelector('svg')) generateAnalytical();
         alignMovieAxes();
       });
 
-      function analyticalSettings() {
-        const energies = window.BeeMolAutocorrelationPhase.parseEnergies($('phaseEnergies').value);
+      function analyticalSettings(energyText = $('phaseEnergies').value) {
+        const energies = window.BeeMolAutocorrelationPhase.parseEnergies(energyText);
         const end = Number($('analyticalEnd').value);
         const stepAU = Number($('analyticalStep').value);
         if (energies.length > 100) throw Error('Use at most 100 energy states.');
@@ -818,8 +816,7 @@
         return { energies, end, stepAU, count };
       }
 
-      function analyticalSamples() {
-        const { energies, stepAU, count } = analyticalSettings();
+      function analyticalSamples({ energies, stepAU, count } = analyticalSettings()) {
         const weights = energies.map(() => 1 / energies.length);
         return Array.from({ length: count }, (_, i) => {
           const timeAU = i * stepAU;
@@ -830,91 +827,81 @@
       }
 
       let analyticalDataset = null;
-      let stateContributionDatasets = [];
-      const stateStyles = [];
-      let stateLegendFontSize = 23;
-      let stateLineWidth = 5;
-      let selectedStateControl = 0;
-      function syncStateControls() {
-        stateControls.replaceChildren();
-        const fontLabel = document.createElement('label'); fontLabel.textContent = 'Font size for all labels (px)';
-        const fontInput = document.createElement('input');
-        Object.assign(fontInput, { type: 'number', min: '8', max: '48', step: '1', value: stateLegendFontSize });
-        fontInput.addEventListener('input', () => {
-          if (!Number.isFinite(fontInput.valueAsNumber)) return;
-          stateLegendFontSize = Math.max(8, Math.min(48, fontInput.valueAsNumber));
-          renderAnalytical();
+      const analyticalOverlays = [];
+      const overlayColors = ['#d55e00', '#0072b2', '#cc79a7', '#009e73', '#9467bd'];
+      let nextOverlay = 1;
+      $('analyticalAddCurve').onclick = () => {
+        const number = nextOverlay++;
+        const plotName = `Additional plot ${number}`;
+        const dataset = {
+          label: plotName,
+          color: overlayColors[(number - 1) % overlayColors.length],
+          dash: '8 4',
+          visible: false,
+          points: []
+        };
+        analyticalOverlays.push(dataset);
+
+        const row = document.createElement('details');
+        row.open = true;
+        const legend = document.createElement('summary');
+        const fields = document.createElement('div');
+        legend.textContent = plotName;
+        const nameLabel = document.createElement('label');
+        nameLabel.textContent = 'Legend name';
+        const name = document.createElement('input');
+        name.type = 'text';
+        name.value = dataset.label;
+        name.addEventListener('input', () => {
+          dataset.label = name.value.trim() || plotName;
+          legend.textContent = dataset.label;
+          if (dataset.visible) renderAnalytical();
         });
-        fontLabel.append(fontInput); stateControls.append(fontLabel);
-        const widthLabel = document.createElement('label'); widthLabel.textContent = 'Line width for all curves (px)';
-        const widthInput = document.createElement('input');
-        Object.assign(widthInput, { type: 'number', min: '0.5', max: '8', step: '0.5', value: stateLineWidth });
-        widthInput.addEventListener('input', () => {
-          if (!Number.isFinite(widthInput.valueAsNumber)) return;
-          stateLineWidth = Math.max(0.5, Math.min(8, widthInput.valueAsNumber));
-          renderAnalytical();
-        });
-        widthLabel.append(widthInput);
-        const sharedControls = document.createElement('div');
-        sharedControls.className = 'analytical-state-shared-controls';
-        sharedControls.append(fontLabel, widthLabel);
-        stateControls.append(sharedControls);
-        const editableDatasets = [...stateContributionDatasets, analyticalDataset].filter(Boolean);
-        const pickerLabel = document.createElement('label'); pickerLabel.textContent = 'Pick state';
-        const picker = document.createElement('select');
-        editableDatasets.forEach((dataset, index) => {
-          const option = document.createElement('option'); option.value = String(index);
-          option.textContent = index === stateContributionDatasets.length ? 'Total |A(t)|' : `State ${index + 1}`;
-          picker.append(option);
-        });
-        selectedStateControl = Math.min(selectedStateControl, Math.max(0, editableDatasets.length - 1));
-        picker.value = String(selectedStateControl);
-        pickerLabel.append(picker); stateControls.append(pickerLabel);
-        const editor = document.createElement('div'); stateControls.append(editor);
-        function showStateEditor() {
-          editor.replaceChildren();
-          const index = selectedStateControl;
-          const dataset = editableDatasets[index];
-          if (!dataset) return;
-          const styleKey = index === stateContributionDatasets.length ? 'total' : index;
-          const style = stateStyles[styleKey] ||= { label: index === stateContributionDatasets.length ? analyticalLegendName.value : dataset.label, color: dataset.color, dash: '', visible: true };
-          const group = document.createElement('fieldset');
-          const heading = document.createElement('legend'); heading.textContent = index === stateContributionDatasets.length ? 'Total' : `State ${index + 1}`;
-          group.append(heading);
-          const visibilityLabel = document.createElement('label');
-          visibilityLabel.className = 'state-visibility-toggle';
-          const visibilityInput = document.createElement('input'); visibilityInput.type = 'checkbox';
-          visibilityInput.checked = style.visible !== false;
-          visibilityInput.addEventListener('change', () => { style.visible = visibilityInput.checked; renderAnalytical(); });
-          visibilityLabel.append(visibilityInput, document.createTextNode('Show contribution'));
-          group.append(visibilityLabel);
-          for (const [key, title, type] of [['label', 'Name', 'text'], ['color', 'Color', 'color']]) {
-            const label = document.createElement('label'); label.textContent = title;
-            const input = document.createElement('input'); input.type = type; input.value = style[key];
-            input.addEventListener(type === 'color' ? 'change' : 'input', () => {
-              style[key] = input.value;
-              if (styleKey === 'total' && key === 'label') analyticalLegendName.value = input.value;
-              renderAnalytical();
-            });
-            label.append(input); group.append(label);
+        nameLabel.append(name);
+
+        const energyLabel = document.createElement('label');
+        energyLabel.textContent = 'Energy values (eV), one per line';
+        const energies = document.createElement('textarea');
+        energies.rows = 4;
+        energyLabel.append(energies);
+        const errorMessage = document.createElement('p');
+        errorMessage.className = 'mini-note';
+        errorMessage.setAttribute('role', 'status');
+        energies.addEventListener('input', () => { errorMessage.textContent = ''; });
+
+        const apply = document.createElement('button');
+        apply.type = 'button';
+        apply.textContent = 'Plot curve';
+        apply.onclick = () => {
+          try {
+            const settings = analyticalSettings(energies.value);
+            dataset.points = analyticalSamples(settings).map(([timeAU, , , , magnitude]) => [timeAU, magnitude]);
+            dataset.visible = true;
+            errorMessage.textContent = '';
+            apply.textContent = 'Update curve';
+            renderAnalytical();
+          } catch (error) {
+            errorMessage.textContent = error.message;
           }
-          const lineStyleLabel = document.createElement('label'); lineStyleLabel.textContent = 'Line style';
-          const lineStyle = document.createElement('select');
-          for (const [value, name] of [['', 'Solid'], ['10 6', 'Dashed'], ['1 6', 'Dotted']]) {
-            const option = document.createElement('option'); option.value = value; option.textContent = name;
-            lineStyle.append(option);
-          }
-          lineStyle.value = style.dash || '';
-          lineStyle.addEventListener('change', () => { style.dash = lineStyle.value; renderAnalytical(); });
-          lineStyleLabel.append(lineStyle); group.append(lineStyleLabel);
-          editor.append(group);
-        }
-        picker.addEventListener('change', () => {
-          selectedStateControl = Number(picker.value);
-          showStateEditor();
-        });
-        showStateEditor();
-      }
+        };
+        const remove = document.createElement('button');
+        remove.type = 'button';
+        remove.textContent = 'Remove';
+        remove.setAttribute('aria-label', `Remove overlay ${number}`);
+        remove.onclick = () => {
+          analyticalOverlays.splice(analyticalOverlays.indexOf(dataset), 1);
+          row.remove();
+          $('analyticalAddCurve').focus();
+          renderAnalytical();
+        };
+        const actions = document.createElement('div');
+        actions.className = 'analytical-actions';
+        actions.append(apply, remove);
+        fields.append(nameLabel, energyLabel, actions, errorMessage);
+        row.append(legend, fields);
+        $('analyticalOverlays').append(row);
+        energies.focus();
+      };
       let analyticalCoordinates = null;
       let analyticalEnergies = [];
       let markerTime = 0;
@@ -938,10 +925,10 @@
         let magnitude = window.BeeMolAutocorrelationPhase.calculate(
           analyticalEnergies, analyticalEnergies.map(() => 1 / analyticalEnergies.length), markerTime
         ).magnitude;
-        if (!$('phaseMovieShowContributions').checked && analyticalStyle.plotTransform.value === 'square') magnitude *= magnitude;
+        if (analyticalStyle.plotTransform.value === 'square') magnitude *= magnitude;
         const points = analyticalDataset.points;
         const inRange = markerTime >= points[0][0] * AU_TO_FS && markerTime <= points[points.length - 1][0] * AU_TO_FS;
-        dot.style.display = !($('phaseMovieShowContributions').checked && stateStyles.total?.visible === false) && selectedFigureView === 'movie' && inRange && markerTime >= xmin && markerTime <= xmax && magnitude >= ymin && magnitude <= ymax ? '' : 'none';
+        dot.style.display = selectedFigureView === 'movie' && inRange && markerTime >= xmin && markerTime <= xmax && magnitude >= ymin && magnitude <= ymax ? '' : 'none';
         dot.setAttribute('cx', X(markerTime));
         dot.setAttribute('cy', Y(magnitude));
         dot.setAttribute('aria-label', `Movie time ${markerTime.toFixed(6)} fs`);
@@ -954,70 +941,43 @@
       $('phaseMovieDotSize').addEventListener('input', updateAnalyticalMarker);
       renderAnalytical = () => {
         if (!phaseMode()) return;
-        const showContributions = $('phaseMovieShowContributions').checked;
         const datasets = [
-          ...(showContributions ? stateContributionDatasets.map((dataset, index) => ({ ...dataset, ...stateStyles[index] })) : []),
-          ...(analyticalDataset ? [showContributions ? { ...analyticalDataset, samplesOnly: false, ...stateStyles.total, label: analyticalLegendName.value } : { ...analyticalDataset, label: analyticalLegendName.value }] : []),
+          ...(analyticalDataset ? [{ ...analyticalDataset, label: analyticalLegendName.value }] : []),
+          ...analyticalOverlays,
           ...series
         ];
         if (!datasets.some(dataset => dataset.visible)) {
           analyticalPreview.replaceChildren();
           return;
         }
-        const yMinimum = analyticalStyle.plotYMin;
-        yMinimum.placeholder = showContributions ? 'Auto' : '0';
         autocorrelation.draw({
           datasets, target: analyticalPreview,
-          settings: showContributions ? {
+          settings: {
             ...analyticalStyle,
-            plotTransform: { value: 'none' },
-            plotLegendGap: { value: '48' }, plotLegendFontSize: { value: String(stateLegendFontSize) },
-            plotLegendLineWidth: { value: String(stateLineWidth) }, plotWidth: { value: String(stateLineWidth) },
-            plotLegendMaxColumns: { value: '100' },
-            plotLegendTextOffset: { value: '48' },
-            plotXTickFontSize: { value: '16' }, plotYTickFontSize: { value: '16' },
-            plotXDecimals: { value: '0' }, plotYDecimals: { value: '1' }
-          } : {
-            ...analyticalStyle,
-            plotYMin: { value: yMinimum.value || '0' }
+            plotYMin: { value: analyticalStyle.plotYMin.value || '0' }
           },
           onCoordinates: coordinates => {
             analyticalCoordinates = coordinates;
             updateAnalyticalMarker();
           },
-          title: $('analyticalFigureTitle').value, xLabel: 'Time (fs)', yLabel: showContributions ? 'dₙ(t) and |A(t)|' : '|A(t)|'
+          title: $('analyticalFigureTitle').value, xLabel: 'Time (fs)', yLabel: '|A(t)|'
         });
         alignMovieAxes();
       };
       document.addEventListener('analyticaltitlechange', () => renderAnalytical());
       function generateAnalytical() {
         try {
-          const samples = analyticalSamples();
-          analyticalEnergies = analyticalSettings().energies;
+          const settings = analyticalSettings();
+          const samples = analyticalSamples(settings);
+          analyticalEnergies = settings.energies;
           analyticalDataset = {
             label: 'Analytical |A(t)|', visible: true, color: '#008080', dash: '',
-            samplesOnly: true,
             points: samples.map(row => [row[0], row[4]])
           };
-          const stateColors = ['#1f77b4', '#ff7f0e', '#2ca02c', '#d62728', '#9467bd', '#8c564b', '#e377c2', '#7f7f7f', '#bcbd22', '#17becf'];
-          stateContributionDatasets = analyticalEnergies.map((energy, index) => ({
-            label: `S${index + 1}`,
-            visible: true, color: stateColors[index % stateColors.length], dash: '',
-            allowGaps: true, points: []
-          }));
-          const weights = analyticalEnergies.map(() => 1 / analyticalEnergies.length);
-          for (const [timeAU, timeFS, real, imaginary, magnitude] of samples) {
-            const contributions = window.BeeMolAutocorrelationPhase.signedContributions(
-              analyticalEnergies, weights, timeFS, { real, imaginary, magnitude }
-            );
-            contributions.forEach((value, index) => stateContributionDatasets[index].points.push([timeAU, value]));
-          }
-          syncStateControls();
           analyticalPreview.hidden = false;
           renderAnalytical();
         } catch (error) {
           analyticalDataset = null;
-          stateContributionDatasets = [];
           analyticalCoordinates = null;
           analyticalEnergies = [];
           renderAnalytical();
@@ -1338,6 +1298,10 @@
       $('analysisClear').onclick = () => {
 
         series.length = 0;
+        if (phaseMode()) {
+          analyticalOverlays.length = 0;
+          $('analyticalOverlays').replaceChildren();
+        }
 
         controls();
 

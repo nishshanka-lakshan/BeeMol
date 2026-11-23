@@ -80,7 +80,6 @@
           <section class="phase-player" aria-labelledby="phasePlayerHeading">
             <div class="phase-player-heading"><h3 id="phasePlayerHeading">Phase movie</h3><span>PLAYER</span></div>
             <label class="phase-player-loop"><input id="phaseMovieShowAnalytical" type="checkbox" checked> Show analytical autocorrelation</label>
-            <label class="phase-player-loop"><input id="phaseMovieShowContributions" type="checkbox" checked> Show signed state contributions dₙ(t) + total |A(t)|</label>
             <label class="phase-player-loop"><input id="phaseMovieShowPhase" type="checkbox" checked> Show phase figure</label>
             <output id="phaseMovieReadout" class="phase-player-clock" aria-live="off">0.000000 fs</output>
             <label class="phase-player-timeline">Timeline<input id="phaseMovieTimeline" type="range" min="0" max="10000" step="1" value="0"></label>
