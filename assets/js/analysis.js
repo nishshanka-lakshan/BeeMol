@@ -495,7 +495,6 @@
       spectrumLegendLabel.classList.add('spectrum-legend-name');
       legendOptions.append(spectrumLegendLabel);
       plotGroup('Legend', [controlLabel('plotLegend'), legendOptions]);
-      $('spectrumLegend').addEventListener('input', () => { if (spectrumMode()) spectrum.draw(); });
       const syncLegendControls = () => { legendOptions.hidden = !$('plotLegend').checked; };
       $('plotLegend').addEventListener('change', syncLegendControls);
       $('analysisPlotType').addEventListener('change', syncLegendControls);

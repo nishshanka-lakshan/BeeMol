@@ -658,7 +658,8 @@
 
       const legendGap = setting('plotLegendGap', 8, 0, 100);
       // Show several repeats so dashed and dotted samples stay recognizable.
-      const legendSampleLength = shown.some(dataset => dataset.dash)
+      const legendDatasets = shown.filter(dataset => !dataset.hideFromLegend);
+      const legendSampleLength = legendDatasets.some(dataset => dataset.dash)
         ? Math.max(24, Math.max(2, legendLineWidth) * 15) : 24;
       const legendTextOffset = Math.max(
         setting('plotLegendTextOffset', 32, 28, 100), legendSampleLength + 8
@@ -666,7 +667,7 @@
       const legendMaxColumns = Math.round(setting('plotLegendMaxColumns', 100, 1, 100));
       const entryFontSize = dataset => Number.isFinite(dataset.legendFontSize)
         ? Math.max(8, Math.min(48, dataset.legendFontSize)) : legendFontSize;
-      const maxLegendFontSize = Math.max(legendFontSize, ...shown.map(entryFontSize));
+      const maxLegendFontSize = Math.max(legendFontSize, ...legendDatasets.map(entryFontSize));
       const legendRows = [];
 
       let entries = [];
@@ -677,7 +678,7 @@
 
       if (legend) {
 
-        for (const dataset of shown) {
+        for (const dataset of legendDatasets) {
 
           measure.font = `${fontWeight('plotLegendFontBold')} ${entryFontSize(dataset)}px Arial`;
           const entryWidth = legendTextOffset +
