@@ -1043,11 +1043,7 @@
 #analysisWorkspace.spectrum-active #analysisSettingsPanel label:has(#plotTitle),
 #analysisWorkspace.spectrum-active #analysisSettingsPanel label:has(#plotXLabel),
 #analysisWorkspace.spectrum-active #analysisSettingsPanel label:has(#plotYLabel),
-#analysisWorkspace.spectrum-active #analysisSettingsPanel label:has(#plotTransform),
-#analysisWorkspace.spectrum-active #analysisSettingsPanel label:has(#plotXMin),
-#analysisWorkspace.spectrum-active #analysisSettingsPanel label:has(#plotXMax),
-#analysisWorkspace.spectrum-active #analysisSettingsPanel label:has(#plotYMin),
-#analysisWorkspace.spectrum-active #analysisSettingsPanel label:has(#plotYMax){display:none}
+#analysisWorkspace.spectrum-active #analysisSettingsPanel label:has(#plotTransform){display:none}
 
 #analysisWorkspace.spectrum-active .analysis-sidebar-tabs{display:flex}
 #analysisWorkspace.spectrum-active .ordinary-analysis-settings-heading{display:none}
@@ -1117,13 +1113,13 @@
 #analysisWorkspace :is(#analysisSettingsPanel,#analysisSpectrumPanel)>.plot-disclosure{margin-top:3px;padding:5px 0}
 :is(#analysisSettingsPanel,#analysisSpectrumPanel) .plot-disclosure>summary{padding:3px 0}
 :is(#analysisSettingsPanel,#analysisSpectrumPanel) .plot-disclosure[open]>summary{margin-bottom:7px}
-#analysisWorkspace #analysisSpectrumPanel > .spectrum-stick-settings { margin-top:16px; }
+#analysisWorkspace #analysisSpectrumPanel > :is(.spectrum-curve-settings,.spectrum-stick-settings) { margin-top:16px; }
 #analysisWorkspace #analysisSpectrumPanel .spectrum-stick-settings .spectrum-settings-fields {
   grid-template-columns:minmax(0,1fr) auto;
   align-items:center;
   gap:12px;
 }
-#analysisWorkspace #analysisSpectrumPanel .spectrum-stick-settings .spectrum-settings-fields label {
+#analysisWorkspace #analysisSpectrumPanel :is(.spectrum-curve-settings,.spectrum-stick-settings) .spectrum-settings-fields label {
   flex-direction:row;
   align-items:center;
   justify-content:flex-start;
@@ -1131,7 +1127,7 @@
   min-height:38px;
   color:var(--text);
 }
-#analysisSpectrumPanel .spectrum-stick-settings #spectrumSticks {
+#analysisSpectrumPanel :is(#spectrumNormalize,#spectrumSticks) {
   width:16px;
   height:16px;
   margin:0;
@@ -1141,6 +1137,15 @@
   height:28px;
   min-height:0;
   padding:2px 4px;
+  margin:0 !important;
+}
+
+#analysisWorkspace #analysisSpectrumPanel .spectrum-stick-settings label:has(> #spectrumStickHeight) {
+  grid-column:1/-1;
+  justify-content:space-between;
+}
+#analysisWorkspace #analysisSpectrumPanel .spectrum-stick-settings #spectrumStickHeight {
+  width:76px;
   margin:0 !important;
 }
 

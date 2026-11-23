@@ -30,6 +30,13 @@
     }
     return points;
   }
+  function peakMagnitude(points) {
+    return points.reduce((peak, [, intensity]) => Math.max(peak, Math.abs(intensity)), 0) || 1;
+  }
+  function normalize(points) {
+    const peak = peakMagnitude(points);
+    return points.map(([energy, intensity]) => [energy, intensity / peak]);
+  }
   function calculate(energies, intensities, options = {}) {
     return broaden(transitions(energies, intensities, options), options);
   }
@@ -51,24 +58,39 @@
       try {
         const { points, sticks } = samples();
         if ($('spectrumPlot').checked) {
-          const min = number('spectrumMin');
-          const max = number('spectrumMax');
+          const xMin = $('plotXMin').value || $('spectrumMin').value;
+          const xMax = $('plotXMax').value || $('spectrumMax').value;
+          if (Number(xMin) >= Number(xMax)) throw Error('X minimum must be smaller than X maximum.');
           const curves = [...($('spectrumOverlay').checked ? overlays : []), {
             label: $('spectrumLegend').value.trim() || 'Spectrum', points, sticks, color: $('spectrumColor').value, visible: true
           }];
+          const heightInput = $('spectrumStickHeight');
+          const stickHeight = !heightInput.validity.rangeUnderflow && Number.isFinite(heightInput.valueAsNumber)
+            ? heightInput.valueAsNumber : Number(heightInput.defaultValue);
           const stickDatasets = $('spectrumSticks').checked ? curves.flatMap(curve => {
-            const scale = curve.sticks.reduce((maxIntensity, [, intensity]) => Math.max(maxIntensity, Math.abs(intensity)), 0) || 1;
+            const scale = peakMagnitude(curve.sticks);
             const points = curve.sticks
-              .filter(([energy]) => energy >= min && energy <= max)
-              .map(([energy, intensity]) => [energy, intensity / scale]);
+              .filter(([energy]) => energy >= Number(xMin) && energy <= Number(xMax))
+              .map(([energy, intensity]) => [energy, (intensity / scale) * stickHeight]);
             return points.length ? [{
               label: curve.label + ' (sticks)', points, color: $('spectrumStickColor').value, visible: true, verticalSticks: true
             }] : [];
           }) : [];
-          const hasNegativeSticks = stickDatasets.some(dataset => dataset.points.some(([, intensity]) => intensity < 0));
-          renderer.draw({ datasets: [...stickDatasets, ...curves],
+          const normalizeCurve = $('spectrumNormalize').checked;
+          const curveDatasets = normalizeCurve ? curves.map(curve => ({ ...curve, points: normalize(curve.points) })) : curves;
+          const datasets = [...stickDatasets, ...curveDatasets];
+          const hasNegativeIntensity = (normalizeCurve ? datasets : stickDatasets)
+            .some(dataset => dataset.points.some(([, intensity]) => intensity < 0));
+          renderer.draw({ datasets,
             title: $('spectrumTitle').value, xLabel: $('spectrumX').value, yLabel: $('spectrumY').value,
-            settings: { plotTransform: { value: 'raw' }, plotXMin: { value: String(min) }, plotXMax: { value: String(max) }, plotYMin: { value: hasNegativeSticks ? '' : '0' }, plotYMax: { value: '' } } });
+            settings: {
+              plotTransform: { value: 'raw' },
+              plotXMin: { value: xMin },
+              plotXMax: { value: xMax },
+              plotYMin: { value: $('plotYMin').value || (hasNegativeIntensity ? '' : '0') }
+            }
+          });
+          if (!$('analysisPlot').firstElementChild) return;
         } else $('analysisPlot').replaceChildren();
         status($('spectrumPlot').checked
           ? `${points.length} spectrum samples plotted. Omega maximum is excluded, as in NumPy arange.`
@@ -92,8 +114,10 @@
         <label>Omega step (eV)<input id="spectrumStep" type="number" min="0" step="any" value="0.01"></label>
         <label>Filename<input id="spectrumFilename" value="spectrum"></label>
         <label><input id="spectrumPlot" type="checkbox" checked> Plot spectrum</label>
+        <label><input id="spectrumNormalize" type="checkbox">Normalize line</label>
         <label><input id="spectrumSticks" type="checkbox">Show sticks</label>
         <input id="spectrumStickColor" type="color" value="${DEFAULT_STICK_COLOR}" aria-label="Stick color" title="Stick color">
+        <label>Max stick height<input id="spectrumStickHeight" type="number" min="0" step="0.1" value="1"></label>
         <label>X label<input id="spectrumX" value="Energy (eV)"></label>
         <label>Y label<input id="spectrumY" value="Intensity"></label>
         <label>Spectrum color<input id="spectrumColor" type="color" value="#0072b2"></label>
@@ -125,7 +149,8 @@
         return section;
       }
       group('Calculation', ['spectrumBroadening', 'spectrumStep', 'spectrumMin', 'spectrumMax', 'spectrumShift', 'spectrumCalculate']);
-      group('Stick spectrum', ['spectrumSticks', 'spectrumStickColor'], { className: 'spectrum-stick-settings', collapsible: true });
+      group('Line spectrum', ['spectrumNormalize'], { className: 'spectrum-curve-settings', collapsible: true });
+      group('Stick spectrum', ['spectrumSticks', 'spectrumStickColor', 'spectrumStickHeight'], { className: 'spectrum-stick-settings', collapsible: true });
       const plotGroup = group('Plot', ['spectrumPlot', 'spectrumTitle', 'spectrumLegend', 'spectrumColor', 'spectrumOverlay', 'spectrumKeep', 'spectrumClearOverlays', 'spectrumOverlayList', 'spectrumX', 'spectrumY'], { className: 'spectrum-plot-settings' });
       $('analysisSettingsPanel').append(plotGroup);
       group('Export', ['spectrumFilename', 'spectrumDownload'], { className: 'spectrum-export-settings' });
@@ -139,7 +164,7 @@
         $('spectrumHint').textContent = hartree ? 'Transition energy = (excited total energy − ground total energy) × 27.211386245988 eV/Hartree.' : 'Enter one transition energy in eV per intensity. Omit the ground-state energy; no conversion is applied.';
       }
       const storageKey = 'beemol.spectrum.settings.v1';
-      const savedFields = ['spectrumEnergyInput', 'spectrumEnergies', 'spectrumIntensities', 'spectrumBroadening', 'spectrumMin', 'spectrumMax', 'spectrumStep', 'spectrumFilename', 'spectrumPlot', 'spectrumSticks', 'spectrumStickColor', 'spectrumX', 'spectrumY', 'spectrumTitle', 'spectrumLegend', 'spectrumShift', 'spectrumColor', 'spectrumOverlay'];
+      const savedFields = ['spectrumEnergyInput', 'spectrumEnergies', 'spectrumIntensities', 'spectrumBroadening', 'spectrumMin', 'spectrumMax', 'spectrumStep', 'spectrumFilename', 'spectrumPlot', 'spectrumNormalize', 'spectrumSticks', 'spectrumStickColor', 'spectrumStickHeight', 'spectrumX', 'spectrumY', 'spectrumTitle', 'spectrumLegend', 'spectrumShift', 'spectrumColor', 'spectrumOverlay'];
       let saved = { method: 'mradc', methods: {} };
       try {
         const data = JSON.parse(localStorage.getItem(storageKey));
@@ -191,8 +216,10 @@
       $('spectrumMethod').addEventListener('change', () => {
         applyMethodDefaults();
         $('spectrumPlot').checked = true;
+        $('spectrumNormalize').checked = false;
         $('spectrumSticks').checked = false;
         $('spectrumStickColor').value = DEFAULT_STICK_COLOR;
+        $('spectrumStickHeight').value = $('spectrumStickHeight').defaultValue;
         restoreMethod($('spectrumMethod').value);
         methodChanged(); remember(); draw();
       });
@@ -231,7 +258,9 @@
       };
       $('spectrumDownload').onclick = () => {
         try {
-          const text = samples().points.map(row => row.map(v => v.toFixed(12).padStart(20, ' ')).join('\t')).join('\n') + '\n';
+          const { points } = samples();
+          const exportPoints = $('spectrumNormalize').checked ? normalize(points) : points;
+          const text = exportPoints.map(row => row.map(v => v.toFixed(12).padStart(20, ' ')).join('\t')).join('\n') + '\n';
           const url = URL.createObjectURL(new Blob([text], { type: 'text/plain' }));
           const link = document.createElement('a'); link.href = url; link.download = filename() + '.txt'; link.click(); setTimeout(() => URL.revokeObjectURL(url), 1000);
         } catch (error) { status(error.message); }

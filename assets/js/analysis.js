@@ -469,10 +469,11 @@
         body.append(...nodes); group.append(legend, body); plotSettings.append(group);
         return body;
       }
-      const generalFields = ['plotTitle', 'plotXLabel', 'plotYLabel', 'plotTransform', 'plotXMin', 'plotXMax', 'plotYMin', 'plotYMax'].map(controlLabel);
-      const generalGroup = plotGroup('Labels and ranges', generalFields);
+      const axisLimitIds = ['plotXMin', 'plotXMax', 'plotYMin', 'plotYMax'];
+      const generalFields = ['plotTitle', 'plotXLabel', 'plotYLabel', 'plotTransform'].map(controlLabel);
+      const generalGroup = plotGroup('Labels', generalFields);
       plotSettings.prepend(generalGroup.parentElement);
-      plotGroup('Size', ['plotBoxWidth', 'plotBoxHeight'].map(controlLabel));
+      plotGroup('Size', ['plotBoxWidth', 'plotBoxHeight', ...axisLimitIds].map(controlLabel));
       plotGroup('Appearance', ['plotTwoTone', 'plotWidth', 'plotBorderWidth'].map(controlLabel));
       const axisFields = [];
       for (const [id, text, value, min, max] of [
@@ -507,7 +508,7 @@
       for (const group of [...plotSettings.children]) {
         if (group.tagName !== 'FIELDSET') continue;
         const legend = group.querySelector(':scope > legend');
-        if (!legend || !['Labels and ranges', 'Size', 'Appearance', 'Axis numbers', 'Legend', 'Text', 'Plot', 'Export'].includes(legend.textContent)) continue;
+        if (!legend || !['Labels', 'Size', 'Appearance', 'Axis numbers', 'Legend', 'Text', 'Plot', 'Export'].includes(legend.textContent)) continue;
         const disclosure = document.createElement('details');
         disclosure.className = group.className + ' plot-disclosure';
         const summary = document.createElement('summary'); summary.textContent = legend.textContent;
@@ -1136,12 +1137,14 @@
       const plotTitles = { autocorrelation: 'Autocorrelation function', 'autocorrelation-phase': 'Relative Phase Alignment of Cationic States', spectrum: 'Spectrum' };
       const plotSettingStates = new Map();
       const plotSettingInputs = () => Array.from($('analysisSettingsPanel').querySelectorAll('input[id^="plot"], select[id^="plot"]'));
-      const spectrumAppearanceKey = 'beemol.spectrum.appearance.v1';
+      const spectrumAppearanceKey = 'beemol.spectrum.appearance.v2';
       try {
-        const savedAppearance = JSON.parse(localStorage.getItem(spectrumAppearanceKey));
+        const storedAppearance = localStorage.getItem(spectrumAppearanceKey);
+        const savedAppearance = JSON.parse(storedAppearance ?? localStorage.getItem('beemol.spectrum.appearance.v1'));
         if (Array.isArray(savedAppearance)) plotSettingStates.set('spectrum', savedAppearance.filter(row =>
           Array.isArray(row) && row.length === 3 && typeof row[0] === 'string' &&
           typeof row[1] === 'string' && typeof row[2] === 'boolean' &&
+          (storedAppearance !== null || !axisLimitIds.includes(row[0])) &&
           plotSettingInputs().some(input => input.id === row[0])));
       } catch (_) { /* Use defaults when storage is unavailable. */ }
       const rememberSpectrumAppearance = () => {
@@ -1170,8 +1173,10 @@
           $(id).value = value;
           $(id).checked = checked;
         });
-        if (spectrumMode() && !incomingSettings) {
-          for (const id of ['plotBoxWidth', 'plotBoxHeight']) $(id).value = $(id).defaultValue;
+        if (spectrumMode()) {
+          for (const id of ['plotBoxWidth', 'plotBoxHeight', ...axisLimitIds]) {
+            if (!incomingSettings?.some(([settingId]) => settingId === id)) $(id).value = $(id).defaultValue;
+          }
         }
         $('plotTitle').value = plotTitles[activePlotType];
         spectrum.setVisible(spectrumMode());

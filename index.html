@@ -39,7 +39,7 @@
 
       rel="stylesheet">
 
-  <link rel="stylesheet" href="assets/css/styles.css?v=20261123-stick-swatch">
+  <link rel="stylesheet" href="assets/css/styles.css?v=20261123-axis-limits">
 
   <link rel="stylesheet" href="assets/css/theme.css?v=20261028-bee1">
 
@@ -135,7 +135,7 @@
 
   <label>Y-axis label<input id="plotYLabel" value="|A(t)|"></label>
   <label>Y values<select id="plotTransform"><option value="raw">As provided</option><option value="abs">Absolute value</option><option value="square">Square of real value</option></select></label>
-  <label>X minimum<input id="plotXMin" type="number" placeholder="Auto"></label><label>X maximum<input id="plotXMax" type="number" placeholder="Auto"></label><label>Y minimum<input id="plotYMin" type="number" placeholder="Auto"></label><label>Y maximum<input id="plotYMax" type="number" placeholder="Auto"></label>
+  <label>X minimum<input id="plotXMin" type="number" step="any" placeholder="Auto"></label><label>X maximum<input id="plotXMax" type="number" step="any" placeholder="Auto"></label><label>Y minimum<input id="plotYMin" type="number" step="any" placeholder="Auto"></label><label>Y maximum<input id="plotYMax" type="number" step="any" placeholder="Auto"></label>
   <label>Line width<input id="plotWidth" type="number" min="0.5" max="8" step="0.5" value="3"></label><label><input id="plotLegend" type="checkbox" checked> Show legend</label><div class="analysis-actions"><button id="analysisSVG" type="button">Download SVG</button><button id="analysisPNG" type="button">Download PNG</button></div></div></aside></div>
 
   <section id="aboutWorkspace" class="hidden" aria-label="About BeeMol">
@@ -1320,8 +1320,8 @@ H -0.757200  0.000000  0.586500</textarea>
 <!-- Individual analysis tools -->
 <script src="assets/js/analysis-tools/autocorrelation.js?v=20261123-stick-spectrum"></script>
 <script src="assets/js/analysis-tools/autocorrelation-phase.js?v=20261030-isolation12"></script>
-<script src="assets/js/analysis-tools/spectrum.js?v=20261123-stick-swatch"></script>
-<script src="assets/js/analysis.js?v=20261123-spectrum-dimensions"></script>
+<script src="assets/js/analysis-tools/spectrum.js?v=20261123-stick-height-step"></script>
+<script src="assets/js/analysis.js?v=20261123-axis-limits"></script>
 
 <script>
 
