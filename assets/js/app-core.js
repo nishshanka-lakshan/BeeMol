@@ -114,7 +114,7 @@ function setOrbitalStatus(message, isError=false){
 
   if(!status) return;
 
-  status.textContent = message;
+  status.replaceChildren(message);
 
   status.style.color = isError ? "var(--danger)" : "var(--muted)";
 

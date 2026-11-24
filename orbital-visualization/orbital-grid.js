@@ -394,7 +394,11 @@ async function loadCalculatedOrbital(number){
     renderOrbitalContributions(model,n);
     markActiveOrbitalRow(n);
 
-    setOrbitalStatus(`Orbital ${n} displayed from the selected Molden file.`);
+    const fileName = document.createElement("strong");
+    fileName.textContent = model.fileName;
+    const message = document.createDocumentFragment();
+    message.append(`Orbital ${n} displayed from “`, fileName, "”.");
+    setOrbitalStatus(message);
 
     document.getElementById("animationFrame").value=n;
 
@@ -415,6 +419,7 @@ async function handleMoldenFile(file){
   try{
 
     const model=parseMoldenForGrid(await file.text());
+    model.fileName=file.name;
     restoreMoldenGridControls();
 
     const xyzRows=model.atoms.map(a=>`${a.symbol} ${(a.x*BOHR_TO_ANGSTROM).toFixed(9)} ${(a.y*BOHR_TO_ANGSTROM).toFixed(9)} ${(a.z*BOHR_TO_ANGSTROM).toFixed(9)}`);
