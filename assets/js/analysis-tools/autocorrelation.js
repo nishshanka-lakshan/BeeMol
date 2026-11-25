@@ -134,7 +134,7 @@
 
           <input id="plotBoxHeight" type="number"
 
-                 min="150" max="1200" step="25" value="300">
+                 min="150" max="1200" step="25" value="200">
 
         </label>
 
@@ -146,7 +146,7 @@
 
           <input id="plotBorderWidth" type="number"
 
-                 min="0.2" max="4" step="0.1" value="2">
+                 min="0.2" max="4" step="0.1" value="4">
 
         </label>
 
@@ -222,7 +222,7 @@
           <label for="plotFontSizeValue">Font size (px)</label>
           <div class="plot-font-size-row">
             <button type="button" id="plotFontMinus" aria-label="Decrease selected font size">−</button>
-            <input id="plotFontSizeValue" type="number" min="8" max="48" step="1" value="20">
+            <input id="plotFontSizeValue" type="number" min="8" max="48" step="1" value="23">
             <button type="button" id="plotFontPlus" aria-label="Increase selected font size">+</button>
           </div>
         </div>
@@ -232,11 +232,11 @@
       `;
       for (const [id, value] of [
         ['plotTitleFontSize', 23],
-        ['plotLegendFontSize', 20],
-        ['plotXLabelFontSize', 22],
-        ['plotYLabelFontSize', 22],
-        ['plotXTickFontSize', 18],
-        ['plotYTickFontSize', 18]
+        ['plotLegendFontSize', 23],
+        ['plotXLabelFontSize', 23],
+        ['plotYLabelFontSize', 23],
+        ['plotXTickFontSize', 23],
+        ['plotYTickFontSize', 23]
       ]) {
         const input = document.createElement('input');
         input.type = 'hidden';
@@ -597,20 +597,20 @@
 
       const PW = setting('plotBoxWidth', 1200, 300, 2000);
 
-      const PH = setting('plotBoxHeight', 300, 150, 1200);
-      const titleFontSize = setting('plotTitleFontSize', 22, 8, 48);
-      const legendFontSize = setting('plotLegendFontSize', 20, 8, 48);
-      const xLabelFontSize = setting('plotXLabelFontSize', 22, 8, 48);
-      const yLabelFontSize = setting('plotYLabelFontSize', 22, 8, 48);
-      const xTickFontSize = setting('plotXTickFontSize', 18, 8, 48);
-      const yTickFontSize = setting('plotYTickFontSize', 18, 8, 48);
+      const PH = setting('plotBoxHeight', 200, 150, 1200);
+      const titleFontSize = setting('plotTitleFontSize', 23, 8, 48);
+      const legendFontSize = setting('plotLegendFontSize', 23, 8, 48);
+      const xLabelFontSize = setting('plotXLabelFontSize', 23, 8, 48);
+      const yLabelFontSize = setting('plotYLabelFontSize', 23, 8, 48);
+      const xTickFontSize = setting('plotXTickFontSize', 23, 8, 48);
+      const yTickFontSize = setting('plotYTickFontSize', 23, 8, 48);
 
       const fontWeight = name =>
         $(name)?.value === 'true' ? 'bold' : 'normal';
 
-      const border = setting('plotBorderWidth', 2, 0.2, 4);
+      const border = setting('plotBorderWidth', 4, 0.2, 4);
 
-      const line = setting('plotWidth', 3.0, 0.5, 8);
+      const line = setting('plotWidth', 5, 0.5, 8);
 
       const legendLineWidth = setting('plotLegendLineWidth', 3.0, 0.2, 10);
       // Keep visible gaps even when users increase the curve or legend thickness.
