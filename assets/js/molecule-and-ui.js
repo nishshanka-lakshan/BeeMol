@@ -926,6 +926,11 @@ function setupCompactOrbitalControls(){
  const status=document.getElementById('orbitalStatus');status.setAttribute('role','status');status.setAttribute('aria-live','polite');host.append(status);
  for(const [id,icon,label] of [['orbitalPrev','previous','Previous orbital'],['orbitalNext','next','Next orbital'],['downloadOrbitalFigure','image','Download high-resolution PNG'],['downloadOrbitalCube','cube','Download orbital CUBE'],['animationPlay','play','Play animation'],['animationRecord','movie','Download high-quality MP4 movie'],['fitOrbitalBtn','fit','Fit molecule to view'],['alignHorizontal','horizontal','Align horizontally'],['alignVertical','vertical','Align vertically'],['applyAxisView','view','Apply viewing axis'],['applyOrbitalZoom','zoom','Apply zoom']]){
   const button=document.getElementById(id);button.innerHTML=orbitalActionIcon(icon);button.title=label;button.setAttribute('aria-label',label);button.classList.add('orbital-icon-button');
+  for(const preview of document.querySelectorAll(`[data-orbital-button="${id}"]`)){
+   preview.innerHTML=orbitalActionIcon(icon);
+   preview.setAttribute('aria-label',label);
+   preview.classList.add('orbital-icon-button');
+  }
  }
  // Keep scientific explanations available without occupying the panel.
  for(const panel of [document.getElementById('orbitalAnimation'),slice]){

@@ -17,6 +17,7 @@
  function show(button){
   if(!button||button===active)return;
   hide();
+  if(button.closest('[data-no-tooltips]'))return;
   const label=button.getAttribute('aria-label')||button.getAttribute('title')||button.textContent.trim();
   if(!label)return;
   active=button;previousDescription=button.getAttribute('aria-describedby');

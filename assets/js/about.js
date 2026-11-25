@@ -12,15 +12,24 @@
     target.scrollIntoView({behavior:'smooth',block:'start'});
    });
   });
-  function open(){
+  function open({manual=false}={}){
    if(typeof stopOrbitalAnimation==='function')stopOrbitalAnimation();
    for(const selector of ['main.container','#orbitalWorkspace','#analysisWorkspace','#aiWorkspace'])document.querySelector(selector)?.classList.add('hidden');
+   workspace.classList.toggle('manual-view',manual);
    workspace.classList.remove('hidden');
   }
   // AI controls are created by beemol-ai.js before this callback runs.
   for(const anchor of document.querySelectorAll('.mode-tabs > button, #aiModes > button')){
    if(anchor.closest('#aboutWorkspace')||anchor.textContent.trim()!=='Chat')continue;
-   const button=document.createElement('button');button.type='button';button.textContent='About';button.dataset.openAbout='true';button.onclick=open;anchor.after(button);
+   const button=document.createElement('button');button.type='button';button.textContent='About';button.dataset.openAbout='true';button.onclick=()=>open();anchor.after(button);
+   const manual=document.createElement('button');
+   manual.type='button';
+   manual.textContent='Manual';
+   manual.onclick=()=>{
+    open({manual:true});
+    workspace.querySelector('.about-sidebar a[href="#aboutMolecule"]').click();
+   };
+   button.after(manual);
   }
   // The shared header remains available in every workspace.
   const navigation=document.querySelector('.header-navigation .mode-tabs');
